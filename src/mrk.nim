@@ -3,21 +3,24 @@
 
 import strutils, json
 
+type
+  Blocktype = enum
+    paragraph, header, blockquote, list, codeblock, horizontalrule
+  Inlinetype = enum
+    link, em, strong, code, image, text
+
 type 
-  Heading = object
-    name, kind: string
-    level: int
-    values: Value
+  Block = object
+    name: string
+    kind: Blocktype
+    values: Inline
  
-  Paragraph = object
-    name, kind: string
-    values: Value
+  Inline = object
+    name: string
+    kind: Inlinetype
+    value: string
 
-  Value = object
-    name, kind, value: string
-  
   Empty = object
-
 
 when isMainModule:
   let path = readLine(stdin)
