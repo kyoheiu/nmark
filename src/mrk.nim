@@ -63,7 +63,7 @@ proc parseHeader(s: string, split: seq[string]): Block =
       str.delete(0,6)
       return Block(kind: header6, values: Inline(kind: text, value: str))
 
-proc parseBlockquote(s: string, split: seq[string]): Block =
+proc parseLinequote(s: string, split: seq[string]): Block =
   var str = s
   str.delete(0,1)
   return Block(kind: blockquote, values: Inline(kind: text, value: str))
@@ -71,28 +71,42 @@ proc parseBlockquote(s: string, split: seq[string]): Block =
 proc parseParagraph(s: string): Block =
   Block(kind: paragraph, values: Inline(kind: text, value: s))
 
-proc parseBlock(s:string): Block =
-  var split = s.splitWhitespace
+proc parseLine(line:string): Block =
+  var split = line.splitWhitespace
   case split[0]:
     of "#", "##", "###", "####", "#####", "######":
-      parseHeader(s, split)
+      parseHeader(line, split)
     of ">":
-      parseBlockquote(s, split)
+      parseLinequote(line, split)
     else:
-      parseParagraph(s)
+      parseParagraph(line)
 
 when isMainModule:
   let path = readLine(stdin)
-  var s = readFile(path).replace("  ","<br />")
+  var s = readFile(path).replace("  \n", "<br />")
   var root = Root(kind: "root", children: @[])
-  var lineblock: string
+  var lineBlock: string
   var mdast: seq[Block]
   for line in s.splitLines:
     if line.isEmptyOrWhitespace:
-      mdast.add(Block(kind: undefinedblock, values:Inline(kind: undefinedinline, value: lineblock)))
-      lineblock = ""
+      if not lineBlock.isEmptyOrWhitespace:
+        mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+        lineBlock = ""
     else:
-      lineblock.add(line)
-  mdast.add(Block(kind: undefinedblock, values:Inline(kind: undefinedinline, value: lineblock)))
+      var split = line.splitWhitespace
+      case split[0]:
+        of "#", "##", "###", "####", "#####", "######":
+          if lineBlock != "":
+            mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+          mdast.add(parseHeader(line, split))
+          lineBlock = ""
+        of ">":
+          if lineBlock != "":
+            mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+          mdast.add(parseLinequote(line, split))
+          lineBlock = ""
+        else:
+          lineBlock.add(line)
+  mdast.add(Block(kind: paragraph, values:Inline(kind: undefinedinline, value: lineBlock)))
   root.children = mdast
   echo %root
