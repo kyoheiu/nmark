@@ -5,7 +5,7 @@ import strutils, json
 
 type
   Blocktype = enum
-    undefined,
+    undefinedblock,
     paragraph,
     header1,
     header2,
@@ -18,7 +18,7 @@ type
     codeblock,
     horizontalrule
   Inlinetype = enum
-    undefined,
+    undefinedinline,
     linebreak,
     softbreak,
     link,
@@ -41,7 +41,7 @@ type
     kind: string
     children: seq[Block]
   
-proc parserHeader(s: string, split: seq[string]): Block =
+proc parseHeader(s: string, split: seq[string]): Block =
   var str = s
   case split[0]:
     of "#":
@@ -63,34 +63,36 @@ proc parserHeader(s: string, split: seq[string]): Block =
       str.delete(0,6)
       return Block(kind: header6, values: Inline(kind: text, value: str))
 
-proc parserBlockquote(s: string, split: seq[string]): Block =
+proc parseBlockquote(s: string, split: seq[string]): Block =
   var str = s
   str.delete(0,1)
   return Block(kind: blockquote, values: Inline(kind: text, value: str))
 
-proc parserParagraph(s: string): Block =
+proc parseParagraph(s: string): Block =
   Block(kind: paragraph, values: Inline(kind: text, value: s))
 
-proc parserBlock(s:string): Block =
+proc parseBlock(s:string): Block =
   var split = s.splitWhitespace
   case split[0]:
     of "#", "##", "###", "####", "#####", "######":
-      parserHeader(s, split)
+      parseHeader(s, split)
     of ">":
-      parserBlockquote(s, split)
+      parseBlockquote(s, split)
     else:
-      parserParagraph(s)
+      parseParagraph(s)
 
 when isMainModule:
   let path = readLine(stdin)
-  var s = readFile(path)
+  var s = readFile(path).replace("  ","<br />")
   var root = Root(kind: "root", children: @[])
-  var mdast: seq[BLock]
-  for line in s.splitlines:
-    if line.len != 0:
-      mdast.add(parserBlock(line))
+  var lineblock: string
+  var mdast: seq[Block]
+  for line in s.splitLines:
+    if line.isEmptyOrWhitespace:
+      mdast.add(Block(kind: undefinedblock, values:Inline(kind: undefinedinline, value: lineblock)))
+      lineblock = ""
     else:
-      let empty = Block() 
-      mdast.add(empty)
-    root.children = mdast
+      lineblock.add(line)
+  mdast.add(Block(kind: undefinedblock, values:Inline(kind: undefinedinline, value: lineblock)))
+  root.children = mdast
   echo %root
