@@ -5,73 +5,90 @@ import strutils, json
 
 type
   Blocktype = enum
-    paragraph, header, blockquote, list, codeblock, horizontalrule
+    paragraph,
+    header1,
+    header2,
+    header3,
+    header4,
+    header5,
+    header6,
+    blockquote,
+    list,
+    codeblock,
+    horizontalrule
   Inlinetype = enum
-    link, em, strong, code, image, text
+    linebreak,
+    softbreak,
+    link,
+    em,
+    strong,
+    code,
+    image,
+    text
 
 type 
   Block = object
-    name: string
     kind: Blocktype
     values: Inline
  
   Inline = object
-    name: string
     kind: Inlinetype
     value: string
 
-  Empty = object
+  Root = object
+    kind: string
+    children: seq[Block]
+  
+proc parserHeader(s: string, split: seq[string]): Block =
+  var str = s
+  case split[0]:
+    of "#":
+      str.delete(0,1)
+      return Block(kind: header1, values: Inline(kind: text, value: str))
+    of "##":
+      str.delete(0,2)
+      return Block(kind: header2, values: Inline(kind: text, value: str))
+    of "###":
+      str.delete(0,3)
+      return Block(kind: header3, values: Inline(kind: text, value: str))
+    of "####":
+      str.delete(0,4)
+      return Block(kind: header4, values: Inline(kind: text, value: str))
+    of "#####":
+      str.delete(0,5)
+      return Block(kind: header5, values: Inline(kind: text, value: str))
+    of "######":
+      str.delete(0,6)
+      return Block(kind: header6, values: Inline(kind: text, value: str))
+
+proc parserBlockquote(s: string, split: seq[string]): Block =
+  var str = s
+  str.delete(0,1)
+  return Block(kind: blockquote, values: Inline(kind: text, value: str))
+
+proc parserParagraph(s: string): Block =
+  Block(kind: paragraph, values: Inline(kind: text, value: s))
+
+proc parserBlock(s:string): Block =
+  var split = s.splitWhitespace
+  case split[0]:
+    of "#", "##", "###", "####", "#####", "######":
+      parserHeader(s, split)
+    of ">":
+      parserBlockquote(s, split)
+    else:
+      parserParagraph(s)
 
 when isMainModule:
   let path = readLine(stdin)
   var s = readFile(path)
-  var mdast: seq[JsonNode]
+  var root = Root(kind: "root", children: @[])
+  var mdast: seq[BLock]
   for line in s.splitlines:
-    if line.len != 0 and line.splitWhitespace[0] == "#":
-      var tempLine = line
-      tempLine.delete(0,1)
-      let inline = Value(
-        name: "text",
-        kind: "inline",
-        value: tempLine
-      )
-      let heading = Heading(
-        name: "heading",
-        kind: "block",
-        level: 1,
-        values: inline
-      )
-      mdast.add(%heading)
-    elif line.len != 0:
-      if line.endsWith("  "):
-        var tempLine = line
-        tempLine.removeSuffix("  ")
-        let inline = Value(
-          name: "text",
-          kind: "inline",
-          value: tempLine
-        )
-        let paragraph = Paragraph(
-          name: "paragraph",
-          kind: "inline",
-          values: inline
-        )
-        mdast.add(%paragraph)
-        continue
-        
-      let inline = Value(
-        name: "text",
-        kind: "inline",
-        value: line
-      )
-      let paragraph = Paragraph(
-        name: "paragraph",
-        kind: "inline",
-        values: inline
-      )
-      mdast.add(%paragraph)
+    if line.len != 0:
+      mdast.add(parserBlock(line))
     else:
-      let empty = Empty()
-      mdast.add(%empty)
-  echo mdast
-      
+      let empty = Block() 
+      mdast.add(empty)
+    root.children = mdast
+  echo %root
