@@ -5,6 +5,7 @@ import strutils, json
 
 type
   Blocktype = enum
+    undefined,
     paragraph,
     header1,
     header2,
@@ -17,6 +18,7 @@ type
     codeblock,
     horizontalrule
   Inlinetype = enum
+    undefined,
     linebreak,
     softbreak,
     link,
