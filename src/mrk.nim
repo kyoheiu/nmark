@@ -41,6 +41,13 @@ type
     kind: string
     children: seq[Block]
   
+proc isCodeFence(line: string): bool =
+  if line.len() < 3:
+    false
+  else:
+    let firstThree = line[0..2]
+    firstThree == "```" or firstThree == "~~~"
+
 proc parseHeader(s: string, split: seq[string]): Block =
   var str = s
   case split[0]:
@@ -71,27 +78,29 @@ proc parseLinequote(s: string, split: seq[string]): Block =
 proc parseParagraph(s: string): Block =
   Block(kind: paragraph, values: Inline(kind: text, value: s))
 
-proc parseLine(line:string): Block =
-  var split = line.splitWhitespace
-  case split[0]:
-    of "#", "##", "###", "####", "#####", "######":
-      parseHeader(line, split)
-    of ">":
-      parseLinequote(line, split)
-    else:
-      parseParagraph(line)
-
-when isMainModule:
-  let path = readLine(stdin)
-  var s = readFile(path).replace("  \n", "<br />")
-  var root = Root(kind: "root", children: @[])
-  var lineBlock: string
+proc parseLine(s: string): seq[Block] =
   var mdast: seq[Block]
+  var lineBlock: string
+  var isCodeBlock = false
   for line in s.splitLines:
-    if line.isEmptyOrWhitespace:
+    if isCodeBlock:
+      if not line.isCodeFence:
+        lineBlock.add(line & "\n")
+      else:
+        mdast.add(Block(kind: codeblock, values: Inline(kind: code, value: lineBlock)))
+        lineblock = ""
+        isCodeBlock = false
+    elif line.isEmptyOrWhitespace:
       if not lineBlock.isEmptyOrWhitespace:
         mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
         lineBlock = ""
+    elif line[0] == '`' or line[0] == '~':
+      if line.len() >= 3 and line.isCodeFence:
+        if lineBlock != "":
+          mdast.add(Block(kind: paragraph, values:Inline(kind: undefinedinline, value: lineBlock)))
+          lineBlock = ""
+        isCodeBlock = true
+
     else:
       var split = line.splitWhitespace
       case split[0]:
@@ -107,6 +116,12 @@ when isMainModule:
           lineBlock = ""
         else:
           lineBlock.add(line)
+
   mdast.add(Block(kind: paragraph, values:Inline(kind: undefinedinline, value: lineBlock)))
-  root.children = mdast
+  return mdast
+
+when isMainModule:
+  var s = readFile("testfiles/1.md").replace("  \n", "<br />")
+  var root = Root(kind: "root", children: @[])
+  root.children = parseLine(s)
   echo %root
