@@ -92,32 +92,34 @@ proc parseLine(s: string): seq[Block] =
         isCodeBlock = false
     elif line.isEmptyOrWhitespace:
       if not lineBlock.isEmptyOrWhitespace:
-        mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+        mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
     elif line[0] == '`' or line[0] == '~':
       if line.len() >= 3 and line.isCodeFence:
         if lineBlock != "":
-          mdast.add(Block(kind: paragraph, values:Inline(kind: undefinedinline, value: lineBlock)))
+          mdast.add(parseParagraph(lineBlock))
           lineBlock = ""
         isCodeBlock = true
+      else: lineBlock.add(line)
 
     else:
       var split = line.splitWhitespace
       case split[0]:
         of "#", "##", "###", "####", "#####", "######":
           if lineBlock != "":
-            mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+            mdast.add(parseParagraph(lineBlock))
           mdast.add(parseHeader(line, split))
           lineBlock = ""
         of ">":
           if lineBlock != "":
-            mdast.add(Block(kind: paragraph, values: Inline(kind: undefinedinline, value: lineBlock)))
+            mdast.add(parseParagraph(lineBlock))
           mdast.add(parseLinequote(line, split))
           lineBlock = ""
         else:
           lineBlock.add(line)
 
-  mdast.add(Block(kind: paragraph, values:Inline(kind: undefinedinline, value: lineBlock)))
+  if lineBlock != "":
+    mdast.add(parseParagraph(lineBlock))
   return mdast
 
 when isMainModule:
