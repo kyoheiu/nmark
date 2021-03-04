@@ -1,7 +1,5 @@
-# This is just an example to get you started. A typical hybrid package
-# uses this file as the main entry point of the application.
-
 import strutils, json
+import nimprof
 
 type
   Blocktype = enum
@@ -29,15 +27,15 @@ type
     text
 
 type 
-  Block = object
+  Block = ref object
     kind: Blocktype
     values: Inline
  
-  Inline = object
+  Inline = ref object
     kind: Inlinetype
     value: string
 
-  Root = object
+  Root = ref object
     kind: string
     children: seq[Block]
   
@@ -123,7 +121,7 @@ proc parseLine(s: string): seq[Block] =
   return mdast
 
 when isMainModule:
-  var s = readFile("testfiles/1.md").replace("  \n", "<br />")
+  var s = readFile("../testfiles/1.md").replace("  \n", "<br />")
   var root = Root(kind: "root", children: @[])
   root.children = parseLine(s)
   echo %root
