@@ -1,5 +1,5 @@
-import strutils, json
-import nimprof
+import strutils, json, re
+# import nimprof
 
 type
   Blocktype = enum
@@ -15,13 +15,14 @@ type
     list,
     codeblock,
     horizontalrule
+
   Inlinetype = enum
     undefinedinline,
     linebreak,
     softbreak,
     link,
     em,
-    strong,
+    lineong,
     code,
     image,
     text
@@ -38,49 +39,58 @@ type
   Root = ref object
     kind: string
     children: seq[Block]
-  
-proc isCodeFence(line: string): bool =
-  if line.len() < 3:
-    false
-  else:
-    let firstThree = line[0..2]
-    firstThree == "```" or firstThree == "~~~"
 
-proc parseHeader(s: string, split: seq[string]): Block =
-  var str = s
-  case split[0]:
+let
+  reHeader = re"^(#|##|###|####|#####|######) "
+  reBlockquote = re"^> "
+  reBulletList = re"^(-|\+|\*) "
+  reOrderedList = re"^(1|2|3|4|5|6|7|8|9) "
+  reCodeBlock = re"^(```|~~~)"
+
+proc isHeader(line: string): bool =
+  match(line, reHeader)
+
+proc isBlockquote(line: string): bool =
+  match(line, reBlockquote)
+
+proc isCodeFence(line: string): bool =
+  match(line, reCodeBlock)
+
+proc parseHeader(line: string): Block =
+  case line.splitWhitespace[0]:
     of "#":
-      str.delete(0,1)
+      let str = line.replace(reHeader)
       return Block(kind: header1, values: Inline(kind: text, value: str))
     of "##":
-      str.delete(0,2)
+      let str = line.replace(reHeader)
       return Block(kind: header2, values: Inline(kind: text, value: str))
     of "###":
-      str.delete(0,3)
+      let str = line.replace(reHeader)
       return Block(kind: header3, values: Inline(kind: text, value: str))
     of "####":
-      str.delete(0,4)
+      let str = line.replace(reHeader)
       return Block(kind: header4, values: Inline(kind: text, value: str))
     of "#####":
-      str.delete(0,5)
+      let str = line.replace(reHeader)
       return Block(kind: header5, values: Inline(kind: text, value: str))
     of "######":
-      str.delete(0,6)
+      let str = line.replace(reHeader)
       return Block(kind: header6, values: Inline(kind: text, value: str))
 
-proc parseLinequote(s: string, split: seq[string]): Block =
-  var str = s
-  str.delete(0,1)
+proc parseBlockquote(line: string): Block =
+  let str = line.replace(reBlockquote)
   return Block(kind: blockquote, values: Inline(kind: text, value: str))
 
-proc parseParagraph(s: string): Block =
-  Block(kind: paragraph, values: Inline(kind: text, value: s))
+proc parseParagraph(line: string): Block =
+  Block(kind: paragraph, values: Inline(kind: text, value: line))
 
 proc parseLine(s: string): seq[Block] =
   var mdast: seq[Block]
   var lineBlock: string
   var isCodeBlock = false
+
   for line in s.splitLines:
+
     if isCodeBlock:
       if not line.isCodeFence:
         lineBlock.add(line & "\n")
@@ -88,40 +98,40 @@ proc parseLine(s: string): seq[Block] =
         mdast.add(Block(kind: codeblock, values: Inline(kind: code, value: lineBlock)))
         lineblock = ""
         isCodeBlock = false
+
     elif line.isEmptyOrWhitespace:
       if not lineBlock.isEmptyOrWhitespace:
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-    elif line[0] == '`' or line[0] == '~':
-      if line.len() >= 3 and line.isCodeFence:
-        if lineBlock != "":
-          mdast.add(parseParagraph(lineBlock))
-          lineBlock = ""
-        isCodeBlock = true
-      else: lineBlock.add(line)
 
+    elif line.isCodeFence:
+      if lineBlock != "":
+        mdast.add(parseParagraph(lineBlock))
+        lineBlock = ""
+      isCodeBlock = true
+
+    elif line.isHeader:
+      if lineBlock != "":
+        mdast.add(parseParagraph(lineBlock))
+      mdast.add(parseHeader(line))
+      lineBlock = ""
+    
+    elif line.isBlockquote:
+      if lineBlock != "":
+        mdast.add(parseParagraph(lineBlock))
+      mdast.add(parseBlockquote(line))
+      lineBlock = ""
+    
     else:
-      var split = line.splitWhitespace
-      case split[0]:
-        of "#", "##", "###", "####", "#####", "######":
-          if lineBlock != "":
-            mdast.add(parseParagraph(lineBlock))
-          mdast.add(parseHeader(line, split))
-          lineBlock = ""
-        of ">":
-          if lineBlock != "":
-            mdast.add(parseParagraph(lineBlock))
-          mdast.add(parseLinequote(line, split))
-          lineBlock = ""
-        else:
-          lineBlock.add(line)
+      lineBlock.add(line)
 
   if lineBlock != "":
     mdast.add(parseParagraph(lineBlock))
+
   return mdast
 
 when isMainModule:
-  var s = readFile("../testfiles/1.md").replace("  \n", "<br />")
+  var s = readFile("testfiles/1.md").replace("  \n", "<br />")
   var root = Root(kind: "root", children: @[])
   root.children = parseLine(s)
   echo %root
