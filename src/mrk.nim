@@ -248,7 +248,7 @@ proc parseLine(s: string): seq[Block] =
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListPlusPare))
+      unorderedListSeq.add(line.replace(reBulletListAstePare))
       container.toggleBulletListAstePare = true
     
     elif line.isOrderdListSpaceStart:
