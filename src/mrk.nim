@@ -15,7 +15,8 @@ type
     blockquote,
     unorderedlist,
     orderedlist,
-    codeblock,
+    indentedcodeblock,
+    fencedcodeblock,
     horizontalrule
 
   Inlinetype = enum
@@ -31,7 +32,9 @@ type
 
   ToggleContainer = ref object
     toggleBlockquote: bool
-    toggleCodeBlock: bool
+    toggleIndentedCodeBlock: bool
+    indentedCodeBlockDepth: int
+    toggleFencedCodeBlock: bool
     toggleBulletListDashSpace: bool
     toggleBulletListPlusSpace: bool
     toggleBulletListAsteSpace: bool
@@ -40,6 +43,22 @@ type
     toggleBulletListAstePare: bool
     toggleOrderedListSpace: bool
     toggleOrderedListPare: bool
+
+proc newToggle(): ToggleContainer =
+  ToggleContainer(
+    toggleBlockquote: false,
+    toggleIndentedCodeBlock: false,
+    indentedCodeBlockDepth: 0,
+    toggleFencedCodeBlock: false,
+    toggleBulletListDashSpace: false,
+    toggleBulletListPlusSpace: false,
+    toggleBulletListAsteSpace: false,
+    toggleBulletListDashPare: false,
+    toggleBulletListPlusPare: false,
+    toggleBulletListAstePare: false,
+    toggleOrderedListSpace: false,
+    toggleOrderedListPare: false
+  )
 
 type 
   Block = ref object
@@ -59,7 +78,7 @@ let
   reSetextHeader1 = re"^(| |  |   )(=+)"
   reSetextHeader2 = re"^(| |  |   )(--+)"
   reAtxHeader = re"^(| |  |   )(#|##|###|####|#####|######) "
-  reBlockquote = re"^(| |  |   )>(| )"
+  reBlockquote = re"^(| |  |   )>( |)"
   reBulletListDashSpace = re"^(| |  |   )- "
   reBulletListPlusSpace = re"^(| |  |   )\+ "
   reBulletListAsteSpace = re"^(| |  |   )\* "
@@ -70,7 +89,9 @@ let
   reOrderedListPareStart = re"^(| |  |   )1\)"
   reOrderedListSpace = re"^(| |  |   )(2|3|4|5|6|7|8|9)\. "
   reOrderedListPare = re"^(| |  |   )(2|3|4|5|6|7|8|9)\)"
-  reCodeBlock = re"^(| |  |   )(```|~~~)"
+  reIndentedCodeBlock = re"^ {4,}"
+  reBreakIndentedCode = re"^(| |  |   )\S"
+  reFencedCodeBlock = re"^(| |  |   )(```|~~~)"
   reParagraph = re"^(| |  |   )[^\*-_=+#>123456789(```)(~~~)]"
 
 proc isSetextHeader1(line: string): bool =
@@ -87,8 +108,14 @@ proc isAtxHeader(line: string): bool =
 proc isBlockquote(line: string): bool =
   match(line, reBlockquote)
 
+proc isIndentedCode(line: string): bool =
+  match(line, reIndentedCodeBlock)
+
+proc isBreakIndentedCode(line: string): bool =
+  match(line, reBreakIndentedCode)
+
 proc isCodeFence(line: string): bool =
-  match(line, reCodeBlock)
+  match(line, reFencedCodeBlock)
 
 proc isParagraph(line: string): bool =
   match(line, reParagraph)
@@ -114,19 +141,11 @@ proc isOrderdListSpace(line: string): bool =
 proc isOrderdListPare(line: string): bool =
   match(line, reOrderedListPare)
 
-proc newToggle(): ToggleContainer =
-  ToggleContainer(
-    toggleBlockquote: false,
-    toggleCodeBlock: false,
-    toggleBulletListDashSpace: false,
-    toggleBulletListPlusSpace: false,
-    toggleBulletListAsteSpace: false,
-    toggleBulletListDashPare: false,
-    toggleBulletListPlusPare: false,
-    toggleBulletListAstePare: false,
-    toggleOrderedListSpace: false,
-    toggleOrderedListPare: false
-  )
+proc countWhitespace(line: string): int =
+  var i = 0
+  for c in line:
+    if c == ' ': i.inc
+    else: return i
 
 proc parseHeader(line: string): Block =
   case line.splitWhitespace[0]:
@@ -174,7 +193,8 @@ proc parseLine(s: string): seq[Block] =
           container.toggleBlockquote = false
           break blockquotes
         else:
-          blockquoteSeq.add(line)
+          blockquoteSeq.add(line.replace(reBlockquote))
+          continue
 
     block bulletListDashSpace:
       if container.toggleBulletListDashSpace:
@@ -198,13 +218,28 @@ proc parseLine(s: string): seq[Block] =
           container.toggleOrderedListSpace = false
           break orderedListDashSpace
 
-    if container.toggleCodeBlock:
+    block indentedCodeBlocks:
+      if container.toggleIndentedCodeBlock:
+        if line.isBreakIndentedCode:
+          lineBlock.removeSuffix("<br />")
+          mdast.add(Block(kind: indentedcodeblock, values: Inline(kind: code, value: @[lineBlock])))
+          lineBlock = ""
+          container.toggleIndentedCodeBlock = false
+          break indentedCodeBlocks
+        else:
+          var mutLine = line
+          mutLine.delete(0,container.indentedCodeBlockDepth)
+          lineBlock.add("<br />" & mutLine)
+          continue
+
+    if container.toggleFencedCodeBlock:
       if not line.isCodeFence:
         lineBlock.add(line & "<br />")
       else:
-        mdast.add(Block(kind: codeblock, values: Inline(kind: code, value: @[lineBlock])))
+        lineBlock.removeSuffix("<br />")
+        mdast.add(Block(kind: fencedcodeblock, values: Inline(kind: code, value: @[lineBlock])))
         lineblock = ""
-        container.toggleCodeBlock = false
+        container.toggleFencedCodeBlock = false
 
     elif line.isBlockquote:
       if lineBlock != "":
@@ -265,11 +300,19 @@ proc parseLine(s: string): seq[Block] =
       orderedListSeq.add(line.replace(reOrderedListPareStart))
       container.toggleOrderedListPare = true
 
+    elif line.isIndentedCode:
+      if lineBlock == "":
+        container.indentedCodeBlockDepth = line.countWhitespace - 1
+        container.toggleIndentedCodeBlock = true
+        var mutLine = line
+        mutLine.delete(0,container.indentedCodeBlockDepth)
+        lineBlock.add(mutLine)
+
     elif line.isCodeFence:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      container.toggleCodeBlock = true
+      container.toggleFencedCodeBlock = true
     
     elif line.isAtxHeader:
       if lineBlock != "":
