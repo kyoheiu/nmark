@@ -60,15 +60,22 @@ proc newToggle(): ToggleContainer =
     toggleOrderedListPare: false
   )
 
-type 
-  Block = ref object
-    kind: BlockType
-    children: Block
-    inline: Inline
-  
+type
+  BlockKind = enum
+    containerBlock,
+    leafBlock
+  Block = ref BlockObj
+  BlockObj = object
+    case kind: BlockKind
+    of containerBlock:
+      containerType: BlockType
+      children: Block
+    of leafBlock:
+      leafType: BlockType
+      inline: Inline
   Inline = ref object
     kind: InlineType
-    value: seq[string]
+    value: string
 
   Root = ref object
     kind: string
@@ -149,38 +156,41 @@ proc countWhitespace(line: string): int =
     if c == ' ': i.inc
     else: return i
 
-proc parseAtxHeader(line: string): Block =
+proc openAtxHeader(line: string): Block =
   case line.splitWhitespace[0]:
     of "#":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header1, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header1, inline: Inline(kind: text, value: str))
     of "##":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header2, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header2, inline: Inline(kind: text, value: str))
     of "###":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header3, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header3, inline: Inline(kind: text, value: str))
     of "####":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header4, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header4, inline: Inline(kind: text, value: str))
     of "#####":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header5, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header5, inline: Inline(kind: text, value: str))
     of "######":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header6, children: nil, inline: Inline(kind: text, value: @[str]))
+      return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: str))
 
-proc parseContainerBLock(blockType: Blocktype, containerBLockSeq: seq[string]): Block =
-  return Block(kind: blockType, children: Block(kind: undefinedBlock, children: nil, inline: Inline(kind: text, value: containerBLockSeq)), inline: nil)
+proc openContainerBLock(blockType: BlockType, containerBLockSeq: seq[string]): Block =
+  return Block(kind: containerBlock, containerType: blockType, children: nil)  
 
-proc parseSetextHeader(blockType: BLocktype, lineBlock: string): Block =
-  return Block(kind: blockType, children: nil, inline: Inline(kind: text, value: @[lineBlock]))
+proc openCodeBLock(blockType: BlockType, codeLines: string): Block =
+  return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: codeLines))  
 
-proc parseThemanticBreak(): Block =
-  return Block(kind: themanticBreak, children: nil, inline: nil) 
+proc openSetextHeader(blockType: BLockType, lineBlock: string): Block =
+  return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: lineBlock))
 
-proc parseParagraph(line: string): Block =
-  Block(kind: paragraph, children: nil, inline: Inline(kind: text, value: @[line]))
+proc openThemanticBreak(): Block =
+  return Block(kind: leafBlock, leafType: themanticBreak, inline: nil) 
+
+proc openParagraph(line: string): Block =
+  Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
 
 proc parseLine(s: string): seq[Block] =
   var mdast: seq[Block]
@@ -195,7 +205,7 @@ proc parseLine(s: string): seq[Block] =
     block blockQuoteBLock:
       if container.toggleBlockQuote:
         if not (line.isParagraph or line.isBlockQuote):
-          mdast.add(parseContainerBLock(blockQuote, blockquoteSeq))
+          mdast.add(openContainerBLock(blockQuote, blockQuoteSeq))
           blockQuoteSeq = @[]
           container.toggleBlockQuote = false
           break blockQuoteBlock
@@ -209,7 +219,7 @@ proc parseLine(s: string): seq[Block] =
           unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
           continue
         else:
-          mdast.add(parseContainerBLock(unOrderedList, unorderedListSeq))
+          mdast.add(openContainerBLock(unOrderedList, unorderedListSeq))
           unorderedListSeq = @[]
           container.toggleUnorderedListDashSpace = false
           break unorderedListDashSpaceBlock
@@ -220,7 +230,7 @@ proc parseLine(s: string): seq[Block] =
           orderedListSeq.add(line.replace(reOrderedListSpace))
           continue
         else:
-          mdast.add(parseContainerBLock(orderedList, orderedListSeq))
+          mdast.add(openContainerBLock(orderedList, orderedListSeq))
           orderedListSeq = @[]
           container.toggleOrderedListSpace = false
           break orderedListDashSpaceBlock
@@ -229,7 +239,7 @@ proc parseLine(s: string): seq[Block] =
       if container.toggleIndentedCodeBlock:
         if line.isBreakIndentedCode:
           lineBlock.removeSuffix("<br />")
-          mdast.add(parseContainerBLock(indentedCodeBlock, @[lineBlock]))
+          mdast.add(openCodeBLock(indentedCodeBlock, lineBlock))
           lineBlock = ""
           container.toggleIndentedCodeBlock = false
           break indentedCodeBlocks
@@ -244,69 +254,69 @@ proc parseLine(s: string): seq[Block] =
         lineBlock.add(line & "<br />")
       else:
         lineBlock.removeSuffix("<br />")
-        mdast.add(parseContainerBLock(fencedCodeBlock, @[lineBlock]))
+        mdast.add(openCodeBLock(fencedCodeBlock, lineBlock))
         lineblock = ""
         container.toggleFencedCodeBlock = false
 
     elif line.isBlockQuote:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       blockQuoteSeq.add(line.replace(reBlockQuote))
       container.toggleBlockQuote = true
     
     elif line.isUnorderedListDashSpace:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
       container.toggleUnorderedListDashSpace = true
 
     elif line.isUnorderedListPlusSpace:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
       container.toggleUnorderedListPlusSpace = true
 
     elif line.isUnorderedListAsteSpace:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
       container.toggleUnorderedListAsteSpace = true
     
     elif line.isUnorderedListDashPare:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListDashPare))
       container.toggleUnorderedListDashPare = true
 
     elif line.isUnorderedListPlusPare:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
       container.toggleUnorderedListPlusPare = true
 
     elif line.isUnorderedListAstePare:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListAstePare))
       container.toggleUnorderedListAstePare = true
     
     elif line.isOrderedListSpaceStart:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       orderedListSeq.add(line.replace(reOrderedListSpaceStart))
       container.toggleOrderedListSpace = true
 
     elif line.isOrderedListPareStart:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       orderedListSeq.add(line.replace(reOrderedListPareStart))
       container.toggleOrderedListPare = true
@@ -321,46 +331,46 @@ proc parseLine(s: string): seq[Block] =
 
     elif line.isCodeFence:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       container.toggleFencedCodeBlock = true
     
     elif line.isAtxHeader:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
-      mdast.add(parseAtxHeader(line))
+        mdast.add(openParagraph(lineBlock))
+      mdast.add(openAtxHeader(line))
       lineBlock = ""
     
     elif line.isSetextHeader1:
       if lineBlock != "":
-        mdast.add(parseSetextHeader(header1, lineBlock))
+        mdast.add(openSetextHeader(header1, lineBlock))
         lineBlock = ""
       else:
         lineBlock.add(line)
     
     elif line.isSetextHeader2:
       if lineBlock != "":
-        mdast.add(parseSetextHeader(header2, lineBlock))
+        mdast.add(openSetextHeader(header2, lineBlock))
         lineBlock = ""
       else:
-        mdast.add(parseThemanticBreak())
+        mdast.add(openThemanticBreak())
     
     elif line.isThemanticBreak:
       if lineBlock != "":
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
-      mdast.add(parseThemanticBreak())
+      mdast.add(openThemanticBreak())
 
     elif line.isEmptyOrWhitespace:
       if not lineBlock.isEmptyOrWhitespace:
-        mdast.add(parseParagraph(lineBlock))
+        mdast.add(openParagraph(lineBlock))
         lineBlock = ""
 
     else:
       lineBlock.add(line)
 
   if lineBlock != "":
-    mdast.add(parseParagraph(lineBlock))
+    mdast.add(openParagraph(lineBlock))
 
   return mdast
 
