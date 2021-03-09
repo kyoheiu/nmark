@@ -2,8 +2,8 @@ import strutils, json, re
 # import nimprof
 
 type
-  Blocktype = enum
-    undefinedblock,
+  BlockType = enum
+    undefinedBlock,
     paragraph,
     header1,
     header2,
@@ -11,18 +11,18 @@ type
     header4,
     header5,
     header6,
-    themanticbreak,
-    blockquote,
-    unorderedlist,
-    orderedlist,
-    indentedcodeblock,
-    fencedcodeblock,
-    horizontalrule
+    themanticBreak,
+    indentedCodeBlock,
+    fencedCodeBlock,
+    blockQuote,
+    unOrderedList,
+    orderedList
 
-  Inlinetype = enum
-    undefinedinline,
-    linebreak,
-    softbreak,
+  InlineType = enum
+    undefinedInline,
+    hr,
+    lineBreak,
+    softBreak,
     link,
     em,
     strong,
@@ -31,42 +31,43 @@ type
     text
 
   ToggleContainer = ref object
-    toggleBlockquote: bool
+    toggleBlockQuote: bool
     toggleIndentedCodeBlock: bool
     indentedCodeBlockDepth: int
     toggleFencedCodeBlock: bool
-    toggleBulletListDashSpace: bool
-    toggleBulletListPlusSpace: bool
-    toggleBulletListAsteSpace: bool
-    toggleBulletListDashPare: bool
-    toggleBulletListPlusPare: bool
-    toggleBulletListAstePare: bool
+    toggleUnorderedListDashSpace: bool
+    toggleUnorderedListPlusSpace: bool
+    toggleUnorderedListAsteSpace: bool
+    toggleUnorderedListDashPare: bool
+    toggleUnorderedListPlusPare: bool
+    toggleUnorderedListAstePare: bool
     toggleOrderedListSpace: bool
     toggleOrderedListPare: bool
 
 proc newToggle(): ToggleContainer =
   ToggleContainer(
-    toggleBlockquote: false,
+    toggleBlockQuote: false,
     toggleIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
     toggleFencedCodeBlock: false,
-    toggleBulletListDashSpace: false,
-    toggleBulletListPlusSpace: false,
-    toggleBulletListAsteSpace: false,
-    toggleBulletListDashPare: false,
-    toggleBulletListPlusPare: false,
-    toggleBulletListAstePare: false,
+    toggleUnorderedListDashSpace: false,
+    toggleUnorderedListPlusSpace: false,
+    toggleUnorderedListAsteSpace: false,
+    toggleUnorderedListDashPare: false,
+    toggleUnorderedListPlusPare: false,
+    toggleUnorderedListAstePare: false,
     toggleOrderedListSpace: false,
     toggleOrderedListPare: false
   )
 
 type 
   Block = ref object
-    kind: Blocktype
-    values: Inline
- 
+    kind: BlockType
+    children: Block
+    inline: Inline
+  
   Inline = ref object
-    kind: Inlinetype
+    kind: InlineType
     value: seq[string]
 
   Root = ref object
@@ -78,13 +79,13 @@ let
   reSetextHeader1 = re"^(| |  |   )(=+)"
   reSetextHeader2 = re"^(| |  |   )(--+)"
   reAtxHeader = re"^(| |  |   )(#|##|###|####|#####|######) "
-  reBlockquote = re"^(| |  |   )>( |)"
-  reBulletListDashSpace = re"^(| |  |   )- "
-  reBulletListPlusSpace = re"^(| |  |   )\+ "
-  reBulletListAsteSpace = re"^(| |  |   )\* "
-  reBulletListDashPare = re"^(| |  |   )-\)"
-  reBulletListPlusPare = re"^(| |  |   )\+\)"
-  reBulletListAstePare = re"^(| |  |   )\*\)"
+  reBlockQuote = re"^(| |  |   )>( |)"
+  reUnorderedListDashSpace = re"^(| |  |   )- "
+  reUnorderedListPlusSpace = re"^(| |  |   )\+ "
+  reUnorderedListAsteSpace = re"^(| |  |   )\* "
+  reUnorderedListDashPare = re"^(| |  |   )-\)"
+  reUnorderedListPlusPare = re"^(| |  |   )\+\)"
+  reUnorderedListAstePare = re"^(| |  |   )\*\)"
   reOrderedListSpaceStart = re"^(| |  |   )1\. "
   reOrderedListPareStart = re"^(| |  |   )1\)"
   reOrderedListSpace = re"^(| |  |   )(2|3|4|5|6|7|8|9)\. "
@@ -96,6 +97,7 @@ let
 
 proc isSetextHeader1(line: string): bool =
   match(line, reSetextHeader1)
+
 proc isSetextHeader2(line: string): bool =
   match(line, reSetextHeader2)
 
@@ -105,8 +107,8 @@ proc isThemanticBreak(line: string): bool =
 proc isAtxHeader(line: string): bool =
   match(line, reAtxHeader)
 
-proc isBlockquote(line: string): bool =
-  match(line, reBlockquote)
+proc isBlockQuote(line: string): bool =
+  match(line, reBlockQuote)
 
 proc isIndentedCode(line: string): bool =
   match(line, reIndentedCodeBlock)
@@ -120,25 +122,25 @@ proc isCodeFence(line: string): bool =
 proc isParagraph(line: string): bool =
   match(line, reParagraph)
 
-proc isBulletListDashSpace(line: string): bool =
-  match(line, reBulletListDashSpace)
-proc isBulletListPlusSpace(line: string): bool =
-  match(line, reBulletListPlusSpace)
-proc isBulletListAsteSpace(line: string): bool =
-  match(line, reBulletListAsteSpace)
-proc isBulletListDashPare(line: string): bool =
-  match(line, reBulletListDashPare)
-proc isBulletListPlusPare(line: string): bool =
-  match(line, reBulletListDashPare)
-proc isBulletListAstePare(line: string): bool =
-  match(line, reBulletListDashPare)
-proc isOrderdListSpaceStart(line: string): bool =
+proc isUnorderedListDashSpace(line: string): bool =
+  match(line, reUnorderedListDashSpace)
+proc isUnorderedListPlusSpace(line: string): bool =
+  match(line, reUnorderedListPlusSpace)
+proc isUnorderedListAsteSpace(line: string): bool =
+  match(line, reUnorderedListAsteSpace)
+proc isUnorderedListDashPare(line: string): bool =
+  match(line, reUnorderedListDashPare)
+proc isUnorderedListPlusPare(line: string): bool =
+  match(line, reUnorderedListDashPare)
+proc isUnorderedListAstePare(line: string): bool =
+  match(line, reUnorderedListDashPare)
+proc isOrderedListSpaceStart(line: string): bool =
   match(line, reOrderedListSpaceStart)
-proc isOrderdListPareStart(line: string): bool =
+proc isOrderedListPareStart(line: string): bool =
   match(line, reOrderedListPareStart)
-proc isOrderdListSpace(line: string): bool =
+proc isOrderedListSpace(line: string): bool =
   match(line, reOrderedListSpace)
-proc isOrderdListPare(line: string): bool =
+proc isOrderedListPare(line: string): bool =
   match(line, reOrderedListPare)
 
 proc countWhitespace(line: string): int =
@@ -147,82 +149,87 @@ proc countWhitespace(line: string): int =
     if c == ' ': i.inc
     else: return i
 
-proc parseHeader(line: string): Block =
+proc parseAtxHeader(line: string): Block =
   case line.splitWhitespace[0]:
     of "#":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header1, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header1, children: nil, inline: Inline(kind: text, value: @[str]))
     of "##":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header2, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header2, children: nil, inline: Inline(kind: text, value: @[str]))
     of "###":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header3, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header3, children: nil, inline: Inline(kind: text, value: @[str]))
     of "####":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header4, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header4, children: nil, inline: Inline(kind: text, value: @[str]))
     of "#####":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header5, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header5, children: nil, inline: Inline(kind: text, value: @[str]))
     of "######":
       let str = line.replace(reAtxHeader)
-      return Block(kind: header6, values: Inline(kind: text, value: @[str]))
+      return Block(kind: header6, children: nil, inline: Inline(kind: text, value: @[str]))
 
-proc parseBlockquote(line: string): Block =
-  let str = line.replace(reBlockquote)
-  return Block(kind: blockquote, values: Inline(kind: text, value: @[str]))
+proc parseContainerBLock(blockType: Blocktype, containerBLockSeq: seq[string]): Block =
+  return Block(kind: blockType, children: Block(kind: undefinedBlock, children: nil, inline: Inline(kind: text, value: containerBLockSeq)), inline: nil)
+
+proc parseSetextHeader(blockType: BLocktype, lineBlock: string): Block =
+  return Block(kind: blockType, children: nil, inline: Inline(kind: text, value: @[lineBlock]))
+
+proc parseThemanticBreak(): Block =
+  return Block(kind: themanticBreak, children: nil, inline: nil) 
 
 proc parseParagraph(line: string): Block =
-  Block(kind: paragraph, values: Inline(kind: text, value: @[line]))
+  Block(kind: paragraph, children: nil, inline: Inline(kind: text, value: @[line]))
 
 proc parseLine(s: string): seq[Block] =
   var mdast: seq[Block]
   var lineBlock: string
-  var blockquoteSeq: seq[string]
+  var blockQuoteSeq: seq[string]
   var unorderedListSeq: seq[string]
   var orderedListSeq: seq[string]
   var container = newToggle()
 
   for line in s.splitLines:
 
-    block blockquotes:
-      if container.toggleBlockquote:
-        if not (line.isParagraph or line.isBlockquote):
-          mdast.add(Block(kind: blockquote, values: Inline(kind: text, value: blockquoteSeq)))
-          blockquoteSeq = @[]
-          container.toggleBlockquote = false
-          break blockquotes
+    block blockQuoteBLock:
+      if container.toggleBlockQuote:
+        if not (line.isParagraph or line.isBlockQuote):
+          mdast.add(parseContainerBLock(blockQuote, blockquoteSeq))
+          blockQuoteSeq = @[]
+          container.toggleBlockQuote = false
+          break blockQuoteBlock
         else:
-          blockquoteSeq.add(line.replace(reBlockquote))
+          blockQuoteSeq.add(line.replace(reBlockQuote))
           continue
 
-    block bulletListDashSpace:
-      if container.toggleBulletListDashSpace:
-        if line.isBulletListDashSpace:
-          unorderedListSeq.add(line.replace(reBulletListDashSpace))
+    block unorderedListDashSpaceBlock:
+      if container.toggleUnorderedListDashSpace:
+        if line.isUnorderedListDashSpace:
+          unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
           continue
         else:
-          mdast.add(Block(kind: unorderedlist, values: Inline(kind: text, value: unorderedListSeq)))
+          mdast.add(parseContainerBLock(unOrderedList, unorderedListSeq))
           unorderedListSeq = @[]
-          container.toggleBulletListDashSpace = false
-          break bulletListDashSpace
+          container.toggleUnorderedListDashSpace = false
+          break unorderedListDashSpaceBlock
 
-    block orderedListDashSpace:
+    block orderedListDashSpaceBlock:
       if container.toggleOrderedListSpace:
-        if line.isOrderdListSpace:
+        if line.isOrderedListSpace:
           orderedListSeq.add(line.replace(reOrderedListSpace))
           continue
         else:
-          mdast.add(Block(kind: orderedlist, values: Inline(kind: text, value: orderedListSeq)))
+          mdast.add(parseContainerBLock(orderedList, orderedListSeq))
           orderedListSeq = @[]
           container.toggleOrderedListSpace = false
-          break orderedListDashSpace
+          break orderedListDashSpaceBlock
 
     block indentedCodeBlocks:
       if container.toggleIndentedCodeBlock:
         if line.isBreakIndentedCode:
           lineBlock.removeSuffix("<br />")
-          mdast.add(Block(kind: indentedcodeblock, values: Inline(kind: code, value: @[lineBlock])))
+          mdast.add(parseContainerBLock(indentedCodeBlock, @[lineBlock]))
           lineBlock = ""
           container.toggleIndentedCodeBlock = false
           break indentedCodeBlocks
@@ -237,63 +244,67 @@ proc parseLine(s: string): seq[Block] =
         lineBlock.add(line & "<br />")
       else:
         lineBlock.removeSuffix("<br />")
-        mdast.add(Block(kind: fencedcodeblock, values: Inline(kind: code, value: @[lineBlock])))
+        mdast.add(parseContainerBLock(fencedCodeBlock, @[lineBlock]))
         lineblock = ""
         container.toggleFencedCodeBlock = false
 
-    elif line.isBlockquote:
+    elif line.isBlockQuote:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      blockquoteSeq.add(line.replace(reBlockquote))
-      container.toggleBlockquote = true
+      blockQuoteSeq.add(line.replace(reBlockQuote))
+      container.toggleBlockQuote = true
     
-    elif line.isBulletListDashSpace:
+    elif line.isUnorderedListDashSpace:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListDashSpace))
-      container.toggleBulletListDashSpace = true
-    elif line.isBulletListPlusSpace:
+      unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
+      container.toggleUnorderedListDashSpace = true
+
+    elif line.isUnorderedListPlusSpace:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListPlusSpace))
-      container.toggleBulletListPlusSpace = true
-    elif line.isBulletListAsteSpace:
+      unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
+      container.toggleUnorderedListPlusSpace = true
+
+    elif line.isUnorderedListAsteSpace:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListAsteSpace))
-      container.toggleBulletListAsteSpace = true
+      unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
+      container.toggleUnorderedListAsteSpace = true
     
-    elif line.isBulletListDashPare:
+    elif line.isUnorderedListDashPare:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListDashPare))
-      container.toggleBulletListDashPare = true
-    elif line.isBulletListPlusPare:
+      unorderedListSeq.add(line.replace(reUnorderedListDashPare))
+      container.toggleUnorderedListDashPare = true
+
+    elif line.isUnorderedListPlusPare:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListPlusPare))
-      container.toggleBulletListPlusPare = true
-    elif line.isBulletListAstePare:
+      unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
+      container.toggleUnorderedListPlusPare = true
+
+    elif line.isUnorderedListAstePare:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reBulletListAstePare))
-      container.toggleBulletListAstePare = true
+      unorderedListSeq.add(line.replace(reUnorderedListAstePare))
+      container.toggleUnorderedListAstePare = true
     
-    elif line.isOrderdListSpaceStart:
+    elif line.isOrderedListSpaceStart:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
       orderedListSeq.add(line.replace(reOrderedListSpaceStart))
       container.toggleOrderedListSpace = true
 
-    elif line.isOrderdListPareStart:
+    elif line.isOrderedListPareStart:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
@@ -317,28 +328,28 @@ proc parseLine(s: string): seq[Block] =
     elif line.isAtxHeader:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
-      mdast.add(parseHeader(line))
+      mdast.add(parseAtxHeader(line))
       lineBlock = ""
     
     elif line.isSetextHeader1:
       if lineBlock != "":
-        mdast.add(Block(kind: header1, values: Inline(kind: text, value: @[lineBlock])))
+        mdast.add(parseSetextHeader(header1, lineBlock))
         lineBlock = ""
       else:
         lineBlock.add(line)
     
     elif line.isSetextHeader2:
       if lineBlock != "":
-        mdast.add(Block(kind: header2, values: Inline(kind: text, value: @[lineBlock])))
+        mdast.add(parseSetextHeader(header2, lineBlock))
         lineBlock = ""
       else:
-        mdast.add(Block(kind: themanticbreak, values: Inline()))
+        mdast.add(parseThemanticBreak())
     
     elif line.isThemanticBreak:
       if lineBlock != "":
         mdast.add(parseParagraph(lineBlock))
         lineBlock = ""
-      mdast.add(Block(kind: themanticbreak, values: Inline()))
+      mdast.add(parseThemanticBreak())
 
     elif line.isEmptyOrWhitespace:
       if not lineBlock.isEmptyOrWhitespace:
