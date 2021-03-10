@@ -30,34 +30,34 @@ type
     image,
     text
 
-  ToggleContainer = ref object
-    toggleBlockQuote: bool
-    toggleIndentedCodeBlock: bool
+  FlagContainer = ref object
+    flagBlockQuote: bool
+    flagIndentedCodeBlock: bool
     indentedCodeBlockDepth: int
-    toggleFencedCodeBlock: bool
-    toggleUnorderedListDashSpace: bool
-    toggleUnorderedListPlusSpace: bool
-    toggleUnorderedListAsteSpace: bool
-    toggleUnorderedListDashPare: bool
-    toggleUnorderedListPlusPare: bool
-    toggleUnorderedListAstePare: bool
-    toggleOrderedListSpace: bool
-    toggleOrderedListPare: bool
+    flagFencedCodeBlock: bool
+    flagUnorderedListDashSpace: bool
+    flagUnorderedListPlusSpace: bool
+    flagUnorderedListAsteSpace: bool
+    flagUnorderedListDashPare: bool
+    flagUnorderedListPlusPare: bool
+    flagUnorderedListAstePare: bool
+    flagOrderedListSpace: bool
+    flagOrderedListPare: bool
 
-proc newToggle(): ToggleContainer =
-  ToggleContainer(
-    toggleBlockQuote: false,
-    toggleIndentedCodeBlock: false,
+proc newFlag(): FlagContainer =
+  FlagContainer(
+    flagBlockQuote: false,
+    flagIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
-    toggleFencedCodeBlock: false,
-    toggleUnorderedListDashSpace: false,
-    toggleUnorderedListPlusSpace: false,
-    toggleUnorderedListAsteSpace: false,
-    toggleUnorderedListDashPare: false,
-    toggleUnorderedListPlusPare: false,
-    toggleUnorderedListAstePare: false,
-    toggleOrderedListSpace: false,
-    toggleOrderedListPare: false
+    flagFencedCodeBlock: false,
+    flagUnorderedListDashSpace: false,
+    flagUnorderedListPlusSpace: false,
+    flagUnorderedListAsteSpace: false,
+    flagUnorderedListDashPare: false,
+    flagUnorderedListPlusPare: false,
+    flagUnorderedListAstePare: false,
+    flagOrderedListSpace: false,
+    flagOrderedListPare: false
   )
 
 type
@@ -197,129 +197,129 @@ var lineBlock: string
 var blockQuoteSeq: seq[string]
 var unorderedListSeq: seq[string]
 var orderedListSeq: seq[string]
-var container = newToggle()
+var flag = newFlag()
 
 proc parseLine(line: string) =
 
     block unorderedListDashSpaceBlock:
-      if container.toggleUnorderedListDashSpace:
+      if flag.flagUnorderedListDashSpace:
         if line.isUnorderedListDashSpace:
           unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
         else:
           mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
           unorderedListSeq = @[]
-          container.toggleUnorderedListDashSpace = false
+          flag.flagUnorderedListDashSpace = false
           break unorderedListDashSpaceBlock
 
     block orderedListDashSpaceBlock:
-      if container.toggleOrderedListSpace:
+      if flag.flagOrderedListSpace:
         if line.isOrderedListSpace:
           orderedListSeq.add(line.replace(reOrderedListSpace))
         else:
           mdast.add(openContainerBlock(orderedList, orderedListSeq))
           orderedListSeq = @[]
-          container.toggleOrderedListSpace = false
+          flag.flagOrderedListSpace = false
           break orderedListDashSpaceBlock
 
     block indentedCodeBlocks:
-      if container.toggleIndentedCodeBlock:
+      if flag.flagIndentedCodeBlock:
         if line.isBreakIndentedCode:
           lineBlock.removeSuffix("\n")
           mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
           lineBlock = ""
-          container.toggleIndentedCodeBlock = false
+          flag.flagIndentedCodeBlock = false
           break indentedCodeBlocks
         else:
           var mutLine = line
-          mutLine.delete(0,container.indentedCodeBlockDepth)
+          mutLine.delete(0,flag.indentedCodeBlockDepth)
           lineBlock.add("\n" & mutLine)
           return
 
-    if container.toggleFencedCodeBlock:
+    if flag.flagFencedCodeBlock:
       if not line.isCodeFence:
         lineBlock.add(line & "\n")
       else:
         lineBlock.removeSuffix("\n")
         mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
         lineblock = ""
-        container.toggleFencedCodeBlock = false
+        flag.flagFencedCodeBlock = false
 
     elif line.isBlockQuote:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       blockQuoteSeq.add(line.replace(reBlockQuote))
-      container.toggleBlockQuote = true
+      flag.flagBlockQuote = true
     
     elif line.isUnorderedListDashSpace:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
-      container.toggleUnorderedListDashSpace = true
+      flag.flagUnorderedListDashSpace = true
 
     elif line.isUnorderedListPlusSpace:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
-      container.toggleUnorderedListPlusSpace = true
+      flag.flagUnorderedListPlusSpace = true
 
     elif line.isUnorderedListAsteSpace:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
-      container.toggleUnorderedListAsteSpace = true
+      flag.flagUnorderedListAsteSpace = true
     
     elif line.isUnorderedListDashPare:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListDashPare))
-      container.toggleUnorderedListDashPare = true
+      flag.flagUnorderedListDashPare = true
 
     elif line.isUnorderedListPlusPare:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
-      container.toggleUnorderedListPlusPare = true
+      flag.flagUnorderedListPlusPare = true
 
     elif line.isUnorderedListAstePare:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       unorderedListSeq.add(line.replace(reUnorderedListAstePare))
-      container.toggleUnorderedListAstePare = true
+      flag.flagUnorderedListAstePare = true
     
     elif line.isOrderedListSpaceStart:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       orderedListSeq.add(line.replace(reOrderedListSpaceStart))
-      container.toggleOrderedListSpace = true
+      flag.flagOrderedListSpace = true
 
     elif line.isOrderedListPareStart:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       orderedListSeq.add(line.replace(reOrderedListPareStart))
-      container.toggleOrderedListPare = true
+      flag.flagOrderedListPare = true
 
     elif line.isIndentedCode:
       if lineBlock == "":
-        container.indentedCodeBlockDepth = line.countWhitespace - 1
-        container.toggleIndentedCodeBlock = true
+        flag.indentedCodeBlockDepth = line.countWhitespace - 1
+        flag.flagIndentedCodeBlock = true
         var mutLine = line
-        mutLine.delete(0,container.indentedCodeBlockDepth)
+        mutLine.delete(0,flag.indentedCodeBlockDepth)
         lineBlock.add(mutLine)
 
     elif line.isCodeFence:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
-      container.toggleFencedCodeBlock = true
+      flag.flagFencedCodeBlock = true
     
     elif line.isAtxHeader:
       if lineBlock != "":
