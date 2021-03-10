@@ -192,26 +192,16 @@ proc openThemanticBreak(): Block =
 proc openParagraph(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
 
+var mdast: seq[Block]
+var lineBlock: string
+var blockQuoteSeq: seq[string]
+var unorderedListSeq: seq[string]
+var orderedListSeq: seq[string]
+var container = newToggle()
+
 proc parseLine(s: string): seq[Block] =
-  var mdast: seq[Block]
-  var lineBlock: string
-  var blockQuoteSeq: seq[string]
-  var unorderedListSeq: seq[string]
-  var orderedListSeq: seq[string]
-  var container = newToggle()
 
   for line in s.splitLines:
-
-    block blockQuoteBlock:
-      if container.toggleBlockQuote:
-        if not (line.isParagraph or line.isBlockQuote):
-          mdast.add(openContainerBlock(blockQuote, blockQuoteSeq))
-          blockQuoteSeq = @[]
-          container.toggleBlockQuote = false
-          break blockQuoteBlock
-        else:
-          blockQuoteSeq.add(line.replace(reBlockQuote))
-          continue
 
     block unorderedListDashSpaceBlock:
       if container.toggleUnorderedListDashSpace:
