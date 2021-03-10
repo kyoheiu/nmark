@@ -262,19 +262,19 @@ proc parseLine(mdast: var seq[Block], line: var string) =
     unorderedListSeq.add(line.replace(reUnorderedListDash))
     flag.flagUnorderedListDash = true
 
-  elif line.isUnorderedListPlus:
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListPlus))
-    flag.flagUnorderedListPlus = true
+  #elif line.isUnorderedListPlus:
+    #if lineBlock != "":
+      #mdast.add(openParagraph(lineBlock))
+      #lineBlock = ""
+    #unorderedListSeq.add(line.replace(reUnorderedListPlus))
+    #flag.flagUnorderedListPlus = true
 
-  elif line.isUnorderedListAste:
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListAste))
-    flag.flagUnorderedListAste = true
+  #elif line.isUnorderedListAste:
+    #if lineBlock != "":
+      #mdast.add(openParagraph(lineBlock))
+      #lineBlock = ""
+    #unorderedListSeq.add(line.replace(reUnorderedListAste))
+    #flag.flagUnorderedListAste = true
   
   elif line.isOrderedListSpaceStart:
     if lineBlock != "":
@@ -311,7 +311,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
     lineBlock = ""
   
   elif line.isSetextHeader1:
-    if lineBlock == "" or flag.flagBlockQuote:
+    if lineBlock == "":
       lineBlock.add(line)
     else:
       mdast.add(openSetextHeader(header1, lineBlock))
