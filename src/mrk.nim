@@ -97,7 +97,7 @@ let
   reOrderedListPareStart = re"^(| |  |   )1\)"
   reOrderedListSpace = re"^(| |  |   )(2|3|4|5|6|7|8|9)\. "
   reOrderedListPare = re"^(| |  |   )(2|3|4|5|6|7|8|9)\)"
-  reIndentedCodeBlock = re"^ {4,}"
+  reIndentedCodeBlock = re"^ {4,}\S"
   reBreakIndentedCode = re"^(| |  |   )\S"
   reFencedCodeBlock = re"^(| |  |   )(```|~~~)"
   reParagraph = re"^(| |  |   )[^\*-_=+#>123456789(```)(~~~)]"
@@ -199,15 +199,12 @@ var unorderedListSeq: seq[string]
 var orderedListSeq: seq[string]
 var container = newToggle()
 
-proc parseLine(s: string): seq[Block] =
-
-  for line in s.splitLines:
+proc parseLine(line: string) =
 
     block unorderedListDashSpaceBlock:
       if container.toggleUnorderedListDashSpace:
         if line.isUnorderedListDashSpace:
           unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
-          continue
         else:
           mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
           unorderedListSeq = @[]
@@ -218,7 +215,6 @@ proc parseLine(s: string): seq[Block] =
       if container.toggleOrderedListSpace:
         if line.isOrderedListSpace:
           orderedListSeq.add(line.replace(reOrderedListSpace))
-          continue
         else:
           mdast.add(openContainerBlock(orderedList, orderedListSeq))
           orderedListSeq = @[]
@@ -237,7 +233,7 @@ proc parseLine(s: string): seq[Block] =
           var mutLine = line
           mutLine.delete(0,container.indentedCodeBlockDepth)
           lineBlock.add("\n" & mutLine)
-          continue
+          return
 
     if container.toggleFencedCodeBlock:
       if not line.isCodeFence:
@@ -359,13 +355,12 @@ proc parseLine(s: string): seq[Block] =
     else:
       lineBlock.add(line)
 
-  if lineBlock != "":
-    mdast.add(openParagraph(lineBlock))
-
-  return mdast
-
 when isMainModule:
   var s = readFile("testfiles/1.md")
   var root = Root(kind: "root", children: @[])
-  root.children = parseLine(s)
+  for line in s.splitLines:
+    line.parseLine
+  if lineBlock != "":
+    mdast.add(openParagraph(lineBlock))
+  root.children = mdast
   echo pretty(%root)
