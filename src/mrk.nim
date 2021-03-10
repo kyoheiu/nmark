@@ -36,12 +36,9 @@ type
     flagIndentedCodeBlock: bool
     indentedCodeBlockDepth: int
     flagFencedCodeBlock: bool
-    flagUnorderedListDashSpace: bool
-    flagUnorderedListPlusSpace: bool
-    flagUnorderedListAsteSpace: bool
-    flagUnorderedListDashPare: bool
-    flagUnorderedListPlusPare: bool
-    flagUnorderedListAstePare: bool
+    flagUnorderedListDash: bool
+    flagUnorderedListPlus: bool
+    flagUnorderedListAste: bool
     flagOrderedListSpace: bool
     flagOrderedListPare: bool
 
@@ -52,12 +49,9 @@ proc newFlag(): FlagContainer =
     flagIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
     flagFencedCodeBlock: false,
-    flagUnorderedListDashSpace: false,
-    flagUnorderedListPlusSpace: false,
-    flagUnorderedListAsteSpace: false,
-    flagUnorderedListDashPare: false,
-    flagUnorderedListPlusPare: false,
-    flagUnorderedListAstePare: false,
+    flagUnorderedListDash: false,
+    flagUnorderedListPlus: false,
+    flagUnorderedListAste: false,
     flagOrderedListSpace: false,
     flagOrderedListPare: false
   )
@@ -90,12 +84,9 @@ let
   reAtxHeader = re"^(| |  |   )(#|##|###|####|#####|######) "
   reBlockQuote = re"^(| |  |   )>( |)"
   reBreakBlockQuote = re""
-  reUnorderedListDashSpace = re"^(| |  |   )- "
-  reUnorderedListPlusSpace = re"^(| |  |   )\+ "
-  reUnorderedListAsteSpace = re"^(| |  |   )\* "
-  reUnorderedListDashPare = re"^(| |  |   )-\)"
-  reUnorderedListPlusPare = re"^(| |  |   )\+\)"
-  reUnorderedListAstePare = re"^(| |  |   )\*\)"
+  reUnorderedListDash = re"^(| |  |   )- "
+  reUnorderedListPlus = re"^(| |  |   )\+ "
+  reUnorderedListAste = re"^(| |  |   )\* "
   reOrderedListSpaceStart = re"^(| |  |   )1\. "
   reOrderedListPareStart = re"^(| |  |   )1\)"
   reOrderedListSpace = re"^(| |  |   )(2|3|4|5|6|7|8|9)\. "
@@ -132,18 +123,12 @@ proc isCodeFence(line: string): bool =
 #proc isParagraph(line: string): bool =
   #match(line, reParagraph)
 
-proc isUnorderedListDashSpace(line: string): bool =
-  match(line, reUnorderedListDashSpace)
-proc isUnorderedListPlusSpace(line: string): bool =
-  match(line, reUnorderedListPlusSpace)
-proc isUnorderedListAsteSpace(line: string): bool =
-  match(line, reUnorderedListAsteSpace)
-proc isUnorderedListDashPare(line: string): bool =
-  match(line, reUnorderedListDashPare)
-proc isUnorderedListPlusPare(line: string): bool =
-  match(line, reUnorderedListDashPare)
-proc isUnorderedListAstePare(line: string): bool =
-  match(line, reUnorderedListDashPare)
+proc isUnorderedListDash(line: string): bool =
+  match(line, reUnorderedListDash)
+proc isUnorderedListPlus(line: string): bool =
+  match(line, reUnorderedListPlus)
+proc isUnorderedListAste(line: string): bool =
+  match(line, reUnorderedListAste)
 proc isOrderedListSpaceStart(line: string): bool =
   match(line, reOrderedListSpaceStart)
 proc isOrderedListPareStart(line: string): bool =
@@ -210,15 +195,15 @@ proc parseLine(mdast: var seq[Block], line: var string) =
 
   flag.flagBlockQuoteMarker = false
 
-  block unorderedListDashSpaceBlock:
-    if flag.flagUnorderedListDashSpace:
-      if line.isUnorderedListDashSpace:
-        unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
+  block unorderedListDashBlock:
+    if flag.flagUnorderedListDash:
+      if line.isUnorderedListDash:
+        unorderedListSeq.add(line.replace(reUnorderedListDash))
       else:
         mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
         unorderedListSeq = @[]
-        flag.flagUnorderedListDashSpace = false
-        break unorderedListDashSpaceBlock
+        flag.flagUnorderedListDash = false
+        break unorderedListDashBlock
 
   block orderedListDashSpaceBlock:
     if flag.flagOrderedListSpace:
@@ -270,47 +255,26 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       lineblock = ""
       flag.flagFencedCodeBlock = false
 
-  elif line.isUnorderedListDashSpace:
+  elif line.isUnorderedListDash:
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
-    flag.flagUnorderedListDashSpace = true
+    unorderedListSeq.add(line.replace(reUnorderedListDash))
+    flag.flagUnorderedListDash = true
 
-  elif line.isUnorderedListPlusSpace:
+  elif line.isUnorderedListPlus:
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
-    flag.flagUnorderedListPlusSpace = true
+    unorderedListSeq.add(line.replace(reUnorderedListPlus))
+    flag.flagUnorderedListPlus = true
 
-  elif line.isUnorderedListAsteSpace:
+  elif line.isUnorderedListAste:
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
-    flag.flagUnorderedListAsteSpace = true
-  
-  elif line.isUnorderedListDashPare:
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListDashPare))
-    flag.flagUnorderedListDashPare = true
-
-  elif line.isUnorderedListPlusPare:
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
-    flag.flagUnorderedListPlusPare = true
-
-  elif line.isUnorderedListAstePare:
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListAstePare))
-    flag.flagUnorderedListAstePare = true
+    unorderedListSeq.add(line.replace(reUnorderedListAste))
+    flag.flagUnorderedListAste = true
   
   elif line.isOrderedListSpaceStart:
     if lineBlock != "":
