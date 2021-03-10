@@ -32,6 +32,7 @@ type
 
   FlagContainer = ref object
     flagBlockQuote: bool
+    flagBlockQuoteMarker: bool
     flagIndentedCodeBlock: bool
     indentedCodeBlockDepth: int
     flagFencedCodeBlock: bool
@@ -47,6 +48,7 @@ type
 proc newFlag(): FlagContainer =
   FlagContainer(
     flagBlockQuote: false,
+    flagBlockQuoteMarker: false,
     flagIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
     flagFencedCodeBlock: false,
@@ -206,178 +208,183 @@ var flag = newFlag()
 
 proc parseLine(mdast: var seq[Block], line: var string) =
 
-    block unorderedListDashSpaceBlock:
-      if flag.flagUnorderedListDashSpace:
-        if line.isUnorderedListDashSpace:
-          unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
-        else:
-          mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
-          unorderedListSeq = @[]
-          flag.flagUnorderedListDashSpace = false
-          break unorderedListDashSpaceBlock
+  flag.flagBlockQuoteMarker = false
 
-    block orderedListDashSpaceBlock:
-      if flag.flagOrderedListSpace:
-        if line.isOrderedListSpace:
-          orderedListSeq.add(line.replace(reOrderedListSpace))
-        else:
-          mdast.add(openContainerBlock(orderedList, orderedListSeq))
-          orderedListSeq = @[]
-          flag.flagOrderedListSpace = false
-          break orderedListDashSpaceBlock
-
-    block indentedCodeBlocks:
-      if flag.flagIndentedCodeBlock:
-        if line.isBreakIndentedCode:
-          lineBlock.removeSuffix("\n")
-          mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
-          lineBlock = ""
-          flag.flagIndentedCodeBlock = false
-          break indentedCodeBlocks
-        else:
-          var mutLine = line
-          mutLine.delete(0,flag.indentedCodeBlockDepth)
-          lineBlock.add("\n" & mutLine)
-          return
-
-    block blockQuoteBlock:
-      if flag.flagBlockQuote:
-        if line.isBlockQuote:
-          let str = line.replace(reBlockQuote)
-          lineBlock.add("\n" & str)
-          return
-        else:
-          break blockQuoteBlock
-      if line.isBlockQuote:
-        if lineBlock != "":
-          mdast.add(openParagraph(lineBlock))
-          lineBlock = ""
-        blockChildren = concat(blockChildren, mdast)
-        mdast = @[]
-        line = line.replace(reBlockQuote)
-        flag.flagBlockQuote = true
-        break blockQuoteBlock
-          
-    if flag.flagFencedCodeBlock:
-      if not line.isCodeFence:
-        lineBlock.add(line & "\n")
+  block unorderedListDashSpaceBlock:
+    if flag.flagUnorderedListDashSpace:
+      if line.isUnorderedListDashSpace:
+        unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
       else:
+        mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
+        unorderedListSeq = @[]
+        flag.flagUnorderedListDashSpace = false
+        break unorderedListDashSpaceBlock
+
+  block orderedListDashSpaceBlock:
+    if flag.flagOrderedListSpace:
+      if line.isOrderedListSpace:
+        orderedListSeq.add(line.replace(reOrderedListSpace))
+      else:
+        mdast.add(openContainerBlock(orderedList, orderedListSeq))
+        orderedListSeq = @[]
+        flag.flagOrderedListSpace = false
+        break orderedListDashSpaceBlock
+
+  block indentedCodeBlocks:
+    if flag.flagIndentedCodeBlock:
+      if line.isBreakIndentedCode:
         lineBlock.removeSuffix("\n")
-        mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
-        lineblock = ""
-        flag.flagFencedCodeBlock = false
-
-    elif line.isUnorderedListDashSpace:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
+        mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
         lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
-      flag.flagUnorderedListDashSpace = true
-
-    elif line.isUnorderedListPlusSpace:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
-      flag.flagUnorderedListPlusSpace = true
-
-    elif line.isUnorderedListAsteSpace:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
-      flag.flagUnorderedListAsteSpace = true
-    
-    elif line.isUnorderedListDashPare:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListDashPare))
-      flag.flagUnorderedListDashPare = true
-
-    elif line.isUnorderedListPlusPare:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
-      flag.flagUnorderedListPlusPare = true
-
-    elif line.isUnorderedListAstePare:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      unorderedListSeq.add(line.replace(reUnorderedListAstePare))
-      flag.flagUnorderedListAstePare = true
-    
-    elif line.isOrderedListSpaceStart:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      orderedListSeq.add(line.replace(reOrderedListSpaceStart))
-      flag.flagOrderedListSpace = true
-
-    elif line.isOrderedListPareStart:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      orderedListSeq.add(line.replace(reOrderedListPareStart))
-      flag.flagOrderedListPare = true
-
-    elif line.isIndentedCode:
-      if lineBlock == "":
-        flag.indentedCodeBlockDepth = line.countWhitespace - 1
-        flag.flagIndentedCodeBlock = true
+        flag.flagIndentedCodeBlock = false
+        break indentedCodeBlocks
+      else:
         var mutLine = line
         mutLine.delete(0,flag.indentedCodeBlockDepth)
-        lineBlock.add(mutLine)
+        lineBlock.add("\n" & mutLine)
+        return
 
-    elif line.isCodeFence:
+  block blockQuoteBlock:
+    if flag.flagBlockQuote:
+      if line.isBlockQuote:
+        line = line.replace(reBlockQuote)
+        flag.flagBlockQuoteMarker = true
+      break blockQuoteBlock
+    if line.isBlockQuote:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
-      flag.flagFencedCodeBlock = true
-    
-    elif line.isAtxHeader:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-      mdast.add(openAtxHeader(line))
+      blockChildren = concat(blockChildren, mdast)
+      mdast = @[]
+      line = line.replace(reBlockQuote)
+      flag.flagBlockQuote = true
+      flag.flagBlockQuoteMarker = true
+      break blockQuoteBlock
+        
+  if flag.flagFencedCodeBlock:
+    if not line.isCodeFence:
+      lineBlock.add(line & "\n")
+    else:
+      lineBlock.removeSuffix("\n")
+      mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
+      lineblock = ""
+      flag.flagFencedCodeBlock = false
+
+  elif line.isUnorderedListDashSpace:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
       lineBlock = ""
-    
-    elif line.isSetextHeader1:
-      if lineBlock == "" or flag.flagBlockQuote:
-        lineBlock.add(line)
-      else:
-        mdast.add(openSetextHeader(header1, lineBlock))
-        lineBlock = ""
-    
-    elif line.isSetextHeader2:
-      if lineBlock != "":
-        mdast.add(openSetextHeader(header2, lineBlock))
-        lineBlock = ""
-      else:
-        mdast.add(openThemanticBreak())
-    
-    elif line.isThemanticBreak:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      mdast.add(openThemanticBreak())
+    unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
+    flag.flagUnorderedListDashSpace = true
 
-    elif line.isEmptyOrWhitespace:
-      if flag.flagBlockQuote:
-        mdast.add(openParagraph(lineBlock))
+  elif line.isUnorderedListPlusSpace:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    unorderedListSeq.add(line.replace(reUnorderedListPlusSpace))
+    flag.flagUnorderedListPlusSpace = true
+
+  elif line.isUnorderedListAsteSpace:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    unorderedListSeq.add(line.replace(reUnorderedListAsteSpace))
+    flag.flagUnorderedListAsteSpace = true
+  
+  elif line.isUnorderedListDashPare:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    unorderedListSeq.add(line.replace(reUnorderedListDashPare))
+    flag.flagUnorderedListDashPare = true
+
+  elif line.isUnorderedListPlusPare:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    unorderedListSeq.add(line.replace(reUnorderedListPlusPare))
+    flag.flagUnorderedListPlusPare = true
+
+  elif line.isUnorderedListAstePare:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    unorderedListSeq.add(line.replace(reUnorderedListAstePare))
+    flag.flagUnorderedListAstePare = true
+  
+  elif line.isOrderedListSpaceStart:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    orderedListSeq.add(line.replace(reOrderedListSpaceStart))
+    flag.flagOrderedListSpace = true
+
+  elif line.isOrderedListPareStart:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    orderedListSeq.add(line.replace(reOrderedListPareStart))
+    flag.flagOrderedListPare = true
+
+  elif line.isIndentedCode:
+    if lineBlock == "":
+      flag.indentedCodeBlockDepth = line.countWhitespace - 1
+      flag.flagIndentedCodeBlock = true
+      var mutLine = line
+      mutLine.delete(0,flag.indentedCodeBlockDepth)
+      lineBlock.add(mutLine)
+
+  elif line.isCodeFence:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    flag.flagFencedCodeBlock = true
+  
+  elif line.isAtxHeader:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+    mdast.add(openAtxHeader(line))
+    lineBlock = ""
+  
+  elif line.isSetextHeader1:
+    if lineBlock == "" or flag.flagBlockQuote:
+      lineBlock.add(line)
+    else:
+      mdast.add(openSetextHeader(header1, lineBlock))
+      lineBlock = ""
+  
+  elif line.isSetextHeader2:
+    if lineBlock != "":
+      mdast.add(openSetextHeader(header2, lineBlock))
+      lineBlock = ""
+    else:
+      mdast.add(openThemanticBreak())
+  
+  elif line.isThemanticBreak:
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    mdast.add(openThemanticBreak())
+
+  elif line.isEmptyOrWhitespace:
+    if flag.flagBlockQuote:
+      if flag.flagBlockQuoteMarker:
+        return
+      else:
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
         blockChildren.add(openQuoteBlock(mdast))
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
-      if not lineBlock.isEmptyOrWhitespace:
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
+    if not lineBlock.isEmptyOrWhitespace:
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
 
-    else:
-      if lineBlock != "":
-        line = "\n" & line
-      lineBlock.add(line)
+  else:
+    if lineBlock != "":
+      line = "\n" & line
+    lineBlock.add(line)
 
 when isMainModule:
   var s = readFile("testfiles/1.md")
