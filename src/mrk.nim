@@ -177,13 +177,13 @@ proc openAtxHeader(line: string): Block =
       let str = line.replace(reAtxHeader)
       return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: str))
 
-proc openContainerBLock(blockType: BlockType, containerBLockSeq: seq[string]): Block =
+proc openContainerBlock(blockType: BlockType, containerBLockSeq: seq[string]): Block =
   return Block(kind: containerBlock, containerType: blockType, children: nil)  
 
-proc openCodeBLock(blockType: BlockType, codeLines: string): Block =
+proc openCodeBlock(blockType: BlockType, codeLines: string): Block =
   return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: codeLines))  
 
-proc openSetextHeader(blockType: BLockType, lineBlock: string): Block =
+proc openSetextHeader(blockType: BlockType, lineBlock: string): Block =
   return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: lineBlock))
 
 proc openThemanticBreak(): Block =
@@ -202,10 +202,10 @@ proc parseLine(s: string): seq[Block] =
 
   for line in s.splitLines:
 
-    block blockQuoteBLock:
+    block blockQuoteBlock:
       if container.toggleBlockQuote:
         if not (line.isParagraph or line.isBlockQuote):
-          mdast.add(openContainerBLock(blockQuote, blockQuoteSeq))
+          mdast.add(openContainerBlock(blockQuote, blockQuoteSeq))
           blockQuoteSeq = @[]
           container.toggleBlockQuote = false
           break blockQuoteBlock
@@ -219,7 +219,7 @@ proc parseLine(s: string): seq[Block] =
           unorderedListSeq.add(line.replace(reUnorderedListDashSpace))
           continue
         else:
-          mdast.add(openContainerBLock(unOrderedList, unorderedListSeq))
+          mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
           unorderedListSeq = @[]
           container.toggleUnorderedListDashSpace = false
           break unorderedListDashSpaceBlock
@@ -230,7 +230,7 @@ proc parseLine(s: string): seq[Block] =
           orderedListSeq.add(line.replace(reOrderedListSpace))
           continue
         else:
-          mdast.add(openContainerBLock(orderedList, orderedListSeq))
+          mdast.add(openContainerBlock(orderedList, orderedListSeq))
           orderedListSeq = @[]
           container.toggleOrderedListSpace = false
           break orderedListDashSpaceBlock
@@ -238,23 +238,23 @@ proc parseLine(s: string): seq[Block] =
     block indentedCodeBlocks:
       if container.toggleIndentedCodeBlock:
         if line.isBreakIndentedCode:
-          lineBlock.removeSuffix("<br />")
-          mdast.add(openCodeBLock(indentedCodeBlock, lineBlock))
+          lineBlock.removeSuffix("\n")
+          mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
           lineBlock = ""
           container.toggleIndentedCodeBlock = false
           break indentedCodeBlocks
         else:
           var mutLine = line
           mutLine.delete(0,container.indentedCodeBlockDepth)
-          lineBlock.add("<br />" & mutLine)
+          lineBlock.add("\n" & mutLine)
           continue
 
     if container.toggleFencedCodeBlock:
       if not line.isCodeFence:
-        lineBlock.add(line & "<br />")
+        lineBlock.add(line & "\n")
       else:
-        lineBlock.removeSuffix("<br />")
-        mdast.add(openCodeBLock(fencedCodeBlock, lineBlock))
+        lineBlock.removeSuffix("\n")
+        mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
         lineblock = ""
         container.toggleFencedCodeBlock = false
 
@@ -375,7 +375,7 @@ proc parseLine(s: string): seq[Block] =
   return mdast
 
 when isMainModule:
-  var s = readFile("testfiles/1.md").replace("  \n", "<br />")
+  var s = readFile("testfiles/1.md")
   var root = Root(kind: "root", children: @[])
   root.children = parseLine(s)
   echo pretty(%root)
