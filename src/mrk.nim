@@ -1,4 +1,4 @@
-import strutils, json, re
+import strutils, sequtils, json, re
 # import nimprof
 
 type
@@ -69,7 +69,7 @@ type
     case kind: BlockKind
     of containerBlock:
       containerType: BlockType
-      children: Block
+      children: seq[Block]
     of leafBlock:
       leafType: BlockType
       inline: Inline
@@ -87,6 +87,7 @@ let
   reSetextHeader2 = re"^(| |  |   )(--+)"
   reAtxHeader = re"^(| |  |   )(#|##|###|####|#####|######) "
   reBlockQuote = re"^(| |  |   )>( |)"
+  reBreakBlockQuote = re""
   reUnorderedListDashSpace = re"^(| |  |   )- "
   reUnorderedListPlusSpace = re"^(| |  |   )\+ "
   reUnorderedListAsteSpace = re"^(| |  |   )\* "
@@ -100,7 +101,7 @@ let
   reIndentedCodeBlock = re"^ {4,}\S"
   reBreakIndentedCode = re"^(| |  |   )\S"
   reFencedCodeBlock = re"^(| |  |   )(```|~~~)"
-  reParagraph = re"^(| |  |   )[^\*-_=+#>123456789(```)(~~~)]"
+  #reParagraph = re"^(| |  |   )[^(\* )(\*\))(\+ )(\+\))(- )(-\))_=+(# )(## )(### )(#### )(##### )(###### )>((1|2|3|4|5|6|7|8|9|)\.)((1|2|3|4|5|6|7|8|9|)\))(```)(~~~)]"
 
 proc isSetextHeader1(line: string): bool =
   match(line, reSetextHeader1)
@@ -126,8 +127,8 @@ proc isBreakIndentedCode(line: string): bool =
 proc isCodeFence(line: string): bool =
   match(line, reFencedCodeBlock)
 
-proc isParagraph(line: string): bool =
-  match(line, reParagraph)
+#proc isParagraph(line: string): bool =
+  #match(line, reParagraph)
 
 proc isUnorderedListDashSpace(line: string): bool =
   match(line, reUnorderedListDashSpace)
@@ -178,7 +179,10 @@ proc openAtxHeader(line: string): Block =
       return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: str))
 
 proc openContainerBlock(blockType: BlockType, containerBLockSeq: seq[string]): Block =
-  return Block(kind: containerBlock, containerType: blockType, children: nil)  
+  return Block(kind: containerBlock, containerType: blockType, children: @[])
+
+proc openQuoteBlock(mdast: seq[Block]): Block =
+  return Block(kind: containerBlock, containerType: blockQuote, children: mdast)
 
 proc openCodeBlock(blockType: BlockType, codeLines: string): Block =
   return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: codeLines))  
@@ -192,6 +196,7 @@ proc openThemanticBreak(): Block =
 proc openParagraph(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
 
+var blockChildren: seq[Block]
 var mdast: seq[Block]
 var lineBlock: string
 var blockQuoteSeq: seq[string]
@@ -199,7 +204,7 @@ var unorderedListSeq: seq[string]
 var orderedListSeq: seq[string]
 var flag = newFlag()
 
-proc parseLine(line: string) =
+proc parseLine(mdast: var seq[Block], line: var string) =
 
     block unorderedListDashSpaceBlock:
       if flag.flagUnorderedListDashSpace:
@@ -235,6 +240,24 @@ proc parseLine(line: string) =
           lineBlock.add("\n" & mutLine)
           return
 
+    block blockQuoteBlock:
+      if flag.flagBlockQuote:
+        if line.isBlockQuote:
+          let str = line.replace(reBlockQuote)
+          lineBlock.add("\n" & str)
+          return
+        else:
+          break blockQuoteBlock
+      if line.isBlockQuote:
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        blockChildren = concat(blockChildren, mdast)
+        mdast = @[]
+        line = line.replace(reBlockQuote)
+        flag.flagBlockQuote = true
+        break blockQuoteBlock
+          
     if flag.flagFencedCodeBlock:
       if not line.isCodeFence:
         lineBlock.add(line & "\n")
@@ -244,13 +267,6 @@ proc parseLine(line: string) =
         lineblock = ""
         flag.flagFencedCodeBlock = false
 
-    elif line.isBlockQuote:
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      blockQuoteSeq.add(line.replace(reBlockQuote))
-      flag.flagBlockQuote = true
-    
     elif line.isUnorderedListDashSpace:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
@@ -328,11 +344,11 @@ proc parseLine(line: string) =
       lineBlock = ""
     
     elif line.isSetextHeader1:
-      if lineBlock != "":
+      if lineBlock == "" or flag.flagBlockQuote:
+        lineBlock.add(line)
+      else:
         mdast.add(openSetextHeader(header1, lineBlock))
         lineBlock = ""
-      else:
-        lineBlock.add(line)
     
     elif line.isSetextHeader2:
       if lineBlock != "":
@@ -348,19 +364,29 @@ proc parseLine(line: string) =
       mdast.add(openThemanticBreak())
 
     elif line.isEmptyOrWhitespace:
+      if flag.flagBlockQuote:
+        mdast.add(openParagraph(lineBlock))
+        blockChildren.add(openQuoteBlock(mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagBlockQuote = false
       if not lineBlock.isEmptyOrWhitespace:
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
 
     else:
+      if lineBlock != "":
+        line = "\n" & line
       lineBlock.add(line)
 
 when isMainModule:
   var s = readFile("testfiles/1.md")
   var root = Root(kind: "root", children: @[])
   for line in s.splitLines:
-    line.parseLine
+    var str = line
+    parseLine(mdast, str)
   if lineBlock != "":
     mdast.add(openParagraph(lineBlock))
-  root.children = mdast
+    blockChildren = concat(blockChildren, mdast)
+  root.children = blockChildren
   echo pretty(%root)
