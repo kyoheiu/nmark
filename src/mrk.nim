@@ -144,7 +144,7 @@ proc openThemanticBreak(): Block =
 proc openParagraph(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
 
-var blockChildren: seq[Block]
+var resultSeq: seq[Block]
 var mdast: seq[Block]
 var lineBlock: string
 var blockQuoteSeq: seq[string]
@@ -200,7 +200,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
-      blockChildren = concat(blockChildren, mdast)
+      resultSeq = concat(resultSeq, mdast)
       mdast = @[]
       line = line.replace(reBlockQuote)
       flag.flagBlockQuote = true
@@ -298,7 +298,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       else:
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
-        blockChildren.add(openQuoteBlock(mdast))
+        resultSeq.add(openQuoteBlock(mdast))
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
@@ -312,13 +312,12 @@ proc parseLine(mdast: var seq[Block], line: var string) =
     lineBlock.add(line)
 
 when isMainModule:
-  var s = readFile("testfiles/1.md")
+  var s = readFile("testfiles/2.md")
   var root = Root(kind: "root", children: @[])
   for line in s.splitLines:
     var str = line
     parseLine(mdast, str)
   if lineBlock != "":
     mdast.add(openParagraph(lineBlock))
-    blockChildren = concat(blockChildren, mdast)
-  root.children = blockChildren
-  echo pretty(%root)
+    resultSeq = concat(resultSeq, mdast)
+  echo pretty(%resultSeq)
