@@ -60,17 +60,17 @@ type
     containerBlock,
     leafBlock
   Block* = ref BlockObj
-  BlockObj* = object
-    case kind: BlockKind
+  BlockObj = object
+    case kind*: BlockKind
     of containerBlock:
-      containerType: BlockType
-      children: seq[Block]
+      containerType*: BlockType
+      children*: seq[Block]
     of leafBlock:
-      leafType: BlockType
-      inline: Inline
+      leafType*: BlockType
+      inline*: Inline
   Inline* = ref object
-    kind: InlineType
-    value: string
+    kind*: InlineType
+    value*: string
 
 let
   reThematicBreak* = re"^(| |  |   )(\*{3,}|-{3,}|_{3,})"

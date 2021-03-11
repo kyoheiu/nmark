@@ -1,7 +1,5 @@
 import strutils, sequtils, json
-# import nimprof
-
-import def, parseline
+import def, parseline, parser
 
 when isMainModule:
   var s = readFile("testfiles/2.md")
@@ -12,3 +10,7 @@ when isMainModule:
     mdast.add(openParagraph(lineBlock))
     resultSeq = concat(resultSeq, mdast)
   echo pretty(%resultSeq)
+  var resultHtml: string
+  for mdast in resultSeq:
+    resultHtml.add(mdast.parseMdast)
+  echo resultHtml
