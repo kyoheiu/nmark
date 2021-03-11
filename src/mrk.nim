@@ -96,47 +96,8 @@ let
   reFencedCodeBlock = re"^(| |  |   )(```|~~~)"
   #reParagraph = re"^(| |  |   )[^(\* )(\*\))(\+ )(\+\))(- )(-\))_=+(# )(## )(### )(#### )(##### )(###### )>((1|2|3|4|5|6|7|8|9|)\.)((1|2|3|4|5|6|7|8|9|)\))(```)(~~~)]"
 
-proc isSetextHeader1(line: string): bool =
-  match(line, reSetextHeader1)
-
-proc isSetextHeader2(line: string): bool =
-  match(line, reSetextHeader2)
-
-proc isThemanticBreak(line: string): bool =
-  match(line, reThematicBreak)
-
-proc isAtxHeader(line: string): bool =
-  match(line, reAtxHeader)
-
-proc isBlockQuote(line: string): bool =
-  match(line, reBlockQuote)
-
-proc isIndentedCode(line: string): bool =
-  match(line, reIndentedCodeBlock)
-
-proc isBreakIndentedCode(line: string): bool =
-  match(line, reBreakIndentedCode)
-
-proc isCodeFence(line: string): bool =
-  match(line, reFencedCodeBlock)
-
-#proc isParagraph(line: string): bool =
-  #match(line, reParagraph)
-
-proc isUnorderedListDash(line: string): bool =
-  match(line, reUnorderedListDash)
-proc isUnorderedListPlus(line: string): bool =
-  match(line, reUnorderedListPlus)
-proc isUnorderedListAste(line: string): bool =
-  match(line, reUnorderedListAste)
-proc isOrderedListSpaceStart(line: string): bool =
-  match(line, reOrderedListSpaceStart)
-proc isOrderedListPareStart(line: string): bool =
-  match(line, reOrderedListPareStart)
-proc isOrderedListSpace(line: string): bool =
-  match(line, reOrderedListSpace)
-proc isOrderedListPare(line: string): bool =
-  match(line, reOrderedListPare)
+proc hasMarker(line: string, regex: Regex): bool =
+  match(line, regex)
 
 proc countWhitespace(line: string): int =
   var i = 0
@@ -197,7 +158,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
 
   block unorderedListDashBlock:
     if flag.flagUnorderedListDash:
-      if line.isUnorderedListDash:
+      if line.hasMarker(reUnorderedListDash):
         unorderedListSeq.add(line.replace(reUnorderedListDash))
       else:
         mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
@@ -207,7 +168,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
 
   block orderedListDashSpaceBlock:
     if flag.flagOrderedListSpace:
-      if line.isOrderedListSpace:
+      if line.hasMarker(reOrderedListSpaceStart):
         orderedListSeq.add(line.replace(reOrderedListSpace))
       else:
         mdast.add(openContainerBlock(orderedList, orderedListSeq))
@@ -217,7 +178,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
 
   block indentedCodeBlocks:
     if flag.flagIndentedCodeBlock:
-      if line.isBreakIndentedCode:
+      if line.hasMarker(reBreakIndentedCode):
         lineBlock.removeSuffix("\n")
         mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
         lineBlock = ""
@@ -231,11 +192,11 @@ proc parseLine(mdast: var seq[Block], line: var string) =
 
   block blockQuoteBlock:
     if flag.flagBlockQuote:
-      if line.isBlockQuote:
+      if line.hasMarker(reBlockQuote):
         line = line.replace(reBlockQuote)
         flag.flagBlockQuoteMarker = true
       break blockQuoteBlock
-    if line.isBlockQuote:
+    if line.hasMarker(reBlockQuote):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -247,7 +208,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       break blockQuoteBlock
         
   if flag.flagFencedCodeBlock:
-    if not line.isCodeFence:
+    if not line.hasMarker(reFencedCodeBlock):
       lineBlock.add(line & "\n")
     else:
       lineBlock.removeSuffix("\n")
@@ -255,7 +216,7 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       lineblock = ""
       flag.flagFencedCodeBlock = false
 
-  elif line.isUnorderedListDash:
+  elif line.hasMarker(reUnorderedListDash):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
@@ -276,21 +237,21 @@ proc parseLine(mdast: var seq[Block], line: var string) =
     #unorderedListSeq.add(line.replace(reUnorderedListAste))
     #flag.flagUnorderedListAste = true
   
-  elif line.isOrderedListSpaceStart:
+  elif line.hasMarker(reOrderedListSpaceStart):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
     orderedListSeq.add(line.replace(reOrderedListSpaceStart))
     flag.flagOrderedListSpace = true
 
-  elif line.isOrderedListPareStart:
+  elif line.hasMarker(reOrderedListPareStart):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
     orderedListSeq.add(line.replace(reOrderedListPareStart))
     flag.flagOrderedListPare = true
 
-  elif line.isIndentedCode:
+  elif line.hasMarker(reIndentedCodeBlock):
     if lineBlock == "":
       flag.indentedCodeBlockDepth = line.countWhitespace - 1
       flag.flagIndentedCodeBlock = true
@@ -298,33 +259,33 @@ proc parseLine(mdast: var seq[Block], line: var string) =
       mutLine.delete(0,flag.indentedCodeBlockDepth)
       lineBlock.add(mutLine)
 
-  elif line.isCodeFence:
+  elif line.hasMarker(reFencedCodeBlock):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
     flag.flagFencedCodeBlock = true
   
-  elif line.isAtxHeader:
+  elif line.hasMarker(reAtxHeader):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
     mdast.add(openAtxHeader(line))
     lineBlock = ""
   
-  elif line.isSetextHeader1:
+  elif line.hasMarker(reSetextHeader1):
     if lineBlock == "":
       lineBlock.add(line)
     else:
       mdast.add(openSetextHeader(header1, lineBlock))
       lineBlock = ""
   
-  elif line.isSetextHeader2:
+  elif line.hasMarker(reSetextHeader2):
     if lineBlock != "":
       mdast.add(openSetextHeader(header2, lineBlock))
       lineBlock = ""
     else:
       mdast.add(openThemanticBreak())
   
-  elif line.isThemanticBreak:
+  elif line.hasMarker(reThematicBreak):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
