@@ -1,7 +1,7 @@
 import unittest, mrk
 
 test "test1":
-  check testProc("testfiles/2.md") == """
+  check testProc("testfiles/1.md") == """
 <p>This is a test-file.</p>
 <h1>heading</h1>
 <h2>heading 2</h2>
