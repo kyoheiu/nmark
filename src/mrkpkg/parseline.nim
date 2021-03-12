@@ -1,14 +1,6 @@
 import strutils, sequtils, re, def
 
-var resultSeq*: seq[Block]
-var mdast*: seq[Block]
-var lineBlock*: string
-var blockQuoteSeq*: seq[string]
-var unorderedListSeq*: seq[string]
-var orderedListSeq*: seq[string]
-var flag* = newFlag()
-
-proc parseLine*(mdast: var seq[Block], line: var string) =
+proc parseLine*(line: var string) =
   flag.flagBlockQuoteMarker = false
 
   block unorderedListDashBlock:

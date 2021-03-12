@@ -138,3 +138,11 @@ proc openThemanticBreak*(): Block =
 
 proc openParagraph*(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
+
+var resultSeq*: seq[Block]
+var mdast*: seq[Block]
+var lineBlock*: string
+var blockQuoteSeq*: seq[string]
+var unorderedListSeq*: seq[string]
+var orderedListSeq*: seq[string]
+var flag* = newFlag()
