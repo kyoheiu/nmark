@@ -3,7 +3,7 @@ import mrkpkg/def, mrkpkg/parseline, mrkpkg/parser
 
 when isMainModule:
 
-  var s = readFile("testfiles/2.md")
+  var s = readFile("testfiles/1.md")
 
   for line in s.splitLines:
     var str = line
