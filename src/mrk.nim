@@ -23,7 +23,6 @@ proc testProc*(lines: string): string =
   if lineBlock != "":
     mdast.add(openParagraph(lineBlock))
     resultSeq = concat(resultSeq, mdast)
-  echo pretty(%resultSeq)
   var resultHtml: string
   for mdast in resultSeq:
     resultHtml.add(mdast.parseMdast)
