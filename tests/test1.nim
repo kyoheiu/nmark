@@ -14,7 +14,10 @@ proc testProc*(file: string): string =
     var str = line
     mdToAst(flag, lineBlock, mdast, resultSeq, str)
   if lineBlock != "":
-    mdast.add(openParagraph(lineBlock))
+    if flag.flagIndentedCodeBlock:
+      mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
+    else:
+      mdast.add(openParagraph(lineBlock))
   resultSeq = concat(resultSeq, mdast)
   var resultHtml: string
   for mdast in resultSeq:
@@ -52,26 +55,6 @@ __</p>
 <p>---a---</p>
 """
 
-test "setextHeadings":
-  check testProc("testfiles/setextHeadings.md") == """
-<h2>Foo1</h2>
-<h1>Foo2</h1>
-<h2>Foo3</h2>
-<h2>Foo4</h2>
-<h1>Foo5</h1>
-<pre><code>Foo6
----
-
-Foo7
-</code></pre>
-<hr />
-<h2>Foo8</h2>
-<p>Foo9
-= =</p>
-<p>Foo10</p>
-<hr />
-"""
-
 test "atxHeadings":
   check testProc("testfiles/atxHeadings.md") == """
 <h1>foo</h1>
@@ -99,4 +82,53 @@ test "atxHeadings":
 <h2></h2>
 <h1></h1>
 <h3></h3>
+"""
+
+test "setextHeadings":
+  check testProc("testfiles/setextHeadings.md") == """
+<h2>Foo1</h2>
+<h1>Foo2</h1>
+<h2>Foo3</h2>
+<h2>Foo4</h2>
+<h1>Foo5</h1>
+<pre><code>Foo6
+---
+
+Foo7
+</code></pre>
+<hr />
+<h2>Foo8</h2>
+<p>Foo9
+= =</p>
+<p>Foo10</p>
+<hr />
+"""
+
+test "indentedCodeBlocks":
+  check testProc("testfiles/indentedCodeBlocks.md") == """
+<pre><code>a simple
+  indented code block
+
+chunk1
+
+chunk2
+
+
+
+chunk3
+</code></pre>
+<p>Foo
+bar</p>
+<pre><code>foo
+</code></pre>
+<p>bar</p>
+<h1>Heading</h1>
+<pre><code>foo
+</code></pre>
+<h2>Heading</h2>
+<pre><code>foo
+</code></pre>
+<hr />
+<pre><code>foo  
+</code></pre>
 """
