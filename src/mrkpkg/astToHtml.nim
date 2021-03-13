@@ -1,7 +1,6 @@
 import def, htmlgen
 
-proc astToHtml*(mdast: Block): string =
-  var resultHtml: string
+proc astToHtml*(resultHtml: var string, mdast: Block): string =
   case mdast.kind
   of leafBlock:
 
@@ -35,5 +34,3 @@ proc astToHtml*(mdast: Block): string =
 
   else:
     return
-
-  return resultHtml

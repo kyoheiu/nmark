@@ -21,7 +21,7 @@ proc testProc*(file: string): string =
   resultSeq = concat(resultSeq, mdast)
   var resultHtml: string
   for mdast in resultSeq:
-    resultHtml.add(mdast.astToHtml)
+    resultHtml.add(astToHtml(resultHtml, mdast))
   return resultHtml
 
 test "test1":
