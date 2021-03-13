@@ -21,7 +21,7 @@ proc testProc*(file: string): string =
   resultSeq = concat(resultSeq, mdast)
   var resultHtml: string
   for mdast in resultSeq:
-    resultHtml.add(astToHtml(resultHtml, mdast))
+    resultHtml.add(mdast.astToHtml)
   return resultHtml
 
 test "test1":
@@ -157,3 +157,12 @@ fifth
 ~~~ ~~
 </code></pre>
 """
+
+#test "simpleBlockQuote":
+  #check testProc("testfiles/simpleBlockQuote.md") == """
+#<blockquote>
+#<h1>Foo</h1>
+#<p>bar
+#baz</p>
+#</blockquote>
+#"""
