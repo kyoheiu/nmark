@@ -73,10 +73,11 @@ type
     value*: string
 
 let
-  reThematicBreak* = re"^(| |  |   )(\*{3,}|-{3,}|_{3,})"
-  reSetextHeader1* = re"^(| |  |   )(=+)"
-  reSetextHeader2* = re"^(| |  |   )(--+)"
+  reThematicBreak* = re"^(| |  |   )(\*{3,}|-{3,}|_{3,})$"
+  reSetextHeader1* = re"^(| |  |   )(=+)$"
+  reBreakOrHeader* = re"^(| |  |   )(-{3,}) *$"
   reAtxHeader* = re"^(| |  |   )(#|##|###|####|#####|######) "
+  reAnotherAtxHeader* = re"^(#|##|###|####|#####|######)$"
   reBlockQuote* = re"^(| |  |   )>( |)"
   reBreakBlockQuote* = re""
   reUnorderedListDash* = re"^(| |  |   )- "
@@ -103,23 +104,38 @@ proc countWhitespace*(line: string): int =
 proc openAtxHeader*(line: string): Block =
   case line.splitWhitespace[0]:
     of "#":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header1, inline: Inline(kind: text, value: str))
     of "##":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header2, inline: Inline(kind: text, value: str))
     of "###":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header3, inline: Inline(kind: text, value: str))
     of "####":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header4, inline: Inline(kind: text, value: str))
     of "#####":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header5, inline: Inline(kind: text, value: str))
     of "######":
-      let str = line.replace(reAtxHeader)
+      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: str))
+
+proc openAnotherAtxHeader*(line: string): Block =
+  case line
+    of "#":
+      return Block(kind: leafBlock, leafType: header1, inline: Inline(kind: text, value: ""))
+    of "##":
+      return Block(kind: leafBlock, leafType: header2, inline: Inline(kind: text, value: ""))
+    of "###":
+      return Block(kind: leafBlock, leafType: header3, inline: Inline(kind: text, value: ""))
+    of "####":
+      return Block(kind: leafBlock, leafType: header4, inline: Inline(kind: text, value: ""))
+    of "#####":
+      return Block(kind: leafBlock, leafType: header5, inline: Inline(kind: text, value: ""))
+    of "######":
+      return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: ""))
 
 proc openContainerBlock*(blockType: BlockType, containerBLockSeq: seq[string]): Block =
   return Block(kind: containerBlock, containerType: blockType, children: @[])
@@ -134,7 +150,13 @@ proc openSetextHeader*(blockType: BlockType, lineBlock: string): Block =
   return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: lineBlock))
 
 proc openThemanticBreak*(): Block =
-  return Block(kind: leafBlock, leafType: themanticBreak, inline: nil) 
+  return Block(kind: leafBlock, leafType: themanticBreak, inline: nil)
+
+proc delWhitespace*(line: string): string =
+  var str: string
+  for c in line:
+    if c != ' ': str.add(c)
+  return str
 
 proc openParagraph*(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))

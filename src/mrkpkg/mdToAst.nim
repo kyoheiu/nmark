@@ -1,6 +1,6 @@
 import strutils, sequtils, re, def
 
-proc parseLine*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block], resultSeq:var seq[Block], line: var string) =
+proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block], resultSeq:var seq[Block], line: var string) =
   flag.flagBlockQuoteMarker = false
 
   #block unorderedListDashBlock:
@@ -105,6 +105,8 @@ proc parseLine*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Bloc
       var mutLine = line
       mutLine.delete(0,flag.indentedCodeBlockDepth)
       lineBlock.add(mutLine)
+    else:
+      lineBlock.add("\n" & line.strip(trailing = false))
 
   elif line.hasMarker(reFencedCodeBlock):
     if lineBlock != "":
@@ -118,25 +120,31 @@ proc parseLine*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Bloc
     mdast.add(openAtxHeader(line))
     lineBlock = ""
   
+  elif line.hasMarker(reAnotherAtxHeader):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+    mdast.add(openAtxHeader(line))
+    lineBlock = ""
+  
+  elif line.hasMarker(reBreakOrHeader):
+    if lineBlock != "":
+      mdast.add(openSetextHeader(header2, lineBlock))
+      lineBlock = ""
+    else:
+      mdast.add(openThemanticBreak())
+
+  elif line.delWhitespace.hasMarker(reThematicBreak):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    mdast.add(openThemanticBreak())
+
   elif line.hasMarker(reSetextHeader1):
     if lineBlock == "":
       lineBlock.add(line)
     else:
       mdast.add(openSetextHeader(header1, lineBlock))
       lineBlock = ""
-  
-  elif line.hasMarker(reSetextHeader2):
-    if lineBlock != "":
-      mdast.add(openSetextHeader(header2, lineBlock))
-      lineBlock = ""
-    else:
-      mdast.add(openThemanticBreak())
-  
-  elif line.hasMarker(reThematicBreak):
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    mdast.add(openThemanticBreak())
 
   elif line.isEmptyOrWhitespace:
     if flag.flagBlockQuote:
@@ -155,5 +163,6 @@ proc parseLine*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Bloc
 
   else:
     if lineBlock != "":
-      line = "\n" & line
-    lineBlock.add(line)
+      lineBlock.add("\n" & line.strip(trailing = false))
+    else:
+      lineBlock.add(line.strip(trailing = false))

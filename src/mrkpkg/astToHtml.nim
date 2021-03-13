@@ -1,10 +1,13 @@
 import def, htmlgen
 
-proc parseMdast*(mdast: Block): string =
+proc astToHtml*(mdast: Block): string =
   var resultHtml: string
   case mdast.kind
   of leafBlock:
+
     case mdast.leafType
+
+    of themanticBreak: resultHtml.add(hr() & "\p")
 
     of paragraph: resultHtml.add(p(mdast.inline.value) & "\p")
 
@@ -19,6 +22,8 @@ proc parseMdast*(mdast: Block): string =
     of header5: resultHtml.add(h5(mdast.inline.value) & "\p")
 
     of header6: resultHtml.add(h6(mdast.inline.value) & "\p")
+
+    of indentedCodeBlock: resultHtml.add(pre(code(mdast.inline.value & "\p")) & "\p")
 
     else: return
 
