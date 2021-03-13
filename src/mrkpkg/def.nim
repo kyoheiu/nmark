@@ -34,7 +34,10 @@ type
     flagBlockQuoteMarker*: bool
     flagIndentedCodeBlock*: bool
     indentedCodeBlockDepth*: int
-    flagFencedCodeBlock*: bool
+    flagFencedCodeBlockChar*: bool
+    flagFencedCodeBlockTild*: bool
+    openingFenceLength*: int
+    fencedCodeBlocksdepth*: int
     flagUnorderedListDash*: bool
     flagUnorderedListPlus*: bool
     flagUnorderedListAste*: bool
@@ -47,7 +50,8 @@ proc newFlag*(): FlagContainer =
     flagBlockQuoteMarker: false,
     flagIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
-    flagFencedCodeBlock: false,
+    flagFencedCodeBlockChar: false,
+    flagFencedCodeBlockTild: false,
     flagUnorderedListDash: false,
     flagUnorderedListPlus: false,
     flagUnorderedListAste: false,
@@ -89,7 +93,8 @@ let
   reOrderedListPare* = re"^(| |  |   )(2|3|4|5|6|7|8|9)\)"
   reIndentedCodeBlock* = re"^ {4,}\S"
   reBreakIndentedCode* = re"^(| |  |   )\S"
-  reFencedCodeBlock* = re"^(| |  |   )(```|~~~)"
+  reFencedCodeBlockChar* = re"^(| |  |   )(```*) *$"
+  reFencedCodeBlockTild* = re"^(| |  |   )(~~~*) *$"
   #reParagraph = re"^(| |  |   )[^(\* )(\*\))(\+ )(\+\))(- )(-\))_=+(# )(## )(### )(#### )(##### )(###### )>((1|2|3|4|5|6|7|8|9|)\.)((1|2|3|4|5|6|7|8|9|)\))(```)(~~~)]"
 
 proc hasMarker*(line: string, regex: Regex): bool =
@@ -100,6 +105,9 @@ proc countWhitespace*(line: string): int =
   for c in line:
     if c == ' ': i.inc
     else: return i
+
+proc countBacktick*(line: string): int =
+  line.strip.len
 
 proc openAtxHeader*(line: string): Block =
   case line.splitWhitespace[0]:

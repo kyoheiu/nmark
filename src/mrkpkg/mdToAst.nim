@@ -54,14 +54,31 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       flag.flagBlockQuoteMarker = true
       break blockQuoteBlock
         
-  if flag.flagFencedCodeBlock:
-    if not line.hasMarker(reFencedCodeBlock):
-      lineBlock.add(line & "\n")
-    else:
+  if flag.flagFencedCodeBlockChar:
+    if line.hasMarker(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
       lineBlock.removeSuffix("\n")
       mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
       lineblock = ""
-      flag.flagFencedCodeBlock = false
+      flag.flagFencedCodeBlockChar = false
+    else:
+      if line.countWhitespace <= flag.fencedCodeBlocksdepth:
+        lineBLock.add(line.strip & "\n")
+      else:
+        line.delete(0, flag.fencedCodeBlocksdepth - 1)
+        lineBlock.add(line & "\n")
+
+  elif flag.flagFencedCodeBlockTild:
+    if line.hasMarker(reFencedCodeBlockTild) and line.countBacktick >= flag.openingFenceLength: 
+      lineBlock.removeSuffix("\n")
+      mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
+      lineblock = ""
+      flag.flagFencedCodeBlockTild = false
+    else:
+      if line.countWhitespace <= flag.fencedCodeBlocksdepth:
+        lineBLock.add(line.strip & "\n")
+      else:
+        line.delete(0, flag.fencedCodeBlocksdepth - 1)
+        lineBlock.add(line & "\n")
 
   #elif line.hasMarker(reUnorderedListDash):
     #if lineBlock != "":
@@ -108,11 +125,21 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     else:
       lineBlock.add("\n" & line.strip(trailing = false))
 
-  elif line.hasMarker(reFencedCodeBlock):
+  elif line.hasMarker(reFencedCodeBlockChar):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
-    flag.flagFencedCodeBlock = true
+    flag.flagFencedCodeBlockChar = true
+    flag.openingFenceLength = line.countBacktick
+    flag.fencedCodeBlocksdepth = line.countWhitespace
+
+  elif line.hasMarker(reFencedCodeBlockTild):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    flag.flagFencedCodeBlockTild = true
+    flag.openingFenceLength = line.countBacktick
+    flag.fencedCodeBlocksdepth = line.countWhitespace
   
   elif line.hasMarker(reAtxHeader):
     if lineBlock != "":

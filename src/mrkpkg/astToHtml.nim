@@ -25,6 +25,12 @@ proc astToHtml*(mdast: Block): string =
 
     of indentedCodeBlock: resultHtml.add(pre(code(mdast.inline.value & "\p")) & "\p")
 
+    of fencedCodeBlock:
+      if mdast.inline.value == "":
+        resultHtml.add(pre(code(mdast.inline.value)) & "\p")
+      else:
+        resultHtml.add(pre(code(mdast.inline.value & "\p")) & "\p")
+
     else: return
 
   else:

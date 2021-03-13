@@ -132,3 +132,28 @@ bar</p>
 <pre><code>foo  
 </code></pre>
 """
+
+test "fencedCodeBlocks":
+  check testProc("testfiles/fencedCodeBlocks.md") == """
+<pre><code>first
+~~~
+</code></pre>
+<pre><code>second
+```
+</code></pre>
+<pre><code>third
+```
+</code></pre>
+<pre><code></code></pre>
+<pre><code>fourth
+ fourth
+fourth
+</code></pre>
+<pre><code>```
+fifth
+```
+</code></pre>
+<pre><code>sixth
+~~~ ~~
+</code></pre>
+"""
