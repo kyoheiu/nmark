@@ -1,27 +1,27 @@
 import strutils, sequtils, re, def
 
-proc parseLine*(line: var string) =
+proc parseLine*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block], resultSeq:var seq[Block], line: var string) =
   flag.flagBlockQuoteMarker = false
 
-  block unorderedListDashBlock:
-    if flag.flagUnorderedListDash:
-      if line.hasMarker(reUnorderedListDash):
-        unorderedListSeq.add(line.replace(reUnorderedListDash))
-      else:
-        mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
-        unorderedListSeq = @[]
-        flag.flagUnorderedListDash = false
-        break unorderedListDashBlock
+  #block unorderedListDashBlock:
+    #if flag.flagUnorderedListDash:
+      #if line.hasMarker(reUnorderedListDash):
+        #unorderedListSeq.add(line.replace(reUnorderedListDash))
+      #else:
+        #mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
+        #unorderedListSeq = @[]
+        #flag.flagUnorderedListDash = false
+        #break unorderedListDashBlock
 
-  block orderedListDashSpaceBlock:
-    if flag.flagOrderedListSpace:
-      if line.hasMarker(reOrderedListSpaceStart):
-        orderedListSeq.add(line.replace(reOrderedListSpace))
-      else:
-        mdast.add(openContainerBlock(orderedList, orderedListSeq))
-        orderedListSeq = @[]
-        flag.flagOrderedListSpace = false
-        break orderedListDashSpaceBlock
+  #block orderedListDashSpaceBlock:
+    #if flag.flagOrderedListSpace:
+      #if line.hasMarker(reOrderedListSpaceStart):
+        #orderedListSeq.add(line.replace(reOrderedListSpace))
+      #else:
+        #mdast.add(openContainerBlock(orderedList, orderedListSeq))
+        #orderedListSeq = @[]
+        #flag.flagOrderedListSpace = false
+        #break orderedListDashSpaceBlock
 
   block indentedCodeBlocks:
     if flag.flagIndentedCodeBlock:
@@ -63,12 +63,12 @@ proc parseLine*(line: var string) =
       lineblock = ""
       flag.flagFencedCodeBlock = false
 
-  elif line.hasMarker(reUnorderedListDash):
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    unorderedListSeq.add(line.replace(reUnorderedListDash))
-    flag.flagUnorderedListDash = true
+  #elif line.hasMarker(reUnorderedListDash):
+    #if lineBlock != "":
+      #mdast.add(openParagraph(lineBlock))
+      #lineBlock = ""
+    #unorderedListSeq.add(line.replace(reUnorderedListDash))
+    #flag.flagUnorderedListDash = true
 
   #elif line.isUnorderedListPlus:
     #if lineBlock != "":
@@ -84,19 +84,19 @@ proc parseLine*(line: var string) =
     #unorderedListSeq.add(line.replace(reUnorderedListAste))
     #flag.flagUnorderedListAste = true
   
-  elif line.hasMarker(reOrderedListSpaceStart):
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    orderedListSeq.add(line.replace(reOrderedListSpaceStart))
-    flag.flagOrderedListSpace = true
+  #elif line.hasMarker(reOrderedListSpaceStart):
+    #if lineBlock != "":
+      #mdast.add(openParagraph(lineBlock))
+      #lineBlock = ""
+    #orderedListSeq.add(line.replace(reOrderedListSpaceStart))
+    #flag.flagOrderedListSpace = true
 
-  elif line.hasMarker(reOrderedListPareStart):
-    if lineBlock != "":
-      mdast.add(openParagraph(lineBlock))
-      lineBlock = ""
-    orderedListSeq.add(line.replace(reOrderedListPareStart))
-    flag.flagOrderedListPare = true
+  #elif line.hasMarker(reOrderedListPareStart):
+    #if lineBlock != "":
+      #mdast.add(openParagraph(lineBlock))
+      #lineBlock = ""
+    #orderedListSeq.add(line.replace(reOrderedListPareStart))
+    #flag.flagOrderedListPare = true
 
   elif line.hasMarker(reIndentedCodeBlock):
     if lineBlock == "":
