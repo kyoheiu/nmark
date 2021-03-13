@@ -6,42 +6,42 @@ proc astToHtml*(mdast: Block): string =
 
     case mdast.leafType
 
-    of themanticBreak: hr() & "\p"
+    of themanticBreak: return hr() & "\p"
 
-    of paragraph: p(mdast.inline.value) & "\p"
+    of paragraph: return p(mdast.inline.value) & "\p"
 
-    of header1: h1(mdast.inline.value) & "\p"
+    of header1: return h1(mdast.inline.value) & "\p"
 
-    of header2: h2(mdast.inline.value) & "\p"
+    of header2: return h2(mdast.inline.value) & "\p"
 
-    of header3: h3(mdast.inline.value) & "\p"
+    of header3: return h3(mdast.inline.value) & "\p"
 
-    of header4: h4(mdast.inline.value) & "\p"
+    of header4: return h4(mdast.inline.value) & "\p"
 
-    of header5: h5(mdast.inline.value) & "\p"
+    of header5: return h5(mdast.inline.value) & "\p"
 
-    of header6: h6(mdast.inline.value) & "\p"
+    of header6: return h6(mdast.inline.value) & "\p"
 
-    of indentedCodeBlock: pre(code(mdast.inline.value & "\p")) & "\p"
+    of indentedCodeBlock: return pre(code(mdast.inline.value & "\p")) & "\p"
 
     of fencedCodeBlock:
       if mdast.inline.value == "":
-        pre(code(mdast.inline.value)) & "\p"
+        return pre(code(mdast.inline.value)) & "\p"
       else:
-        pre(code(mdast.inline.value & "\p")) & "\p"
+        return pre(code(mdast.inline.value & "\p")) & "\p"
 
     else: return
 
-  #of containerBlock:
+  of containerBlock:
 
-    #case mdast.containerType
+    case mdast.containerType
 
-    #of BLocktype.blockQuote:
-      #var blockQuoteContainer: string
-      #for child in mdast.children:
-        #astToHtml(blockQuoteContainer, child)
-        #resultHtml.add(blockquote(blockquoeteContainer) & "\p")
-        #blockquoeteContainer = ""
+    of BLocktype.blockQuote:
 
-  else:
-    return
+      var blockQuoteContainer: string
+      for child in mdast.children:
+        blockQuoteContainer.add(child.astToHtml)
+        blockquoteContainer = ""
+        return htmlgen.blockquote(blockquoteContainer) & "\p"
+    
+    else: return
