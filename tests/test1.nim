@@ -1,5 +1,5 @@
-import unittest, strutils, sequtils
-import mrk, mrkpkg/def, mrkpkg/mdToAst, mrkpkg/astToHtml
+import unittest
+import mrk
 
 test "test1":
   check mdParser("testfiles/1.md") == """
