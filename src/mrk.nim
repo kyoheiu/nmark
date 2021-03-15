@@ -25,13 +25,13 @@ proc mdParser*(path: string): string =
       mdast.add(openParagraph(lineBlock))
 
   resultSeq = concat(resultSeq, mdast)
-
+  
   var resultHtml: string
 
-  for mdast in resultSeq:
-    resultHtml.add(mdast.astToHtml)
+  for ast in resultSeq:
+    resultHtml.add(ast.astToHtml)
 
   return resultHtml
 
 when isMainModule:
-  mdParser()
+  echo mdParser("testfiles/1.md")

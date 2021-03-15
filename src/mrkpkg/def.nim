@@ -13,6 +13,7 @@ type
     themanticBreak,
     indentedCodeBlock,
     fencedCodeBlock,
+    htmlBlock,
     blockQuote,
     unOrderedList,
     orderedList
@@ -38,6 +39,13 @@ type
     flagFencedCodeBlockTild*: bool
     openingFenceLength*: int
     fencedCodeBlocksdepth*: int
+    flagHtmlBlock1*: bool
+    flagHtmlBlock2*: bool
+    flagHtmlBlock3*: bool
+    flagHtmlBlock4*: bool
+    flagHtmlBlock5*: bool
+    flagHtmlBlock6*: bool
+    flagHtmlBlock7*: bool
     flagUnorderedListDash*: bool
     flagUnorderedListPlus*: bool
     flagUnorderedListAste*: bool
@@ -52,6 +60,13 @@ proc newFlag*(): FlagContainer =
     indentedCodeBlockDepth: 0,
     flagFencedCodeBlockChar: false,
     flagFencedCodeBlockTild: false,
+    flagHtmlBlock1: false,
+    flagHtmlBlock2: false,
+    flagHtmlBlock3: false,
+    flagHtmlBlock4: false,
+    flagHtmlBlock5: false,
+    flagHtmlBlock6: false,
+    flagHtmlBlock7: false,
     flagUnorderedListDash: false,
     flagUnorderedListPlus: false,
     flagUnorderedListAste: false,
@@ -83,7 +98,6 @@ let
   reAtxHeader* = re"^(| |  |   )(#|##|###|####|#####|######) "
   reAnotherAtxHeader* = re"^(#|##|###|####|#####|######)$"
   reBlockQuote* = re"^(| |  |   )>( |)"
-  reBreakBlockQuote* = re""
   reUnorderedListDash* = re"^(| |  |   )- "
   reUnorderedListPlus* = re"^(| |  |   )\+ "
   reUnorderedListAste* = re"^(| |  |   )\* "
@@ -95,10 +109,28 @@ let
   reBreakIndentedCode* = re"^(| |  |   )\S"
   reFencedCodeBlockChar* = re"^(| |  |   )(```*) *$"
   reFencedCodeBlockTild* = re"^(| |  |   )(~~~*) *$"
-  #reParagraph = re"^(| |  |   )[^(\* )(\*\))(\+ )(\+\))(- )(-\))_=+(# )(## )(### )(#### )(##### )(###### )>((1|2|3|4|5|6|7|8|9|)\.)((1|2|3|4|5|6|7|8|9|)\))(```)(~~~)]"
+
+  reHtmlBlock1Begins* = re"(^(<script|<pre|<style)( |>|\n))"
+  reHtmlBlock1Ends*   = re"(</script>|</pre>|</style>)"
+  reHtmlBlock2Begins* = re"^<!--"
+  reHtmlBlock2Ends*   = re"-->"
+  reHtmlBlock3Begins* = re"^<\?"
+  reHtmlBlock3Ends*   = re"\?>"
+  reHtmlBlock4Begins* = re"^<![A-Z]"
+  reHtmlBlock4Ends*   = re">"
+  reHtmlBlock5Begins* = re"^<!\[CDATA\["
+  reHtmlBlock5Ends*   = re"\]\]>"
+  reHtmlBlock6Begins* = re"^(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
+  reHtmlBlock7Begins* = re"^<.*>"
 
 proc hasMarker*(line: string, regex: Regex): bool =
   match(line, regex)
+
+proc delWhitespace*(line: string): string =
+  var str: string
+  for c in line:
+    if c != ' ': str.add(c)
+  return str
 
 proc countWhitespace*(line: string): int =
   var i = 0
@@ -160,11 +192,8 @@ proc openSetextHeader*(blockType: BlockType, lineBlock: string): Block =
 proc openThemanticBreak*(): Block =
   return Block(kind: leafBlock, leafType: themanticBreak, inline: nil)
 
-proc delWhitespace*(line: string): string =
-  var str: string
-  for c in line:
-    if c != ' ': str.add(c)
-  return str
+proc openHtmlBlock*(lineBlock: string): Block =
+  return(Block(kind: leafBlock, leafType: htmlBlock, inline: Inline(kind: text, value: lineBlock)))
 
 proc openParagraph*(line: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))

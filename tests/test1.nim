@@ -142,3 +142,15 @@ test "simpleBlockQuote":
 baz</p>
 </blockquote>
 """
+
+test "simpleHtmlBlock":
+  check mdParser("testfiles/simpleHtmlBlock.md") == """
+<table>
+  <tr>
+    <td>
+           hi
+    </td>
+  </tr>
+</table>
+<p>okay.</p>
+"""

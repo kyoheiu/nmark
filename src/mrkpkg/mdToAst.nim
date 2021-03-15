@@ -23,6 +23,23 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
         #flag.flagOrderedListSpace = false
         #break orderedListDashSpaceBlock
 
+  block blockQuoteBlock:
+    if flag.flagBlockQuote:
+      if line.hasMarker(reBlockQuote):
+        line = line.replace(reBlockQuote)
+        flag.flagBlockQuoteMarker = true
+      break blockQuoteBlock
+    elif line.hasMarker(reBlockQuote):
+      if lineBlock != "":
+        mdast.add(openParagraph(lineBlock))
+        lineBlock = ""
+      resultSeq = concat(resultSeq, mdast)
+      mdast = @[]
+      line = line.replace(reBlockQuote)
+      flag.flagBlockQuote = true
+      flag.flagBlockQuoteMarker = true
+      break blockQuoteBlock
+        
   block indentedCodeBlocks:
     if flag.flagIndentedCodeBlock:
       if line.hasMarker(reBreakIndentedCode):
@@ -37,23 +54,6 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
         lineBlock.add("\n" & mutLine)
         return
 
-  block blockQuoteBlock:
-    if flag.flagBlockQuote:
-      if line.hasMarker(reBlockQuote):
-        line = line.replace(reBlockQuote)
-        flag.flagBlockQuoteMarker = true
-      break blockQuoteBlock
-    if line.hasMarker(reBlockQuote):
-      if lineBlock != "":
-        mdast.add(openParagraph(lineBlock))
-        lineBlock = ""
-      resultSeq = concat(resultSeq, mdast)
-      mdast = @[]
-      line = line.replace(reBlockQuote)
-      flag.flagBlockQuote = true
-      flag.flagBlockQuoteMarker = true
-      break blockQuoteBlock
-        
   if flag.flagFencedCodeBlockChar:
     if line.hasMarker(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
       lineBlock.removeSuffix("\n")
@@ -79,6 +79,67 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       else:
         line.delete(0, flag.fencedCodeBlocksdepth - 1)
         lineBlock.add(line & "\n")
+
+  elif flag.flagHtmlBlock1:
+    if line.hasMarker(reHtmlBlock1Ends):
+      lineBlock.add("\n" & line)
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock1 = false
+    else:
+      lineBlock.add("\n" & line)
+
+  elif flag.flagHtmlBlock2:
+    if line.hasMarker(reHtmlBlock2Ends):
+      lineBlock.add("\n" & line)
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock2 = false
+    else:
+      lineBlock.add("\n" & line)
+
+  elif flag.flagHtmlBlock3:
+    if line.hasMarker(reHtmlBlock2Ends):
+      lineBlock.add("\n" & line)
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock3 = false
+    else:
+      lineBlock.add("\n" & line)
+
+  elif flag.flagHtmlBlock4:
+    if line.hasMarker(reHtmlBlock2Ends):
+      lineBlock.add("\n" & line)
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock4 = false
+    else:
+      lineBlock.add("\n" & line)
+
+  elif flag.flagHtmlBlock5:
+    if line.hasMarker(reHtmlBlock2Ends):
+      lineBlock.add("\n" & line)
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock5 = false
+    else:
+      lineBlock.add("\n" & line)
+
+  elif flag.flagHtmlBlock6:
+    if line.isEmptyOrWhitespace:
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock6 = false
+    else:
+      lineBlock.add("\n" & line)
+  
+  elif flag.flagHtmlBlock7:
+    if line.isEmptyOrWhitespace:
+      mdast.add(openHtmlBlock(lineBLock))
+      lineBlock = ""
+      flag.flagHtmlBlock7 = false
+    else:
+      lineBlock.add("\n" & line)
 
   #elif line.hasMarker(reUnorderedListDash):
     #if lineBlock != "":
@@ -141,6 +202,60 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     flag.openingFenceLength = line.countBacktick
     flag.fencedCodeBlocksdepth = line.countWhitespace
   
+  elif line.hasMarker(reHtmlBlock1Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock1 = true
+      lineBlock.add(line)
+ 
+  elif line.hasMarker(reHtmlBlock2Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock2 = true
+      lineBlock.add(line)
+  
+  elif line.hasMarker(reHtmlBlock3Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock3 = true
+      lineBlock.add(line)
+  
+  elif line.hasMarker(reHtmlBlock4Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock4 = true
+      lineBlock.add(line)
+  
+  elif line.hasMarker(reHtmlBlock5Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock5 = true
+      lineBlock.add(line)
+  
+  
+  elif line.hasMarker(reHtmlBlock6Begins):
+    if lineBlock != "":
+      mdast.add(openParagraph(lineBlock))
+      lineBlock = ""
+    if not flag.flagBlockQuote:
+      flag.flagHtmlBlock6 = true
+      lineBlock.add(line)
+  
+  elif line.hasMarker(reHtmlBlock7Begins):
+    if lineBlock == "" and not flag.flagBlockQuote:
+      flag.flagHtmlBlock7 = true
+      lineBlock.add(line)
+
   elif line.hasMarker(reAtxHeader):
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
@@ -184,9 +299,22 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
-    if not lineBlock.isEmptyOrWhitespace:
+        flag.flagHtmlBlock6 = false
+        flag.flagHtmlBlock7 = false
+    elif flag.flagHtmlBlock6:
+        mdast.add(openHtmlBlock(lineBlock))
+        lineBlock = ""
+        flag.flagHtmlBlock6 = false
+    elif flag.flagHtmlBlock7:
+        mdast.add(openHtmlBlock(lineBlock))
+        lineBlock = ""
+        flag.flagHtmlBlock7 = false
+    elif lineBlock != "":
       mdast.add(openParagraph(lineBlock))
       lineBlock = ""
+      return
+    else:
+      return
 
   else:
     if lineBlock != "":

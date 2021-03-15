@@ -22,6 +22,8 @@ proc astToHtml*(mdast: Block): string =
 
     of header6: return h6(mdast.inline.value) & "\p"
 
+    of htmlBlock: return mdast.inline.value & "\p"
+
     of indentedCodeBlock: return pre(code(mdast.inline.value & "\p")) & "\p"
 
     of fencedCodeBlock:
