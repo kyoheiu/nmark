@@ -1,4 +1,5 @@
-import re, strutils
+import strutils
+import re
 
 type
   BlockType* = enum
