@@ -154,3 +154,9 @@ test "simpleHtmlBlock":
 </table>
 <p>okay.</p>
 """
+
+#test "simpleLinkReference":
+  #check mdParser("testfiles/simpleLinkReference.md") == """
+#<p><a href="/url" title="title">foo</a></p>
+#<p><a href="my%20url" title="title">Foo bar</a></p>
+#"""

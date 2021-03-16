@@ -58,7 +58,7 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     if line.hasMarker(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
       lineBlock.removeSuffix("\n")
       mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
-      lineblock = ""
+      lineBlock = ""
       flag.flagFencedCodeBlockChar = false
     else:
       if line.countWhitespace <= flag.fencedCodeBlocksdepth:
@@ -71,7 +71,7 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     if line.hasMarker(reFencedCodeBlockTild) and line.countBacktick >= flag.openingFenceLength: 
       lineBlock.removeSuffix("\n")
       mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
-      lineblock = ""
+      lineBlock = ""
       flag.flagFencedCodeBlockTild = false
     else:
       if line.countWhitespace <= flag.fencedCodeBlocksdepth:
@@ -140,6 +140,12 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       flag.flagHtmlBlock7 = false
     else:
       lineBlock.add("\n" & line)
+
+  elif flag.flagLinkReference:
+    if line.isEmptyOrWhitespace:
+      mdast.add(openLinkReference(lineBlock))
+    else:
+      lineBLock.add(line.strip(trailing = false))
 
   #elif line.hasMarker(reUnorderedListDash):
     #if lineBlock != "":
@@ -287,6 +293,13 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     else:
       mdast.add(openSetextHeader(header1, lineBlock))
       lineBlock = ""
+
+  elif line.hasMarker(reLinkLabel):
+    if lineBlock != "":
+      lineBlock.add("\n" & line.strip(trailing = false))
+    else:
+      flag.flagLinkReference = true
+      lineBlock.add("\n" & line.strip(trailing = false))
 
   elif line.isEmptyOrWhitespace:
     if flag.flagBlockQuote:

@@ -14,6 +14,7 @@ type
     indentedCodeBlock,
     fencedCodeBlock,
     htmlBlock,
+    linkReference,
     blockQuote,
     unOrderedList,
     orderedList
@@ -46,6 +47,7 @@ type
     flagHtmlBlock5*: bool
     flagHtmlBlock6*: bool
     flagHtmlBlock7*: bool
+    flagLinkReference*: bool
     flagUnorderedListDash*: bool
     flagUnorderedListPlus*: bool
     flagUnorderedListAste*: bool
@@ -67,6 +69,7 @@ proc newFlag*(): FlagContainer =
     flagHtmlBlock5: false,
     flagHtmlBlock6: false,
     flagHtmlBlock7: false,
+    flagLinkReference: false,
     flagUnorderedListDash: false,
     flagUnorderedListPlus: false,
     flagUnorderedListAste: false,
@@ -122,6 +125,9 @@ let
   reHtmlBlock5Ends*   = re"\]\]>"
   reHtmlBlock6Begins* = re"^(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
   reHtmlBlock7Begins* = re"^<.*>"
+
+  reLinkLabel* = re"^\[\S+\]:"
+  #reLinkReference = re(^\[\S+\]:( *\n? *)(\S+)( |\n)+(".*")|('.*')|()\s*$)
 
 proc hasMarker*(line: string, regex: Regex): bool =
   match(line, regex)
@@ -193,7 +199,10 @@ proc openThemanticBreak*(): Block =
   return Block(kind: leafBlock, leafType: themanticBreak, inline: nil)
 
 proc openHtmlBlock*(lineBlock: string): Block =
-  return(Block(kind: leafBlock, leafType: htmlBlock, inline: Inline(kind: text, value: lineBlock)))
+  return Block(kind: leafBlock, leaftype: htmlblock, inline: Inline(kind: text, value: lineBlock))
 
-proc openParagraph*(line: string): Block =
-  Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: line))
+proc openLinkReference*(lineBlock: string): Block =
+  return Block(kind: leafBlock, leaftype: linkReference, inline: Inline(kind: text, value: lineBlock))
+
+proc openParagraph*(lineBlock: string): Block =
+  Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: lineBlock))
