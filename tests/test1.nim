@@ -155,6 +155,16 @@ test "simpleHtmlBlock":
 <p>okay.</p>
 """
 
+test "simpleParagraph":
+  check mdParser("testfiles/simpleParagraph.md") == """
+<p>aaa
+bbb</p>
+<p>aaa<br />
+bbb</p>
+<p>aaa</p>
+<p>bbb</p>
+"""
+
 #test "simpleLinkReference":
   #check mdParser("testfiles/simpleLinkReference.md") == """
 #<p><a href="/url" title="title">foo</a></p>

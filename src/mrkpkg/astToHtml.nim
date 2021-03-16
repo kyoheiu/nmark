@@ -1,4 +1,4 @@
-import def, htmlgen
+import def, re, htmlgen, strutils
 
 proc astToHtml*(mdast: Block): string =
   case mdast.kind
@@ -8,7 +8,9 @@ proc astToHtml*(mdast: Block): string =
 
     of themanticBreak: return hr() & "\p"
 
-    of paragraph: return p(mdast.inline.value) & "\p"
+    of paragraph:
+      let value = mdast.inline.value.replace(reSoftBreak, "<br />\p").strip(leading = false)
+      return p(value) & "\p"
 
     of header1: return h1(mdast.inline.value) & "\p"
 
