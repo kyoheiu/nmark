@@ -1,11 +1,11 @@
-import strutils, sequtils, re, def
+import strutils, sequtils, re
+import def
 
 proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block], resultSeq:var seq[Block], line: var string) =
   flag.flagBlockQuoteMarker = false
   flag.flagUnorderedListMarker = false
   flag.flagOrderedListMarker = false
 
-  # stackoverflow spec
   block unOrderedListBlock:
     if flag.flagUnorderedList:
       if line.hasMarker(reUnorderedList):
@@ -37,7 +37,6 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       flag.flagUnorderedListMarker = true
       break unOrderedListBlock
 
-  # stackoverflow spec
   block orderedListBlock:
     if flag.flagOrderedList:
       if line.hasMarker(reOrderedList):
@@ -68,20 +67,62 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       break orderedListBlock
 
   block blockQuoteBlock:
+
     if flag.flagBlockQuote:
       if line.hasMarker(reBlockQuote):
         line = line.replace(reBlockQuote)
         flag.flagBlockQuoteMarker = true
         break blockQuoteBlock
       elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+
         flag.flagBlockQuote = false
         if lineBlock != "":
-          mdast.add(openParagraph(lineBlock))
-        resultSeq.add(openContainerBlock(blockQuote, mdast))
+
+          var bflag = newFlag()
+          var blineBlock: string
+          var bmdast: seq[Block]
+          var bresultSeq: seq[Block]
+
+          for bline in lineBlock.splitLines:
+            var bstr = bline
+            mdToAst(bflag, blineBlock, bmdast, bresultSeq, bstr)
+
+          if bflag.flagBlockQuote:
+            if blineBlock != "":
+              bmdast.add(openParagraph(blineBlock))
+            bresultSeq.add(openContainerBlock(blockQuote, bmdast))
+            bmdast  = @[]
+
+          elif bflag.flagUnorderedList:
+            if blineBlock != "":
+              bmdast.add(openList(blineBlock))
+            bresultSeq.add(openContainerBlock(unOrderedList, bmdast))
+            bmdast  = @[]
+
+          elif bflag.flagOrderedList:
+            if blineBlock != "":
+              bmdast.add(openList(lineBlock))
+            bresultSeq.add(openContainerBlock(orderedList, bmdast))
+            bmdast  = @[]
+          
+          elif blineBlock != "":
+            if bflag.flagIndentedCodeBlock:
+              bmdast.add(openCodeBlock(indentedCodeBlock, blineBlock))
+            else:
+              bmdast.add(openParagraph(blineBlock))
+
+          bresultSeq = concat(bresultSeq, bmdast)
+          
+          resultSeq.add(openContainerBlock(blockQuote, bresultSeq))
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
         break blockQuoteBlock
+
+      else:
+        lineBlock.add("\n" & line.strip(trailing = false))
+        return
+
     elif line.hasMarker(reBlockQuote):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
@@ -91,7 +132,8 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       line = line.replace(reBlockQuote)
       flag.flagBlockQuote = true
       flag.flagBlockQuoteMarker = true
-      break blockQuoteBlock
+      lineBlock.add(line.strip(trailing = false))
+      return
         
   block indentedCodeBlocks:
     if flag.flagIndentedCodeBlock:

@@ -2,7 +2,7 @@ import unittest
 import mrk
 
 test "test1":
-  check mdParser("testfiles/1.md") == """
+  check markdown("testfiles/1.md") == """
 <p>This is a test-file.</p>
 <h1>heading</h1>
 <h2>heading 2</h2>
@@ -14,7 +14,7 @@ test "test1":
 """
 
 test "themanticBreak":
-  check mdParser("testfiles/themanticBreak.md") == """
+  check markdown("testfiles/themanticBreak.md") == """
 <hr />
 <hr />
 <hr />
@@ -33,7 +33,7 @@ __</p>
 """
 
 test "atxHeadings":
-  check mdParser("testfiles/atxHeadings.md") == """
+  check markdown("testfiles/atxHeadings.md") == """
 <h1>foo</h1>
 <h2>foo</h2>
 <h3>foo</h3>
@@ -62,7 +62,7 @@ test "atxHeadings":
 """
 
 test "setextHeadings":
-  check mdParser("testfiles/setextHeadings.md") == """
+  check markdown("testfiles/setextHeadings.md") == """
 <h2>Foo1</h2>
 <h1>Foo2</h1>
 <h2>Foo3</h2>
@@ -82,7 +82,7 @@ Foo7
 """
 
 test "indentedCodeBlocks":
-  check mdParser("testfiles/indentedCodeBlocks.md") == """
+  check markdown("testfiles/indentedCodeBlocks.md") == """
 <pre><code>a simple
   indented code block
 
@@ -111,7 +111,7 @@ bar</p>
 """
 
 test "fencedCodeBlocks":
-  check mdParser("testfiles/fencedCodeBlocks.md") == """
+  check markdown("testfiles/fencedCodeBlocks.md") == """
 <pre><code>first
 ~~~
 </code></pre>
@@ -136,7 +136,7 @@ fifth
 """
 
 test "simpleBlockQuote":
-  check mdParser("testfiles/simpleBlockQuote.md") == """
+  check markdown("testfiles/simpleBlockQuote.md") == """
 <blockquote>
 <h1>Foo</h1>
 <p>bar
@@ -154,10 +154,18 @@ foo</p>
 <blockquote>
 <p>bar</p>
 </blockquote>
+<blockquote>
+<p>abc</p>
+<blockquote>
+<p>def
+ghi</p>
+</blockquote>
+</blockquote>
+<p>end of line</p>
 """
 
 test "simpleHtmlBlock":
-  check mdParser("testfiles/simpleHtmlBlock.md") == """
+  check markdown("testfiles/simpleHtmlBlock.md") == """
 <table>
   <tr>
     <td>
@@ -169,7 +177,7 @@ test "simpleHtmlBlock":
 """
 
 test "simpleParagraph":
-  check mdParser("testfiles/simpleParagraph.md") == """
+  check markdown("testfiles/simpleParagraph.md") == """
 <p>aaa
 bbb</p>
 <p>aaa<br />
@@ -179,13 +187,13 @@ bbb</p>
 """
 
 #test "simpleLinkReference":
-  #check mdParser("testfiles/simpleLinkReference.md") == """
+  #check markdown("testfiles/simpleLinkReference.md") == """
 #<p><a href="/url" title="title">foo</a></p>
 #<p><a href="my%20url" title="title">Foo bar</a></p>
 #"""
 
 test "simpleList":
-  check mdParser("testfiles/simpleList.md") == """
+  check markdown("testfiles/simpleList.md") == """
 <ul>
 <li>Use a minus sign for a bullet</li>
 <li>Or plus sign</li>
@@ -199,7 +207,7 @@ test "simpleList":
 """
 
 test "inline":
-  check mdParser("testfiles/inline.md") == """
+  check markdown("testfiles/inline.md") == """
 <p>Quo usque <code>tandem abutere</code>, Catilina, <code>patientia</code> nostra?</p>
 <p><em>Quam</em> diu <em>etiam <code>furor</code> iste</em> tuus nos eludet?</p>
 """
