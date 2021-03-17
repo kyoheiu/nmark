@@ -28,7 +28,16 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       if line.hasMarker(reBlockQuote):
         line = line.replace(reBlockQuote)
         flag.flagBlockQuoteMarker = true
-      break blockQuoteBlock
+        break blockQuoteBlock
+      elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedListDash) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+        flag.flagBlockQuote = false
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+        resultSeq.add(openQuoteBlock(mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagBlockQuote = false
+        break blockQuoteBlock
     elif line.hasMarker(reBlockQuote):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))

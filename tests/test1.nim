@@ -141,6 +141,13 @@ test "simpleBlockQuote":
 <p>bar
 baz</p>
 </blockquote>
+<blockquote><p>bar
+baz
+foo</p>
+</blockquote>
+<blockquote><p>foo</p>
+</blockquote>
+<hr />
 """
 
 test "simpleHtmlBlock":
