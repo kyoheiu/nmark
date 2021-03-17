@@ -1,4 +1,4 @@
-import strutils, sequtils
+import strutils, sequtils, json
 import mrkpkg/def, mrkpkg/mdToAst, mrkpkg/astToHtml
 
 proc mdParser*(path: string): string =
@@ -15,9 +15,21 @@ proc mdParser*(path: string): string =
   if flag.flagBlockQuote:
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
-    resultSeq.add(openQuoteBlock(mdast))
+    resultSeq.add(openContainerBlock(blockQuote, mdast))
     mdast = @[]
 
+  elif flag.flagUnorderedList:
+    if lineBlock != "":
+      mdast.add(openList(lineBlock))
+    resultSeq.add(openContainerBlock(unOrderedList, mdast))
+    mdast = @[]
+
+  elif flag.flagOrderedList:
+    if lineBlock != "":
+      mdast.add(openList(lineBlock))
+    resultSeq.add(openContainerBlock(orderedList, mdast))
+    mdast = @[]
+  
   elif lineBlock != "":
     if flag.flagIndentedCodeBlock:
       mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
@@ -25,7 +37,7 @@ proc mdParser*(path: string): string =
       mdast.add(openParagraph(lineBlock))
 
   resultSeq = concat(resultSeq, mdast)
-  
+ 
   var resultHtml: string
 
   for ast in resultSeq:
@@ -34,4 +46,4 @@ proc mdParser*(path: string): string =
   return resultHtml
 
 when isMainModule:
-  echo mdParser("testfiles/1.md")
+  echo mdParser("testfiles/simpleList.md")

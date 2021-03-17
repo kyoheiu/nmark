@@ -18,7 +18,8 @@ type
     linkReference,
     blockQuote,
     unOrderedList,
-    orderedList
+    orderedList,
+    list
 
   InlineType* = enum
     undefinedInline,
@@ -30,6 +31,7 @@ type
     strong,
     code,
     image,
+    li,
     text
 
   FlagContainer* = ref object
@@ -49,11 +51,10 @@ type
     flagHtmlBlock6*: bool
     flagHtmlBlock7*: bool
     flagLinkReference*: bool
-    flagUnorderedListDash*: bool
-    flagUnorderedListPlus*: bool
-    flagUnorderedListAste*: bool
-    flagOrderedListSpace*: bool
-    flagOrderedListPare*: bool
+    flagUnorderedList*: bool
+    flagUnorderedListMarker*: bool
+    flagOrderedList*: bool
+    flagOrderedListMarker*: bool
 
 proc newFlag*(): FlagContainer =
   FlagContainer(
@@ -71,11 +72,10 @@ proc newFlag*(): FlagContainer =
     flagHtmlBlock6: false,
     flagHtmlBlock7: false,
     flagLinkReference: false,
-    flagUnorderedListDash: false,
-    flagUnorderedListPlus: false,
-    flagUnorderedListAste: false,
-    flagOrderedListSpace: false,
-    flagOrderedListPare: false
+    flagUnorderedList: false,
+    flagUnorderedListMarker: false,
+    flagOrderedList: false,
+    flagOrderedListMarker: false
   )
 
 type
@@ -102,13 +102,8 @@ let
   reAtxHeader* = re"^(| |  |   )(#|##|###|####|#####|######) "
   reAnotherAtxHeader* = re"^(#|##|###|####|#####|######)$"
   reBlockQuote* = re"^(| |  |   )>( |)"
-  reUnorderedListDash* = re"^(| |  |   )- "
-  reUnorderedListPlus* = re"^(| |  |   )\+ "
-  reUnorderedListAste* = re"^(| |  |   )\* "
-  reOrderedListSpaceStart* = re"^(| |  |   )1\. "
-  reOrderedListPareStart* = re"^(| |  |   )1\)"
-  reOrderedListSpace* = re"^(| |  |   )(2|3|4|5|6|7|8|9)\. "
-  reOrderedListPare* = re"^(| |  |   )(2|3|4|5|6|7|8|9)\)"
+  reUnorderedList* = re"^(| |  |   )(-|\+|\*) "
+  reOrderedList* = re"^(| |  |   )[0-9]{1,9}(\.|\)) "
   reIndentedCodeBlock* = re"^ {4,}\S"
   reBreakIndentedCode* = re"^(| |  |   )\S"
   reFencedCodeBlockChar* = re"^(| |  |   )(```*) *$"
@@ -185,11 +180,8 @@ proc openAnotherAtxHeader*(line: string): Block =
     of "######":
       return Block(kind: leafBlock, leafType: header6, inline: Inline(kind: text, value: ""))
 
-proc openContainerBlock*(blockType: BlockType, containerBLockSeq: seq[string]): Block =
-  return Block(kind: containerBlock, containerType: blockType, children: @[])
-
-proc openQuoteBlock*(mdast: seq[Block]): Block =
-  return Block(kind: containerBlock, containerType: blockQuote, children: mdast)
+proc openContainerBlock*(blockType: BlockType, mdast: seq[Block]): Block =
+  return Block(kind: containerBlock, containerType: blockType, children: mdast)
 
 proc openCodeBlock*(blockType: BlockType, codeLines: string): Block =
   return Block(kind: leafBlock, leafType: blockType, inline: Inline(kind: text, value: codeLines))  
@@ -205,6 +197,9 @@ proc openHtmlBlock*(lineBlock: string): Block =
 
 proc openLinkReference*(lineBlock: string): Block =
   return Block(kind: leafBlock, leaftype: linkReference, inline: Inline(kind: text, value: lineBlock))
+
+proc openList*(lineBlock: string): Block =
+  Block(kind: leafBlock, leafType: list, inline: Inline(kind: li, value: lineBlock))
 
 proc openParagraph*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: lineBlock))

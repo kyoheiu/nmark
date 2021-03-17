@@ -8,3 +8,4 @@ baz
 
 > foo
 ---
+> bar

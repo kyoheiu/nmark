@@ -1,4 +1,4 @@
-import def, re, htmlgen, strutils
+import def, inline, re, htmlgen, strutils
 
 proc astToHtml*(mdast: Block): string =
   case mdast.kind
@@ -9,7 +9,7 @@ proc astToHtml*(mdast: Block): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.inline.value.replace(reSoftBreak, "<br />\p").strip(leading = false)
+      let value = mdast.inline.value.replace(reSoftBreak, "<br />\p").strip(leading = false).parseInline
       return p(value) & "\p"
 
     of header1: return h1(mdast.inline.value) & "\p"
@@ -34,6 +34,8 @@ proc astToHtml*(mdast: Block): string =
       else:
         return pre(code(mdast.inline.value & "\p")) & "\p"
 
+    of list : return li(mdast.inline.value) & "\p"
+
     else: return
 
   of containerBlock:
@@ -45,6 +47,20 @@ proc astToHtml*(mdast: Block): string =
       var blockQuoteContainer: string
       for child in mdast.children:
         blockQuoteContainer.add(child.astToHtml)
-      return htmlgen.blockquote(blockquoteContainer) & "\p"
-    
+      return htmlgen.blockquote("\p" & blockquoteContainer) & "\p"
+
+    of BLocktype.unOrderedList:
+
+      var unOrderedListContainer: string
+      for child in mdast.children:
+        unOrderedListContainer.add(child.astToHtml)
+      return ul("\p" & unOrderedListContainer) & "\p"
+
+    of BLocktype.orderedList:
+
+      var orderedListContainer: string
+      for child in mdast.children:
+        orderedListContainer.add(child.astToHtml)
+      return ol("\p" & orderedListContainer) & "\p"
+
     else: return

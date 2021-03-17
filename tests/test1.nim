@@ -137,17 +137,23 @@ fifth
 
 test "simpleBlockQuote":
   check mdParser("testfiles/simpleBlockQuote.md") == """
-<blockquote><h1>Foo</h1>
+<blockquote>
+<h1>Foo</h1>
 <p>bar
 baz</p>
 </blockquote>
-<blockquote><p>bar
+<blockquote>
+<p>bar
 baz
 foo</p>
 </blockquote>
-<blockquote><p>foo</p>
+<blockquote>
+<p>foo</p>
 </blockquote>
 <hr />
+<blockquote>
+<p>bar</p>
+</blockquote>
 """
 
 test "simpleHtmlBlock":
@@ -177,3 +183,23 @@ bbb</p>
 #<p><a href="/url" title="title">foo</a></p>
 #<p><a href="my%20url" title="title">Foo bar</a></p>
 #"""
+
+test "simpleList":
+  check mdParser("testfiles/simpleList.md") == """
+<ul>
+<li>Use a minus sign for a bullet</li>
+<li>Or plus sign</li>
+<li>Or an asterisk</li>
+</ul>
+<ol>
+<li>Numbered lists are easy</li>
+<li>Markdown keeps track of the numbers for you</li>
+<li>So this will be item 3.</li>
+</ol>
+"""
+
+test "inline":
+  check mdParser("testfiles/inline.md") == """
+<p>Quo usque <code>tandem abutere</code>, Catilina, <code>patientia</code> nostra?</p>
+<p><em>Quam</em> diu <em>etiam <code>furor</code> iste</em> tuus nos eludet?</p>
+"""

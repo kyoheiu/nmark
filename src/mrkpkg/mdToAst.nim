@@ -2,26 +2,70 @@ import strutils, sequtils, re, def
 
 proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block], resultSeq:var seq[Block], line: var string) =
   flag.flagBlockQuoteMarker = false
+  flag.flagUnorderedListMarker = false
+  flag.flagOrderedListMarker = false
 
-  #block unorderedListDashBlock:
-    #if flag.flagUnorderedListDash:
-      #if line.hasMarker(reUnorderedListDash):
-        #unorderedListSeq.add(line.replace(reUnorderedListDash))
-      #else:
-        #mdast.add(openContainerBlock(unOrderedList, unorderedListSeq))
-        #unorderedListSeq = @[]
-        #flag.flagUnorderedListDash = false
-        #break unorderedListDashBlock
+  # stackoverflow spec
+  block unOrderedListBlock:
+    if flag.flagUnorderedList:
+      if line.hasMarker(reUnorderedList):
+        mdast.add(openList(lineBlock))
+        lineBlock = ""
+        line = line.replace(reUnorderedList)
+        flag.flagUnorderedListMarker = true
+        break unorderedListBlock
+      elif line.hasMarker(reThematicBreak) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+        flag.flagUnorderedList = false
+        if lineBlock != "":
+          mdast.add(openList(lineBlock))
+        resultSeq.add(openContainerBlock(unOrderedList, mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagUnorderedList = false
+        break unOrderedListBlock
+      
+    elif line.hasMarker(reUnorderedList):
+      if line.delWhitespace.hasMarker(reThematicBreak):
+        break unOrderedListBlock
+      if lineBlock != "":
+        mdast.add(openParagraph(lineBlock))
+        lineBlock = ""
+      resultSeq = concat(resultSeq, mdast)
+      mdast = @[]
+      line = line.replace(reUnorderedList)
+      flag.flagUnorderedList = true
+      flag.flagUnorderedListMarker = true
+      break unOrderedListBlock
 
-  #block orderedListDashSpaceBlock:
-    #if flag.flagOrderedListSpace:
-      #if line.hasMarker(reOrderedListSpaceStart):
-        #orderedListSeq.add(line.replace(reOrderedListSpace))
-      #else:
-        #mdast.add(openContainerBlock(orderedList, orderedListSeq))
-        #orderedListSeq = @[]
-        #flag.flagOrderedListSpace = false
-        #break orderedListDashSpaceBlock
+  # stackoverflow spec
+  block orderedListBlock:
+    if flag.flagOrderedList:
+      if line.hasMarker(reOrderedList):
+        mdast.add(openList(lineBlock))
+        lineBlock = ""
+        line = line.replace(reOrderedList)
+        flag.flagOrderedListMarker = true
+        break orderedListBlock
+      elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+        flag.flagOrderedList = false
+        if lineBlock != "":
+          mdast.add(openList(lineBlock))
+        resultSeq.add(openContainerBlock(orderedList, mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagOrderedList = false
+        break orderedListBlock
+
+    elif line.hasMarker(reOrderedList):
+      if lineBlock != "":
+        mdast.add(openParagraph(lineBlock))
+        lineBlock = ""
+      resultSeq = concat(resultSeq, mdast)
+      mdast = @[]
+      line = line.replace(reOrderedList)
+      flag.flagOrderedList = true
+      flag.flagOrderedListMarker = true
+      break orderedListBlock
 
   block blockQuoteBlock:
     if flag.flagBlockQuote:
@@ -29,11 +73,11 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
         line = line.replace(reBlockQuote)
         flag.flagBlockQuoteMarker = true
         break blockQuoteBlock
-      elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedListDash) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+      elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
         flag.flagBlockQuote = false
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
-        resultSeq.add(openQuoteBlock(mdast))
+        resultSeq.add(openContainerBlock(blockQuote, mdast))
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
@@ -156,7 +200,7 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
     else:
       lineBLock.add(line.strip(trailing = false))
 
-  #elif line.hasMarker(reUnorderedListDash):
+  #elif line.hasMarker(reUnorderedList):
     #if lineBlock != "":
       #mdast.add(openParagraph(lineBlock))
       #lineBlock = ""
@@ -317,12 +361,32 @@ proc mdToAst*(flag:var FlagContainer, lineBLock:var string, mdast:var seq[Block]
       else:
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
-        resultSeq.add(openQuoteBlock(mdast))
+        resultSeq.add(openContainerBlock(blockQuote, mdast))
         lineBlock = ""
         mdast = @[]
         flag.flagBlockQuote = false
         flag.flagHtmlBlock6 = false
         flag.flagHtmlBlock7 = false
+    if flag.flagUnorderedList:
+      if flag.flagUnorderedListMarker:
+        return
+      else:
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+        resultSeq.add(openContainerBlock(blockQuote, mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagUnorderedList = false
+    if flag.flagOrderedList:
+      if flag.flagOrderedListMarker:
+        return
+      else:
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+        resultSeq.add(openContainerBlock(blockQuote, mdast))
+        lineBlock = ""
+        mdast = @[]
+        flag.flagOrderedList = false
     elif flag.flagHtmlBlock6:
         mdast.add(openHtmlBlock(lineBlock))
         lineBlock = ""
