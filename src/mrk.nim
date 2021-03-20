@@ -1,11 +1,11 @@
-import mrkpkg/mdParser, mrkpkg/astToHtml
-
+import mrkpkg/mdToAst, mrkpkg/astToHtml
+import json
 
 
 proc markdown*(path: string): string =
   let s = readFile(path)
-  let seqAst = s.mdParser
- 
+  let seqAst = s.mdToAst
+
   var resultHtml: string
 
   for ast in seqAst:
