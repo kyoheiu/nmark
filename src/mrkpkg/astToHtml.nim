@@ -42,21 +42,21 @@ proc astToHtml*(mdast: Block): string =
 
     case mdast.containerType
 
-    of BLocktype.blockQuote:
+    of Blocktype.blockQuote:
 
       var blockQuoteContainer: string
       for child in mdast.children:
         blockQuoteContainer.add(child.astToHtml)
       return htmlgen.blockquote("\p" & blockquoteContainer) & "\p"
 
-    of BLocktype.unOrderedList:
+    of Blocktype.unOrderedList:
 
       var unOrderedListContainer: string
       for child in mdast.children:
         unOrderedListContainer.add(child.astToHtml)
       return ul("\p" & unOrderedListContainer) & "\p"
 
-    of BLocktype.orderedList:
+    of Blocktype.orderedList:
 
       var orderedListContainer: string
       for child in mdast.children:

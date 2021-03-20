@@ -38,10 +38,3 @@ proc mdParser*(s: string): seq[Block] =
   resultSeq = concat(resultSeq, mdast)
 
   return resultSeq
-
-  #var resultHtml: string
-
-  #for ast in resultSeq:
-    #resultHtml.add(ast.astToHtml)
-
-  #return resultHtml
