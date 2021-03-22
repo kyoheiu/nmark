@@ -53,8 +53,10 @@ type
     flagLinkReference*: bool
     flagUnorderedList*: bool
     flagUnorderedListMarker*: bool
+    uldepth*: int
     flagOrderedList*: bool
     flagOrderedListMarker*: bool
+    oldepth*: int
 
 proc newFlag*(): FlagContainer =
   FlagContainer(
@@ -74,8 +76,10 @@ proc newFlag*(): FlagContainer =
     flagLinkReference: false,
     flagUnorderedList: false,
     flagUnorderedListMarker: false,
+    uldepth: 0,
     flagOrderedList: false,
-    flagOrderedListMarker: false
+    flagOrderedListMarker: false,
+    oldepth: 0
   )
 
 type
@@ -134,6 +138,12 @@ proc delWhitespace*(line: string): string =
   for c in line:
     if c != ' ': str.add(c)
   return str
+
+proc countULIndent*(line: string): int =
+  var i = 0
+  for c in line:
+    if c == ' ' or c == '-' or c == '+' or c == '*': i.inc
+    else: return i
 
 proc countWhitespace*(line: string): int =
   var i = 0
@@ -199,7 +209,7 @@ proc openLinkReference*(lineBlock: string): Block =
   return Block(kind: leafBlock, leaftype: linkReference, inline: Inline(kind: text, value: lineBlock))
 
 proc openList*(lineBlock: string): Block =
-  Block(kind: leafBlock, leafType: list, inline: Inline(kind: li, value: lineBlock))
+  Block(kind: containerBlock, containerType: list, children: Inline(kind: li, value: lineBlock))
 
 proc openParagraph*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: lineBlock))

@@ -45,6 +45,7 @@ proc mdToAst*(s: string): seq[Block] =
         line = line.replace(reUnorderedList)
         flag.flagUnorderedList = true
         flag.flagUnorderedListMarker = true
+        flag.uldepth = line.countULIndent
         break unOrderedListBlock
 
     #block orderedListBlock:

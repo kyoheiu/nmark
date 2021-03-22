@@ -1,4 +1,6 @@
 - Use a minus sign for a bullet
+  to make list
+  > this is container type
 + Or plus sign
 * Or an asterisk
 

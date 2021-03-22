@@ -16,4 +16,4 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  echo markdown("testfiles/1.md")
+  echo markdown("testfiles/simpleList.md")
