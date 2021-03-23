@@ -1,6 +1,7 @@
 import def, inline, re, htmlgen, strutils
 
-proc astToHtml*(mdast: Block): string =
+proc astToHtml*(mdast: Block, isTight: var bool): string =
+
   case mdast.kind
   of leafBlock:
 
@@ -10,7 +11,8 @@ proc astToHtml*(mdast: Block): string =
 
     of paragraph:
       let value = mdast.inline.value.replace(reSoftBreak, "<br />\p").strip(leading = false).parseInline
-      return p(value) & "\p"
+      if isTight: return value & "\p"
+      else: return p(value) & "\p"
 
     of header1: return h1(mdast.inline.value) & "\p"
 
@@ -34,8 +36,6 @@ proc astToHtml*(mdast: Block): string =
       else:
         return pre(code(mdast.inline.value & "\p")) & "\p"
 
-    of list : return li(mdast.inline.value) & "\p"
-
     else: return
 
   of containerBlock:
@@ -46,21 +46,46 @@ proc astToHtml*(mdast: Block): string =
 
       var blockQuoteContainer: string
       for child in mdast.children:
-        blockQuoteContainer.add(child.astToHtml)
+        blockQuoteContainer.add(child.astToHtml(isTight))
       return htmlgen.blockquote("\p" & blockquoteContainer) & "\p"
 
-    of Blocktype.unOrderedList:
+    of Blocktype.list:
+
+      var listContainer: string
+      for child in mdast.children:
+        listContainer.add(child.astToHtml(isTight))
+      return li("\p" & listContainer) & "\p"
+
+    of Blocktype.unOrderedLooseList:
 
       var unOrderedListContainer: string
       for child in mdast.children:
-        unOrderedListContainer.add(child.astToHtml)
+        unOrderedListContainer.add(child.astToHtml(isTight))
       return ul("\p" & unOrderedListContainer) & "\p"
 
-    of Blocktype.orderedList:
+    of Blocktype.unOrderedTightList:
+
+      isTight = true
+      var unOrderedListContainer: string
+      for child in mdast.children:
+        unOrderedListContainer.add(child.astToHtml(isTight))
+      isTight = false
+      return ul("\p" & unOrderedListContainer) & "\p"
+
+    of Blocktype.orderedLooseList:
 
       var orderedListContainer: string
       for child in mdast.children:
-        orderedListContainer.add(child.astToHtml)
+        orderedListContainer.add(child.astToHtml(isTight))
+      return ol("\p" & orderedListContainer) & "\p"
+
+    of Blocktype.orderedTightList:
+
+      isTight = true
+      var orderedListContainer: string
+      for child in mdast.children:
+        orderedListContainer.add(child.astToHtml(isTight))
+      isTight = false
       return ol("\p" & orderedListContainer) & "\p"
 
     else: return

@@ -17,22 +17,44 @@ proc mdToAst*(s: string): seq[Block] =
     flag.flagOrderedListMarker = false
 
     block unOrderedListBlock:
+
       if flag.flagUnorderedList:
         if line.hasMarker(reUnorderedList):
-          mdast.add(openList(lineBlock))
+          flag.afterEmptyLine = false
+          flag.looseUnordered = true
+          mdast.add(lineBlock.mdToAst.openList)
           lineBlock = ""
+          flag.uldepth = line.matchLen(reUnorderedList)
           line = line.replace(reUnorderedList)
           flag.flagUnorderedListMarker = true
-          break unorderedListBlock
-        elif line.hasMarker(reThematicBreak) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
-          flag.flagUnorderedList = false
-          if lineBlock != "":
-            mdast.add(openList(lineBlock))
-          resultSeq.add(openContainerBlock(unOrderedList, mdast))
-          lineBlock = ""
-          mdast = @[]
-          flag.flagUnorderedList = false
           break unOrderedListBlock
+        elif line.countWhitespace >= flag.uldepth:
+          if flag.hasEmptyLine: flag.looseUnordered = true
+          line.delete(0,flag.uldepth - 1)
+          lineBlock.add("\n" & line)
+          flag.afterEmptyLine = false
+          continue
+        elif line.isEmptyOrWhitespace:
+          lineBlock.add("\n")
+          flag.hasEmptyLine = true
+          flag.afterEmptyLine = true
+          continue
+        else:
+          if not flag.afterEmptyLine:
+            lineBlock.add("\n" & line.strip(trailing = false))
+            continue
+          else:
+            flag.afterEmptyLine = false
+            mdast.add(lineBlock.mdToAst.openList)
+            if flag.looseUnordered: resultSeq.add(mdast.openLooseUL)
+            else: resultSeq.add(mdast.openTightUL)
+            lineBlock = ""
+            mdast = @[]
+            flag.flagUnorderedList = false
+            flag.looseUnordered = false
+            flag.hasEmptyLine = false
+            flag.uldepth = 0
+            break unOrderedListBlock
         
       elif line.hasMarker(reUnorderedList):
         if line.delWhitespace.hasMarker(reThematicBreak):
@@ -42,58 +64,85 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock = ""
         resultSeq = concat(resultSeq, mdast)
         mdast = @[]
+        flag.uldepth = line.matchLen(reUnorderedList)
         line = line.replace(reUnorderedList)
         flag.flagUnorderedList = true
         flag.flagUnorderedListMarker = true
-        flag.uldepth = line.countULIndent
         break unOrderedListBlock
 
-    #block orderedListBlock:
-      #if flag.flagOrderedList:
-        #if line.hasMarker(reOrderedList):
-          #mdast.add(openList(lineBlock))
-          #lineBlock = ""
-          #line = line.replace(reOrderedList)
-          #flag.flagOrderedListMarker = true
-          #break orderedListBlock
-        #elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
-          #flag.flagOrderedList = false
-          #if lineBlock != "":
-            #mdast.add(openList(lineBlock))
-          #resultSeq.add(openContainerBlock(orderedList, mdast))
-          #lineBlock = ""
-          #mdast = @[]
-          #flag.flagOrderedList = false
-          #break orderedListBlock
 
-      #elif line.hasMarker(reOrderedList):
-        #if lineBlock != "":
-          #mdast.add(openParagraph(lineBlock))
-          #lineBlock = ""
-        #resultSeq = concat(resultSeq, mdast)
-        #mdast = @[]
-        #line = line.replace(reOrderedList)
-        #flag.flagOrderedList = true
-        #flag.flagOrderedListMarker = true
-        #break orderedListBlock
 
-    block blockQuoteBlock:
+    block orderedListBlock:
+
+      if flag.flagOrderedList:
+        if line.hasMarker(reOrderedList):
+          flag.afterEmptyLine = false
+          flag.looseOrdered = true
+          mdast.add(lineBlock.mdToAst.openList)
+          lineBlock = ""
+          flag.oldepth = line.matchLen(reOrderedList)
+          line = line.replace(reOrderedList)
+          flag.flagOrderedListMarker = true
+          break orderedListBlock
+        elif line.countWhitespace >= flag.oldepth:
+          if flag.hasEmptyLine: flag.looseOrdered = true
+          line.delete(0,flag.oldepth - 1)
+          lineBlock.add("\n" & line)
+          flag.afterEmptyLine = false
+          continue
+        elif line.isEmptyOrWhitespace:
+          lineBlock.add("\n")
+          flag.hasEmptyLine = true
+          flag.afterEmptyLine = true
+          continue
+        else:
+          if not flag.afterEmptyLine:
+            lineBlock.add("\n" & line.strip(trailing = false))
+            continue
+          else:
+            flag.afterEmptyLine = false
+            mdast.add(lineBlock.mdToAst.openList)
+            if flag.looseOrdered: resultSeq.add(mdast.openLooseOL)
+            else: resultSeq.add(mdast.openTightOL)
+            lineBlock = ""
+            mdast = @[]
+            flag.flagOrderedList = false
+            flag.looseOrdered = false
+            flag.hasEmptyLine = false
+            flag.oldepth = 0
+            break orderedListBlock
+        
+      elif line.hasMarker(reOrderedList):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        resultSeq = concat(resultSeq, mdast)
+        mdast = @[]
+        flag.oldepth = line.matchLen(reOrderedList)
+        line = line.replace(reOrderedList)
+        flag.flagOrderedList = true
+        flag.flagOrderedListMarker = true
+        break orderedListBlock
+
+
+
+    block bqBlock:
 
       if flag.flagBlockQuote:
         if line.hasMarker(reBlockQuote):
           line = line.replace(reBlockQuote)
           flag.flagBlockQuoteMarker = true
-          break blockQuoteBlock
+          break bqBlock
+
         elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
 
           flag.flagBlockQuote = false
           if lineBlock != "":
-            let bresultSeq = mdToAst(lineBlock)
-            resultSeq.add(openContainerBlock(blockQuote, bresultSeq))
+            resultSeq.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
           mdast = @[]
           flag.flagBlockQuote = false
-          break blockQuoteBlock
+          break bqBlock
 
         else:
           lineBlock.add("\n" & line.strip(trailing = false))
@@ -111,19 +160,25 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add(line.strip(trailing = false))
         continue
           
-    block indentedCodeBlocks:
+
+
+    block indentedCBlock:
       if flag.flagIndentedCodeBlock:
-        if line.hasMarker(reBreakIndentedCode):
+        if not line.isEmptyOrWhitespace and line.countWhitespace < 4:
           lineBlock.removeSuffix("\n")
           mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
           lineBlock = ""
           flag.flagIndentedCodeBlock = false
-          break indentedCodeBlocks
-        else:
-          var mutLine = line
-          mutLine.delete(0,flag.indentedCodeBlockDepth)
-          lineBlock.add("\n" & mutLine)
+          break indentedCBlock
+        elif line.isEmptyOrWhiteSpace:
+          lineBlock.add("\n")
           continue
+        else:
+          line.delete(0,flag.indentedCodeBlockDepth)
+          lineBlock.add("\n" & line)
+          continue
+
+
 
     if flag.flagFencedCodeBlockChar:
       if line.hasMarker(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
@@ -222,9 +277,8 @@ proc mdToAst*(s: string): seq[Block] =
       if lineBlock == "":
         flag.indentedCodeBlockDepth = line.countWhitespace - 1
         flag.flagIndentedCodeBlock = true
-        var mutLine = line
-        mutLine.delete(0,flag.indentedCodeBlockDepth)
-        lineBlock.add(mutLine)
+        line.delete(0,flag.indentedCodeBlockDepth)
+        lineBlock.add(line)
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
 
@@ -350,25 +404,9 @@ proc mdToAst*(s: string): seq[Block] =
           flag.flagHtmlBlock6 = false
           flag.flagHtmlBlock7 = false
       if flag.flagUnorderedList:
-        if flag.flagUnorderedListMarker:
-          continue
-        else:
-          if lineBlock != "":
-            mdast.add(openParagraph(lineBlock))
-          resultSeq.add(openContainerBlock(blockQuote, mdast))
-          lineBlock = ""
-          mdast = @[]
-          flag.flagUnorderedList = false
+        continue
       if flag.flagOrderedList:
-        if flag.flagOrderedListMarker:
-          continue
-        else:
-          if lineBlock != "":
-            mdast.add(openParagraph(lineBlock))
-          resultSeq.add(openContainerBlock(blockQuote, mdast))
-          lineBlock = ""
-          mdast = @[]
-          flag.flagOrderedList = false
+        continue
       elif flag.flagHtmlBlock6:
           mdast.add(openHtmlBlock(lineBlock))
           lineBlock = ""
@@ -396,19 +434,22 @@ proc mdToAst*(s: string): seq[Block] =
     if lineBlock != "":
       mdast.add(openParagraph(lineBlock))
     resultSeq.add(openContainerBlock(blockQuote, mdast))
-    mdast = @[]
+    return resultSeq
 
   elif flag.flagUnorderedList:
     if lineBlock != "":
-      mdast.add(openList(lineBlock))
-    resultSeq.add(openContainerBlock(unOrderedList, mdast))
-    mdast = @[]
+      mdast.add(lineBlock.mdToAst.openList)
+    if flag.looseUnordered: resultSeq.add(mdast.openLooseUL)
+    else: resultSeq.add(mdast.openTightUL)
+    return resultSeq
 
   elif flag.flagOrderedList:
     if lineBlock != "":
-      mdast.add(openList(lineBlock))
-    resultSeq.add(openContainerBlock(orderedList, mdast))
-    mdast = @[]
+      echo lineBlock
+      mdast.add(lineBlock.mdToAst.openList)
+    if flag.looseOrdered: resultSeq.add(mdast.openLooseOL)
+    else: resultSeq.add(mdast.openTightOL)
+    return resultSeq
   
   elif lineBlock != "":
     if flag.flagIndentedCodeBlock:
@@ -417,5 +458,5 @@ proc mdToAst*(s: string): seq[Block] =
       mdast.add(openParagraph(lineBlock))
 
   resultSeq = concat(resultSeq, mdast)
-
+  
   return resultSeq

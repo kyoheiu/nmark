@@ -1,4 +1,4 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml
+import mrkpkg/def, mrkpkg/mdToAst, mrkpkg/astToHtml
 import json
 
 
@@ -7,13 +7,14 @@ proc markdown*(path: string): string =
   let seqAst = s.mdToAst
 
   var resultHtml: string
+  var isTight = false
 
   for ast in seqAst:
-    resultHtml.add(ast.astToHtml)
+    resultHtml.add(ast.astToHtml(isTight))
 
   return resultHtml
 
 
 
 when isMainModule:
-  echo markdown("testfiles/simpleList.md")
+  echo markdown("testfiles/simpleList4.md")

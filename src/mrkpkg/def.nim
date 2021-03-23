@@ -1,4 +1,4 @@
-import strutils
+import strutils, json
 import re
 
 type
@@ -17,9 +17,11 @@ type
     htmlBlock,
     linkReference,
     blockQuote,
-    unOrderedList,
-    orderedList,
-    list
+    unOrderedTightList,
+    unOrderedLooseList,
+    orderedTightList,
+    orderedLooseList,
+    list,
 
   InlineType* = enum
     undefinedInline,
@@ -57,6 +59,10 @@ type
     flagOrderedList*: bool
     flagOrderedListMarker*: bool
     oldepth*: int
+    hasEmptyLine*: bool
+    afterEmptyLine*: bool
+    looseUnordered*: bool
+    looseOrdered*: bool
 
 proc newFlag*(): FlagContainer =
   FlagContainer(
@@ -79,7 +85,11 @@ proc newFlag*(): FlagContainer =
     uldepth: 0,
     flagOrderedList: false,
     flagOrderedListMarker: false,
-    oldepth: 0
+    oldepth: 0,
+    hasEmptyLine: false,
+    afterEmptyLine: false,
+    looseUnordered: false,
+    looseOrdered: false
   )
 
 type
@@ -106,8 +116,8 @@ let
   reAtxHeader* = re"^(| |  |   )(#|##|###|####|#####|######) "
   reAnotherAtxHeader* = re"^(#|##|###|####|#####|######)$"
   reBlockQuote* = re"^(| |  |   )>( |)"
-  reUnorderedList* = re"^(| |  |   )(-|\+|\*) "
-  reOrderedList* = re"^(| |  |   )[0-9]{1,9}(\.|\)) "
+  reUnorderedList* = re"^(| |  |   )(-|\+|\*) +"
+  reOrderedList* = re"^(| |  |   )[0-9]{1,9}(\.|\)) +"
   reIndentedCodeBlock* = re"^ {4,}\S"
   reBreakIndentedCode* = re"^(| |  |   )\S"
   reFencedCodeBlockChar* = re"^(| |  |   )(```*) *$"
@@ -138,12 +148,6 @@ proc delWhitespace*(line: string): string =
   for c in line:
     if c != ' ': str.add(c)
   return str
-
-proc countULIndent*(line: string): int =
-  var i = 0
-  for c in line:
-    if c == ' ' or c == '-' or c == '+' or c == '*': i.inc
-    else: return i
 
 proc countWhitespace*(line: string): int =
   var i = 0
@@ -208,8 +212,29 @@ proc openHtmlBlock*(lineBlock: string): Block =
 proc openLinkReference*(lineBlock: string): Block =
   return Block(kind: leafBlock, leaftype: linkReference, inline: Inline(kind: text, value: lineBlock))
 
-proc openList*(lineBlock: string): Block =
-  Block(kind: containerBlock, containerType: list, children: Inline(kind: li, value: lineBlock))
+proc openBlockQuote*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: blockQuote, children: mdast)
+
+proc openList*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: list, children: mdast)
+
+proc openLooseUL*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: unOrderedLooseList, children: mdast)
+
+proc openTightUL*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: unOrderedTightList, children: mdast)
+
+proc openLooseOL*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: orderedLooseList, children: mdast)
+
+proc openTightOL*(mdast: seq[Block]): Block =
+  Block(kind: containerBlock, containerType: orderedTightList, children: mdast)
 
 proc openParagraph*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: paragraph, inline: Inline(kind: text, value: lineBlock))
+
+proc echoSeqBlock*(mdast: seq[Block]) =
+  var s: seq[JsonNode]
+  for b in mdast:
+    s.add(%b)
+  echo s

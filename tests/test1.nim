@@ -192,17 +192,55 @@ bbb</p>
 #<p><a href="my%20url" title="title">Foo bar</a></p>
 #"""
 
-test "simpleList":
-  check markdown("testfiles/simpleList.md") == """
+test "simpleList1":
+  check markdown("testfiles/simpleList1.md") == """
 <ul>
-<li>Use a minus sign for a bullet</li>
-<li>Or plus sign</li>
-<li>Or an asterisk</li>
+<li>
+foo
+bar
+</li>
 </ul>
+<p>baz</p>
+"""
+
+test "simpleList2":
+  check markdown("testfiles/simpleList2.md") == """
+<ul>
+<li>
+<p>a</p>
+</li>
+<li>
+<p>b</p>
+</li>
+<li>
+<p>c</p>
+</li>
+</ul>
+"""
+
+test "simpleList3":
+  check markdown("testfiles/simpleList3.md") == """
+<ul>
+<li>
+<p>one</p>
+<p>two
+three</p>
+</li>
+</ul>
+"""
+
+test "simpleList4":
+  check markdown("testfiles/simpleList4.md") == """
 <ol>
-<li>Numbered lists are easy</li>
-<li>Markdown keeps track of the numbers for you</li>
-<li>So this will be item 3.</li>
+<li>
+<p>A paragraph
+with two lines.</p>
+<pre><code>indented code
+</code></pre>
+<blockquote>
+<p>A block quote.</p>
+</blockquote>
+</li>
 </ol>
 """
 
