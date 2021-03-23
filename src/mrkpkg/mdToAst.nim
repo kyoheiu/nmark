@@ -9,7 +9,6 @@ proc mdToAst*(s: string): seq[Block] =
   var resultSeq: seq[Block]
 
   for str in s.splitLines:
-    echo "---" & "\p" & lineBlock & "\p" & "---"
     var line = str
 
     flag.flagBlockQuoteMarker = false
@@ -150,7 +149,12 @@ proc mdToAst*(s: string): seq[Block] =
 
       elif line.hasMarker(reBlockQuote):
         if lineBlock != "":
-          mdast.add(openParagraph(lineBlock))
+          if flag.flagIndentedCodeBlock:
+            lineBlock.removeSuffix("\n")
+            mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
+            lineBlock = ""
+            flag.flagIndentedCodeBlock = false
+          else: mdast.add(openParagraph(lineBlock))
           lineBlock = ""
         resultSeq = concat(resultSeq, mdast)
         mdast = @[]
@@ -445,7 +449,6 @@ proc mdToAst*(s: string): seq[Block] =
 
   elif flag.flagOrderedList:
     if lineBlock != "":
-      echo lineBlock
       mdast.add(lineBlock.mdToAst.openList)
     if flag.looseOrdered: resultSeq.add(mdast.openLooseOL)
     else: resultSeq.add(mdast.openTightOL)
