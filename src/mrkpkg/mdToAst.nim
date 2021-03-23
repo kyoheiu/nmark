@@ -9,7 +9,7 @@ proc mdToAst*(s: string): seq[Block] =
   var resultSeq: seq[Block]
 
   for str in s.splitLines:
-
+    echo "---" & "\p" & lineBlock & "\p" & "---"
     var line = str
 
     flag.flagBlockQuoteMarker = false
@@ -164,7 +164,7 @@ proc mdToAst*(s: string): seq[Block] =
 
     block indentedCBlock:
       if flag.flagIndentedCodeBlock:
-        if not line.isEmptyOrWhitespace and line.countWhitespace < 4:
+        if (not line.isEmptyOrWhitespace) and line.countWhitespace < 4:
           lineBlock.removeSuffix("\n")
           mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
           lineBlock = ""
