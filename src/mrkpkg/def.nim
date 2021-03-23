@@ -36,7 +36,8 @@ type
     li,
     text
 
-  FlagContainer* = ref object
+  FlagContainer* = ref FlagObj
+  FlagObj = object
     flagBlockQuote*: bool
     flagBlockQuoteMarker*: bool
     flagIndentedCodeBlock*: bool
