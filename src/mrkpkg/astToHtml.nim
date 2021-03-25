@@ -10,31 +10,31 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.inline.value.replace(reSoftBreak, "<br />\p").strip(leading = false).parseInline
+      let value = mdast.inline.replace(reSoftBreak, "<br />\p").strip(leading = false).parseInline
       if isTight: return value & "\p"
       else: return p(value) & "\p"
 
-    of header1: return h1(mdast.inline.value) & "\p"
+    of header1: return h1(mdast.inline) & "\p"
 
-    of header2: return h2(mdast.inline.value) & "\p"
+    of header2: return h2(mdast.inline) & "\p"
 
-    of header3: return h3(mdast.inline.value) & "\p"
+    of header3: return h3(mdast.inline) & "\p"
 
-    of header4: return h4(mdast.inline.value) & "\p"
+    of header4: return h4(mdast.inline) & "\p"
 
-    of header5: return h5(mdast.inline.value) & "\p"
+    of header5: return h5(mdast.inline) & "\p"
 
-    of header6: return h6(mdast.inline.value) & "\p"
+    of header6: return h6(mdast.inline) & "\p"
 
-    of htmlBlock: return mdast.inline.value & "\p"
+    of htmlBlock: return mdast.inline & "\p"
 
-    of indentedCodeBlock: return pre(code(mdast.inline.value & "\p")) & "\p"
+    of indentedCodeBlock: return pre(code(mdast.inline & "\p")) & "\p"
 
     of fencedCodeBlock:
-      if mdast.inline.value == "":
-        return pre(code(mdast.inline.value)) & "\p"
+      if mdast.inline == "":
+        return pre(code(mdast.inline)) & "\p"
       else:
-        return pre(code(mdast.inline.value & "\p")) & "\p"
+        return pre(code(mdast.inline & "\p")) & "\p"
 
     else: return
 
