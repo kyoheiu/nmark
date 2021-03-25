@@ -1,4 +1,5 @@
 import re
+import def
 
 let
   codespan = re"(`)([^`]*)(`)"
@@ -28,9 +29,25 @@ proc parseInline*(line: string): string =
   line.replacef(codespan, "<code>$2</code>")
   .replacef(emphasis, "<em>$2$3$4</em>")
 
+proc newInline(s: string): Inline =
+  return Inline(kind: text, value: s)
 
 
-#proc parseInline2*(inlines: seq[Block]): string =
-  #var result: string
-  #for inline in inlines:
-    #result.add(inline.value)
+proc parseInline2*(s: string): seq[Inline] =
+
+  var result: seq[Inline]
+  var tempStr: string
+
+  for c in s:
+    case c
+
+    of '*':
+      if tempStr != "":
+        result.add(newInline(tempStr))
+        tempStr = ""
+      result.add(newInline("*"))
+    
+    else:
+      tempStr.add(c)
+  
+  return result

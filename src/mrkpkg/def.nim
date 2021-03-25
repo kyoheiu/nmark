@@ -24,10 +24,6 @@ type
     list,
 
   InlineType* = enum
-    undefinedInline,
-    hr,
-    lineBreak,
-    softBreak,
     link,
     em,
     strong,
@@ -48,7 +44,12 @@ type
       children*: seq[Block]
     of leafBlock:
       leafType*: BlockType
-      inline*: string
+      raw*: string
+  
+  Inline* = ref InlineObj
+  InlineObj = object
+    kind*: InlineType
+    value*: string
 
   FlagContainer* = ref FlagObj
   FlagObj = object
@@ -160,55 +161,55 @@ proc openAtxHeader*(line: string): Block =
   case line.splitWhitespace[0]:
     of "#":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header1, inline: str)
+      return Block(kind: leafBlock, leafType: header1, raw: str)
     of "##":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header2, inline: str)
+      return Block(kind: leafBlock, leafType: header2, raw: str)
     of "###":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header3, inline: str)
+      return Block(kind: leafBlock, leafType: header3, raw: str)
     of "####":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header4, inline: str)
+      return Block(kind: leafBlock, leafType: header4, raw: str)
     of "#####":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header5, inline: str)
+      return Block(kind: leafBlock, leafType: header5, raw: str)
     of "######":
       let str = line.strip(chars = {' ', '#'})
-      return Block(kind: leafBlock, leafType: header6, inline: str)
+      return Block(kind: leafBlock, leafType: header6, raw: str)
 
 proc openAnotherAtxHeader*(line: string): Block =
   case line
     of "#":
-      return Block(kind: leafBlock, leafType: header1, inline: "")
+      return Block(kind: leafBlock, leafType: header1, raw: "")
     of "##":
-      return Block(kind: leafBlock, leafType: header2, inline: "")
+      return Block(kind: leafBlock, leafType: header2, raw: "")
     of "###":
-      return Block(kind: leafBlock, leafType: header3, inline: "")
+      return Block(kind: leafBlock, leafType: header3, raw: "")
     of "####":
-      return Block(kind: leafBlock, leafType: header4, inline: "")
+      return Block(kind: leafBlock, leafType: header4, raw: "")
     of "#####":
-      return Block(kind: leafBlock, leafType: header5, inline: "")
+      return Block(kind: leafBlock, leafType: header5, raw: "")
     of "######":
-      return Block(kind: leafBlock, leafType: header6, inline: "")
+      return Block(kind: leafBlock, leafType: header6, raw: "")
 
 proc openContainerBlock*(blockType: BlockType, mdast: seq[Block]): Block =
   return Block(kind: containerBlock, containerType: blockType, children: mdast)
 
 proc openCodeBlock*(blockType: BlockType, codeLines: string): Block =
-  return Block(kind: leafBlock, leafType: blockType, inline: codeLines)
+  return Block(kind: leafBlock, leafType: blockType, raw: codeLines)
 
 proc openSetextHeader*(blockType: BlockType, lineBlock: string): Block =
-  return Block(kind: leafBlock, leafType: blockType, inline: lineBlock)
+  return Block(kind: leafBlock, leafType: blockType, raw: lineBlock)
 
 proc openThemanticBreak*(): Block =
-  return Block(kind: leafBlock, leafType: themanticBreak, inline: "")
+  return Block(kind: leafBlock, leafType: themanticBreak, raw: "")
 
 proc openHtmlBlock*(lineBlock: string): Block =
-  return Block(kind: leafBlock, leaftype: htmlblock, inline: lineBlock) 
+  return Block(kind: leafBlock, leaftype: htmlblock, raw: lineBlock) 
 
 proc openLinkReference*(lineBlock: string): Block =
-  return Block(kind: leafBlock, leaftype: linkReference, inline: lineBlock)
+  return Block(kind: leafBlock, leaftype: linkReference, raw: lineBlock)
 
 proc openBlockQuote*(mdast: seq[Block]): Block =
   Block(kind: containerBlock, containerType: blockQuote, children: mdast)
@@ -229,7 +230,7 @@ proc openTightOL*(mdast: seq[Block]): Block =
   Block(kind: containerBlock, containerType: orderedTightList, children: mdast)
 
 proc openParagraph*(lineBlock: string): Block =
-  Block(kind: leafBlock, leafType: paragraph, inline: lineBlock)
+  Block(kind: leafBlock, leafType: paragraph, raw: lineBlock)
 
 proc echoSeqBlock*(mdast: seq[Block]) =
   var s: seq[JsonNode]
