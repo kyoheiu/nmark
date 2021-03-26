@@ -23,15 +23,6 @@ type
     orderedLooseList,
     list,
 
-  InlineType* = enum
-    link,
-    em,
-    strong,
-    code,
-    image,
-    li,
-    text
-
 type
   BlockKind* = enum
     containerBlock,
@@ -46,11 +37,6 @@ type
       leafType*: BlockType
       raw*: string
   
-  Inline* = ref InlineObj
-  InlineObj = object
-    kind*: InlineType
-    value*: string
-
   FlagContainer* = ref FlagObj
   FlagObj = object
     flagBlockQuote*: bool
