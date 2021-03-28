@@ -244,8 +244,7 @@ with two lines.</p>
 </ol>
 """
 
-test "inline":
-  check markdown("testfiles/inline.md") == """
-<p>Quo usque <code>tandem abutere</code>, Catilina, <code>patientia</code> nostra?</p>
-<p><em>Quam</em> diu <em>etiam <code>furor</code> iste</em> tuus nos eludet?</p>
+test "inlineCodespan":
+  check markdown("testfiles/inlineCodespan.md") == """
+<p>Quo usque <code>tandem abutere``, Catilina, </code>patientia`` nostra?</p>
 """

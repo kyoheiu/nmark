@@ -1,5 +1,4 @@
-import mrkpkg/def, mrkpkg/mdToAst, mrkpkg/astToHtml
-import json
+import mrkpkg/mdToAst, mrkpkg/astToHtml
 
 
 proc markdown*(path: string): string =
@@ -17,4 +16,5 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  echo markdown("testfiles/simpleList4.md")
+  let f = readFile("testfiles/inlineCodespan.md")
+  echo f.parseInline
