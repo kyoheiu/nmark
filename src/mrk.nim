@@ -1,4 +1,4 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml
+import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/inline
 
 
 proc markdown*(path: string): string =
@@ -17,4 +17,5 @@ proc markdown*(path: string): string =
 
 when isMainModule:
   let f = readFile("testfiles/inlineCodespan.md")
-  echo f.parseInline
+  echoSeqInline f.parseInline2
+  #echo f.parseInline
