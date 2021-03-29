@@ -39,7 +39,7 @@ type
   DelimObj = object
     position*: int
     typeDelim*: string
-    numDelim: int
+    numDelim*: int
     isActive*: bool
     potential*: DelimPotential
 

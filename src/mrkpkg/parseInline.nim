@@ -10,15 +10,17 @@ type
   PObj = object
     positionOpener: int
     positionOpenerInString: int
-    positionCloserInString: int
     canMakeAutoLink: bool
+    canMakeCode: bool
+    number: int
 
 proc newParseFlag(): ParseFlag =
   ParseFlag(
     positionOpener: -1,
     positionOpenerInString: -1, 
-    positionCloserInString: -1,
-    canMakeAutoLink: false
+    canMakeAutoLink: false,
+    canMakeCode: false,
+    number: -1
   )
 
 proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack] =
@@ -40,13 +42,11 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
     elif element.typeDelim == ">":
       if flag.canMakeAutoLink:
         let str = line[flag.positionOpenerInString+1 .. element.position-1]
-        echo str
         if str.match(reAutoLink) or str.match(reMailLink):
           delimSeq[flag.positionOpener].potential = opener
           element.potential = closer
-          flag.positionCloserInString = element.position
 
-          autoLinkPositions.add((flag.positionOpenerInString, flag.positionCloserInString))
+          autoLinkPositions.add((flag.positionOpenerInString, element.position))
 
           flag = newParseFlag()
       else:
@@ -58,6 +58,46 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
   for autoLinkPosition in autoLinkPositions:
     for element in delimSeq:
       if element.position > autoLinkPosition.begins and element.position < autoLinkPosition.ends: 
+        element.isActive = false
+
+  return delimSeq
+
+
+
+
+proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
+
+  var flag = newParseFlag()
+  var codePositions: seq[tuple[begins: int, ends: int]]
+
+  for i, element in delimSeq:
+
+    if element.typeDelim == "`" and element.isActive:
+      if flag.canMakeCode:
+        if flag.number == element.numDelim:
+          delimSeq[flag.positionOpener].potential = opener
+          element.potential = closer
+
+          codePositions.add((flag.positionOpenerInString, element.position))
+
+          flag = newParseFlag()
+
+        else:
+          continue
+
+      else:
+        flag.canMakeCode = true
+        flag.positionOpener = i
+        flag.positionOpenerInString = element.position
+        flag.number = element.numDelim
+
+    
+    else:
+      continue
+
+  for codePosition in codePositions:
+    for element in delimSeq:
+      if element.position > codePosition.begins and element.position < codePosition.ends: 
         element.isActive = false
 
   return delimSeq
