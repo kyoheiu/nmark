@@ -1,3 +1,3 @@
 Quo *usque `tandem **abutere**``.  
-<Catilina*@*mail>, `patientia`` nostra*?
+<Catilina@mail>, `patientia`` nostra*?
 [foo](url)
