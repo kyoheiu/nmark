@@ -1,6 +1,3 @@
-import lists, json, strutils
-import def
-
 const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
 
 type
@@ -46,200 +43,156 @@ type
 
   InlineFlag = ref IFObj
   IFObj = object
-    isAfterBacktick: bool
+    position: int
+    isAfterB: bool
     numBacktick: int
     isAfterW: bool
     isAfterP: bool
     isAfterA: bool
     isAfterE: bool
+    isAfterX: bool
     numAsterisk: int
 
 proc newInlineFlag*(): InlineFlag =
   InlineFlag(
-    isAfterBacktick: false,
+    position: -1,
+    isAfterB: false,
     numBacktick: 0,
     isAfterW: false,
     isAfterP: false,
     isAfterA: false,
     isAfterE: false,
+    isAfterX: false,
     numAsterisk: 0
   )
 
-proc newInlineText(s: string): Inline =
-  return Inline(kind: text, value: s)
+proc readAutoLink*(line: string): seq[DelimStack] =
 
-proc newCodeSpan(num: int): Inline =
-  return Inline(kind: marker, inlineType: code, number: num)
+  var resultSeq: seq[DelimStack]
 
-proc newDelim(delimType: InlineType, num: int): Inline =
-  return Inline(kind: marker, inlineType: delimType, number: num)
+  for i, c in line:
+    case c
 
-proc echoSeqInline*(inlines: seq[Inline]) =
-  var s: seq[JsonNode]
-  for b in inlines:
-    s.add(%b)
-  echo s
+    of '<':
+      resultSeq.add(DelimStack(position: i, typeDelim: "<", numDelim: 1, isActive: true, potential: opener))
 
-proc insertEmphasis(line: string): seq[Inline] =
-  var resultInline: seq[Inline]
-  var tempStr: string
+    of '>':
+      resultSeq.add(DelimStack(position: i, typeDelim: ">", numDelim: 1, isActive: true, potential: closer))
+
+    else:
+      continue
+  
+  return resultSeq
+
+
+
+proc readLinkOrImage*(line: string): seq[DelimStack] =
+
+  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
-  var str = " " & line
+  for i, c in line:
+    case c
+
+    of '!':
+      flag.isAfterX = true
+
+    of '[':
+      if flag.isAfterX:
+        flag.isAfterX = false
+        resultSeq.add(DelimStack(position: i, typeDelim: "![", numDelim: 1, isActive: true, potential: opener))
+      else:
+        resultSeq.add(DelimStack(position: i, typeDelim: "[", numDelim: 1, isActive: true, potential: opener))
+
+    of ']':
+      resultSeq.add(DelimStack(position: i, typeDelim: "]", numDelim: 1, isActive: true, potential: closer))
+
+    else:
+      continue
   
-  for c in str:
-    echo tempStr
+  return resultSeq
+
+
+
+proc readEmphasis*(line: string): seq[DelimStack] =
+  var resultSeq: seq[DelimStack]
+  var flag = newInlineFlag()
+
+  let str = " " & line
+  
+  for i, c in str:
 
     if c == ' ':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        tempStr = ""
-        resultInline.add(newDelim(rightFlanking, flag.numAsterisk))
-        flag.isAfterE = false
-        flag.isAfterP = false
-        flag.isAfterA = false
-        flag.numAsterisk = 0
-        tempStr.add(c)
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: closer))
+        flag = newInlineFlag()
         flag.isAfterW = true
-      elif flag.isAfterW and flag.isAfterA:
-        tempStr.add(repeat('*', flag.numAsterisk))
-        flag.isAfterW = false
-        flag.isAfterA = false
-        flag.numAsterisk = 0
-        tempStr.add(c)
-        flag.isAfterW = true
+
       else:
-        tempStr.add(c)
         flag = newInlineFlag()
         flag.isAfterW = true
     
     elif puncChar.contains(c):
       if flag.isAfterW and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        tempStr = ""
-        resultInline.add(newDelim(leftFlanking, flag.numAsterisk))
-        flag.isAfterW = false
-        flag.isAfterA = false
-        flag.numAsterisk = 0
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: opener))
+        flag = newInlineFlag()
+        flag.isAfterP = true
+
       elif flag.isAfterE and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        tempStr = ""
-        resultInline.add(newDelim(rightFlanking, flag.numAsterisk))
-        flag.isAfterE = false
-        flag.isAfterA = false
-        flag.numAsterisk = 0
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: closer))
+        flag = newInlineFlag()
+        flag.isAfterP = true
+
       elif flag.isAfterP and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        tempStr = ""
-        resultInline.add(newDelim(bothFlanking, flag.numAsterisk))
-        flag.isAfterP = false
-        flag.isAfterA = false
-        flag.numAsterisk = 0
-      tempStr.add(c)
-      flag.isAfterP = true
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: both))
+        flag = newInlineFlag()
+        flag.isAfterP = true
 
     elif c == '*':
       flag.isAfterA = true
+      flag.position = i-1
       flag.numAsterisk.inc
     
     else:
       if flag.isAfterW and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        resultInline.add(newDelim(leftFlanking, flag.numAsterisk))
-        tempStr = $c
-        flag.isAfterW = false
-        flag.isAfterA = false
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: opener))
       elif flag.isAfterE and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        resultInline.add(newDelim(bothFlanking, flag.numAsterisk))
-        tempStr = $c
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: both))
       elif flag.isAfterP and flag.isAfterA:
-        resultInline.add(newInlineText(tempStr))
-        resultInline.add(newDelim(leftFlanking, flag.numAsterisk))
-        tempStr = $c
-      else:
-        tempStr.add(c)
-        flag = newInlineFlag()
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: closer))
+      flag = newInlineFlag()
       flag.isAfterE = true
 
-  if tempStr != "": resultInline.add(newInlineText(tempStr))
+  if flag.isAfterE and flag.isAfterA:
+    resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: closer))
+  elif flag.isAfterP and flag.isAfterA:
+    resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.numAsterisk, isActive: true, potential: closer))
 
-  return resultInline
+  return resultSeq
 
 
 
-proc insertCodeSpan(line: string): seq[Inline] =
-  var resultInline: seq[Inline]
-  var tempStr: string
+proc readCodeSpan*(line: string): seq[DelimStack] =
+
+  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
-  for c in line:
+  for i, c in line:
     case c
 
     of '`':
-      if tempStr != "":
-        resultInline.add(newInlineText(tempStr))
-        tempStr = ""
-      flag.isAfterBacktick = true
+      flag.isAfterB = true
       flag.numBacktick.inc
+      flag.position = i
 
     else:
-      if flag.isAfterBacktick:
-        resultInline.add(newCodeSpan(flag.numBacktick))
-        flag.isAfterBacktick = false
+      if flag.isAfterB:
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.numBacktick, isActive: true, potential: both))
+        flag.position = 0
         flag.numBacktick = 0
-      tempStr.add(c)
+        flag.isAfterB = false
   
-  if flag.isAfterBacktick:
-    resultInline.add(newCodeSpan(flag.numBacktick))
-  elif tempStr != "":
-    resultInline.add(newInlineText(tempStr))
+  if flag.isAfterB:
+      resultSeq.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.numBacktick, isActive: true, potential: both))
   
-  return resultInline
-
-proc parseCodeSpan(resultInline: seq[Inline]): string =
-  var isActiveCode = false
-  var numBacktick = 0
-  var positionCodeBegins: int
-
-  for i, element in resultInline:
-    if element.kind == marker and element.inlineType == code:
-      if isActiveCode == false:
-        isActiveCode = true
-        element.inlineType = codePotentialBegins
-        numBacktick = element.number
-        positionCodeBegins = i
-      elif isActiveCode == true and element.number != numBacktick:
-        continue
-      else:
-        isActiveCode = false
-        element.inlineType = codeEnds
-        resultInline[positionCodeBegins].inlineType = codeBegins
-        numBacktick = 0
-
-    else:
-      continue  
-
-  #echoSeqObj resultInline
-
-  var resultText: string
-  for element in resultInline:
-    if element.kind == text:
-      resultText.add(element.value)
-    elif element.inlineType == codeBegins:
-      resultText.add("<code>")
-    elif element.inlineType == codeEnds:
-      resultText.add("</code>")
-    elif element.inlineType == code or element.inlineType == codePotentialBegins:
-      resultText.add(repeat('`', element.number))
-  
-  return resultText
-
-
-
-proc parseInline*(line: string): string =
-  line.insertCodeSpan.parseCodeSpan
-
-
-proc parseInline2*(line: string): seq[Inline] =
-  line.insertCodeSpan.parseCodeSpan.insertEmphasis
+  return resultSeq

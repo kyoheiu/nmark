@@ -10,7 +10,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.raw.replace(reSoftBreak, "<br />\p").strip(leading = false).parseInline
+      let value = mdast.raw.replace(reSoftBreak, "<br />\p").strip(leading = false)
       if isTight: return value & "\p"
       else: return p(value) & "\p"
 

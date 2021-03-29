@@ -1,4 +1,5 @@
 import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/inline
+import json
 
 
 proc markdown*(path: string): string =
@@ -17,5 +18,15 @@ proc markdown*(path: string): string =
 
 when isMainModule:
   let f = readFile("testfiles/inlineCodespan.md")
-  echoSeqInline f.parseInline2
-  #echo f.parseInline
+  let c = f.readCodeSpan
+  let a = f.readAutoLink
+  let e = f.readEmphasis
+ 
+  let r = f.readAutoLink & f.readLinkOrImage & f.readCodeSpan & f.readEmphasis
+
+  var j: seq[JsonNode]
+  for element in r:
+    j.add(%element)
+  
+  echo j
+    
