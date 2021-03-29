@@ -1,4 +1,4 @@
-import def, inline, re, htmlgen, strutils
+import defBlock, readInline, htmlgen, strutils
 
 proc astToHtml*(mdast: Block, isTight: var bool): string =
 
@@ -10,7 +10,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.raw.replace(reSoftBreak, "<br />\p").strip(leading = false)
+      let value = mdast.raw.strip(leading = false)
       if isTight: return value & "\p"
       else: return p(value) & "\p"
 

@@ -1,5 +1,5 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/inline
-import json
+import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/readInline, mrkpkg/parseInline
+import json, algorithm
 
 
 proc markdown*(path: string): string =
@@ -17,12 +17,9 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  let f = readFile("testfiles/inlineCodespan.md")
-  let c = f.readCodeSpan
-  let a = f.readAutoLink
-  let e = f.readEmphasis
+  let f = readFile("testfiles/inline.md")
  
-  let r = f.readAutoLink & f.readLinkOrImage & f.readCodeSpan & f.readEmphasis
+  var r = (f.readAutoLink & f.readLinkOrImage & f.readCodeSpan & f.readEmphasisAste & f.readEmphasisUnder & f.readHardBreak).sortedByIt(it.position).parseAutoLink
 
   var j: seq[JsonNode]
   for element in r:

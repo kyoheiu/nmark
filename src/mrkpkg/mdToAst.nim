@@ -1,5 +1,5 @@
 import strutils, sequtils, re
-import def
+import defBlock
 
 proc mdToAst*(s: string): seq[Block] =
 
