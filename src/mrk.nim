@@ -19,7 +19,7 @@ proc markdown*(path: string): string =
 when isMainModule:
   let f = readFile("testfiles/inline.md")
  
-  var r = (f.readAutoLink & f.readLinkOrImage & f.readCodeSpan & f.readEmphasisAste & f.readEmphasisUnder & f.readHardBreak).sortedByIt(it.position).parseAutoLink(f).parseCodeSpan
+  var r = (f.readAutoLink & f.readLinkOrImage & f.readCodeSpan & f.readEmphasisAste & f.readEmphasisUnder & f.readHardBreak).sortedByIt(it.position).parseAutoLink(f).parseCodeSpan.parseLink(f)
 
   var j: seq[JsonNode]
   for element in r:
