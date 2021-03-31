@@ -33,7 +33,8 @@ type
     canClose,
     both,
     opener,
-    closer
+    closer,
+    none
 
   DelimStack* = ref DelimObj
   DelimObj = object
@@ -149,8 +150,9 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
         flag.isAfterP = true
 
     elif c == '*':
-      flag.isAfterA = true
-      flag.position = i-1
+      if not flag.isAfterA:
+        flag.isAfterA = true
+        flag.position = i-1
       flag.number.inc
     
     else:
@@ -207,8 +209,9 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
         flag.isAfterP = true
 
     elif c == '_':
-      flag.isAfterA = true
-      flag.position = i-1
+      if not flag.isAfterA:
+        flag.isAfterA = true
+        flag.position = i-1
       flag.number.inc
     
     else:

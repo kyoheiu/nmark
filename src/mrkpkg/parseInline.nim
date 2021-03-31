@@ -47,9 +47,7 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
         let str = line[flag.positionOpenerInString+1 .. element.position-1]
         if str.match(reAutoLink) or str.match(reMailLink):
           delimSeq[flag.positionOpener].potential = opener
-          delimSeq[flag.positionOpener].isActive = false
           element.potential = closer
-          element.isActive = false
 
           autoLinkPositions.add((flag.positionOpenerInString, element.position))
 
@@ -80,9 +78,7 @@ proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
       if flag.canMakeCode:
         if flag.number == element.numDelim:
           delimSeq[flag.positionOpener].potential = opener
-          delimSeq[flag.positionOpener].isActive = false
           element.potential = closer
-          element.isActive = false
 
           codePositions.add((flag.positionOpenerInString, element.position))
 
@@ -122,27 +118,99 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
 
       if line[element.position+1 .. ^1].startsWith(reLinkDest):
         
-        for j, element in delimSeq.reversed(0, i):
+        for j, element in delimSeq[0..i].reversed:
 
           if flag.inactivateLink:
             if element.typeDelim == "[":
               element.isActive = false
               continue
 
-          elif element.typeDelim == "[" and element.isActive and element.potential == canOpen:
+          elif (element.typeDelim == "[" or element.typeDelim == "![") and element.isActive and element.potential == canOpen:
             element.potential = opener
-            element.isActive = false
 
             delimSeq[i].potential = closer
-            delimSeq[i].isActive = false
 
             linkPositions.add((element.position, flag.positionOpenerInString))
 
             flag.inactivateLink = true
 
-  for linkPosition in linkPositions:
-    for element in delimSeq:
-      if element.position > linkPosition.begins and element.position < linkPosition.ends: 
-        element.isActive = false
+  if linkPositions.len() != 0:
+    for linkPosition in linkPositions:
+      for element in delimSeq:
+        if element.position > linkPosition.begins and element.position < linkPosition.ends: 
+          element.isActive = false
 
-  return delimSeq.filter(proc(x: DelimStack): bool = x.isActive)
+  return delimSeq
+
+
+
+proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
+
+  var resultDelims: seq[DelimStack]
+
+  for i, closingElement in delimSeq:
+
+    block doubleLoop:
+
+      if closingElement.isActive and (closingElement.potential == canClose or closingElement.potential == both):
+
+        for openingElement in delimSeq[0..i-1].reversed:
+          if openingElement.isActive and closingElement.typeDelim == openingElement.typeDelim and (openingElement.potential == canOpen or openingElement.potential == both):
+
+            if closingElement.numDelim >= 2 and openingElement.numDelim >= 2:
+              
+              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-2, typeDelim: "strong", isActive: true, potential: opener)])
+              resultDelims.add(@[DelimStack(position: closingElement.position, typeDelim: "strong", isActive: true, potential: closer)])
+
+              openingElement.numDelim -= 2
+              closingElement.numDelim -= 2
+              if closingElement.numDelim == 0 and openingElement.numDelim == 0:
+                closingElement.potential = none
+                openingElement.potential = none
+                break doubleLoop
+              elif openingElement.numDelim == 0:
+                openingElement.potential = none
+                continue
+              else:
+                closingElement.potential = none
+                break doubleLoop
+
+            if openingElement.numDelim >= 2 and closingElement.numDelim == 1:
+              
+              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-1, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+
+              openingElement.numDelim -= 1
+              closingElement.potential = none
+              break doubleLoop
+            
+            if openingElement.numDelim == 1 and closingElement.numDelim >= 2:
+              
+              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+
+              openingElement.potential = none
+              closingElement.numDelim -= 1
+              closingElement.position += 1
+              continue
+            
+            else:
+              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+
+              openingElement.potential = none
+              closingElement.potential = none
+              break doubleLoop
+
+    continue
+
+  return resultDelims
+
+
+
+proc parseInline*(line: string): seq[DelimStack] =
+
+  var r = (line.readAutoLink & line.readLinkOrImage & line.readCodeSpan & line.readEmphasisAste & line.readEmphasisUnder & line.readHardBreak).sortedByIt(it.position)
+
+  let n_em = r.parseAutoLink(line).parseCodeSpan.parseLink(line).filter(proc(x: DelimStack): bool = (x.typeDelim != "*" and x.typeDelim != "_"))
+
+  let em = r.parseEmphasis
+
+  return (n_em & em).sortedByIt(it.position).filter(proc(x: DelimStack): bool = (x.isActive) and x.potential != both)
