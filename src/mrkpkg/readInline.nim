@@ -1,33 +1,6 @@
 const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
 
 type
-  InlineType* = enum
-    autoLink,
-    link,
-    leftFlanking,
-    rightFlanking,
-    bothFlanking,
-    em,
-    strong,
-    code,
-    codeBegins,
-    codePotentialBegins,
-    codeEnds,
-    image,
-  
-  InlineKind* = enum
-    text,
-    marker
-  
-  Inline* = ref InlineObj
-  InlineObj = object
-    case kind: InlineKind
-    of text:
-      value: string
-    of marker:
-      inlineType: InlineType
-      number: int
-
   DelimPotential* = enum
     canOpen,
     canClose,

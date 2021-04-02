@@ -159,8 +159,8 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
             if closingElement.numDelim >= 2 and openingElement.numDelim >= 2:
               
-              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-2, typeDelim: "strong", isActive: true, potential: opener)])
-              resultDelims.add(@[DelimStack(position: closingElement.position, typeDelim: "strong", isActive: true, potential: closer)])
+              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-2, typeDelim: "strong", numDelim: 2, isActive: true, potential: opener)])
+              resultDelims.add(@[DelimStack(position: closingElement.position, typeDelim: "strong", numDelim: 2, isActive: true, potential: closer)])
 
               openingElement.numDelim -= 2
               closingElement.numDelim -= 2
@@ -177,7 +177,7 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
             if openingElement.numDelim >= 2 and closingElement.numDelim == 1:
               
-              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-1, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+              resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-1, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
 
               openingElement.numDelim -= 1
               closingElement.potential = none
@@ -185,7 +185,7 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
             
             if openingElement.numDelim == 1 and closingElement.numDelim >= 2:
               
-              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
 
               openingElement.potential = none
               closingElement.numDelim -= 1
@@ -193,7 +193,7 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
               continue
             
             else:
-              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", isActive: true, potential: closer)])
+              resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
 
               openingElement.potential = none
               closingElement.potential = none

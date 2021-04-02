@@ -1,7 +1,7 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/readInline, mrkpkg/parseInline
+import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/readInline, mrkpkg/parseInline, mrkpkg/concatInline
 import json
 
-proc echoResult(r: seq[DelimStack]) =
+proc echoResult(r: seq[Inline]) =
   var j: seq[JsonNode]
   for element in r:
     j.add(%element)
@@ -25,4 +25,4 @@ proc markdown*(path: string): string =
 when isMainModule:
   let f = readFile("testfiles/inline.md")
 
-  echoResult f.parseInline 
+  echoResult splitInline(f, f.parseInline)
