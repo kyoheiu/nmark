@@ -1,14 +1,21 @@
-import nmarkpkg/mdToAst, nmarkpkg/astToHtml, json
+import nmarkpkg/mdToAst, nmarkpkg/astToHtml
 
-proc markdown*(path: string): string =
+proc markdown*(line: string): string =
+  let seqAst = line.mdToAst
+
+  var resultHtml: string
+  var isTight = false
+
+  for ast in seqAst:
+    resultHtml.add(ast.astToHtml(isTight))
+
+  return resultHtml
+
+
+proc markdownFromFile*(path: string): string =
   let line = readFile(path)
 
   let seqAst = line.mdToAst
-
-  #var s: seq[JsonNode]
-  #for bl in seqAst:
-    #s.add(%bl)
-  #echo s
 
   var resultHtml: string
   var isTight = false
@@ -21,5 +28,5 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  let f = "testfiles/longtext.md"
-  echo f.markdown
+  let f = "testfiles/longtext2.md"
+  echo f.markdownFromFile

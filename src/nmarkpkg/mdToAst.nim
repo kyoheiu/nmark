@@ -137,7 +137,6 @@ proc mdToAst*(s: string): seq[Block] =
       if flag.flagBlockQuote:
         if line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
 
-          echo "CHECK"
           resultSeq.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
           mdast = @[]

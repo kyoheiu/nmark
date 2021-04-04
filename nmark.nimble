@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "kyoheiu"
-description   = "A new awesome nimble package"
+description   = "Yet another markdown parser, based on CommonMark"
 license       = "MIT"
 srcDir        = "src"
 installExt    = @["nim"]

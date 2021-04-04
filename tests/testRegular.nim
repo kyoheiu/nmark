@@ -2,7 +2,7 @@ import unittest
 import nmark
 
 test "themanticBreak":
-  check markdown("testfiles/themanticBreak.md") == """
+  check markdownFromFile("testfiles/themanticBreak.md") == """
 <hr />
 <hr />
 <hr />
@@ -21,7 +21,7 @@ __</p>
 """
 
 test "atxHeadings":
-  check markdown("testfiles/atxHeadings.md") == """
+  check markdownFromFile("testfiles/atxHeadings.md") == """
 <h1>foo</h1>
 <h2>foo</h2>
 <h3>foo</h3>
@@ -50,7 +50,7 @@ test "atxHeadings":
 """
 
 test "setextHeadings":
-  check markdown("testfiles/setextHeadings.md") == """
+  check markdownFromFile("testfiles/setextHeadings.md") == """
 <h2>Foo1</h2>
 <h1>Foo2</h1>
 <h2>Foo3</h2>
@@ -70,7 +70,7 @@ Foo7
 """
 
 test "indentedCodeBlocks":
-  check markdown("testfiles/indentedCodeBlocks.md") == """
+  check markdownFromFile("testfiles/indentedCodeBlocks.md") == """
 <pre><code>a simple
   indented code block
 
@@ -99,7 +99,7 @@ bar</p>
 """
 
 test "fencedCodeBlocks":
-  check markdown("testfiles/fencedCodeBlocks.md") == """
+  check markdownFromFile("testfiles/fencedCodeBlocks.md") == """
 <pre><code>first
 ~~~
 </code></pre>
@@ -124,7 +124,7 @@ fifth
 """
 
 test "simpleBlockQuote":
-  check markdown("testfiles/simpleBlockQuote.md") == """
+  check markdownFromFile("testfiles/simpleBlockQuote.md") == """
 <blockquote>
 <h1>Foo</h1>
 <p>bar
@@ -153,7 +153,7 @@ ghi</p>
 """
 
 test "simpleHtmlBlock":
-  check markdown("testfiles/simpleHtmlBlock.md") == """
+  check markdownFromFile("testfiles/simpleHtmlBlock.md") == """
 <table>
   <tr>
     <td>
@@ -165,7 +165,7 @@ test "simpleHtmlBlock":
 """
 
 test "simpleParagraph":
-  check markdown("testfiles/simpleParagraph.md") == """
+  check markdownFromFile("testfiles/simpleParagraph.md") == """
 <p>aaa
 bbb</p>
 <p>aaa<br />
@@ -175,13 +175,13 @@ bbb</p>
 """
 
 #test "simpleLinkReference":
-  #check markdown("testfiles/simpleLinkReference.md") == """
+  #check markdownFromFile("testfiles/simpleLinkReference.md") == """
 #<p><a href="/url" title="title">foo</a></p>
 #<p><a href="my%20url" title="title">Foo bar</a></p>
 #"""
 
 test "simpleList1":
-  check markdown("testfiles/simpleList1.md") == """
+  check markdownFromFile("testfiles/simpleList1.md") == """
 <ul>
 <li>foo
 bar</li>
@@ -190,7 +190,7 @@ bar</li>
 """
 
 test "simpleList2":
-  check markdown("testfiles/simpleList2.md") == """
+  check markdownFromFile("testfiles/simpleList2.md") == """
 <ul>
 <li><p>a</p>
 </li>
@@ -202,7 +202,7 @@ test "simpleList2":
 """
 
 test "simpleList3":
-  check markdown("testfiles/simpleList3.md") == """
+  check markdownFromFile("testfiles/simpleList3.md") == """
 <ul>
 <li><p>one</p>
 <p>two
@@ -212,7 +212,7 @@ three</p>
 """
 
 test "simpleList4":
-  check markdown("testfiles/simpleList4.md") == """
+  check markdownFromFile("testfiles/simpleList4.md") == """
 <ol>
 <li><p>A paragraph
 with two lines.</p>
@@ -226,7 +226,7 @@ with two lines.</p>
 """
 
 test "simpleList5":
-  check markdown("testfiles/simpleList5.md") == """
+  check markdownFromFile("testfiles/simpleList5.md") == """
 <h4>Unordered List</h4>
 <ul>
 <li>List item</li>
@@ -244,7 +244,7 @@ test "simpleList5":
 """
 
 test "bqandlist":
-  check markdown("testfiles/bqandlist.md") == """
+  check markdownFromFile("testfiles/bqandlist.md") == """
 <h4>Blockquote and Lists</h4>
 <blockquote>
 <h2>foo
