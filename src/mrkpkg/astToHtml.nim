@@ -12,7 +12,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of paragraph:
       let value = mdast.raw.insertInline
-      if isTight: return value & "\p"
+      if isTight: return value
       else: return p(value) & "\p"
 
     of header1: return h1(mdast.raw.insertInline) & "\p"
@@ -55,10 +55,11 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       var listContainer: string
       for child in mdast.children:
         listContainer.add(child.astToHtml(isTight))
-      return li("\p" & listContainer) & "\p"
+      return li(listContainer) & "\p"
 
     of Blocktype.unOrderedLooseList:
 
+      isTight = false
       var unOrderedListContainer: string
       for child in mdast.children:
         unOrderedListContainer.add(child.astToHtml(isTight))
@@ -75,6 +76,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of Blocktype.orderedLooseList:
 
+      isTight = false
       var orderedListContainer: string
       for child in mdast.children:
         orderedListContainer.add(child.astToHtml(isTight))

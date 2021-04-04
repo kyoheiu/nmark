@@ -10,6 +10,7 @@ proc mdToAst*(s: string): seq[Block] =
 
   for str in s.splitLines:
     var line = str
+    echo lineBlock
 
     flag.flagBlockQuoteMarker = false
     flag.flagUnorderedListMarker = false
@@ -18,21 +19,20 @@ proc mdToAst*(s: string): seq[Block] =
     block unOrderedListBlock:
 
       if flag.flagUnorderedList:
-        if line.hasMarker(reUnorderedList):
+        if line.countWhitespace >= flag.uldepth:
+          if flag.hasEmptyLine: flag.looseUnordered = true
+          line.delete(0,flag.uldepth - 1)
+          lineBlock.add("\n" & line)
           flag.afterEmptyLine = false
-          flag.looseUnordered = true
+          continue
+        elif line.hasMarker(reUnorderedList):
+          flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
           lineBlock = ""
           flag.uldepth = line.matchLen(reUnorderedList)
           line = line.replace(reUnorderedList)
           flag.flagUnorderedListMarker = true
           break unOrderedListBlock
-        elif line.countWhitespace >= flag.uldepth:
-          if flag.hasEmptyLine: flag.looseUnordered = true
-          line.delete(0,flag.uldepth - 1)
-          lineBlock.add("\n" & line)
-          flag.afterEmptyLine = false
-          continue
         elif line.isEmptyOrWhitespace:
           lineBlock.add("\n")
           flag.hasEmptyLine = true
@@ -74,21 +74,20 @@ proc mdToAst*(s: string): seq[Block] =
     block orderedListBlock:
 
       if flag.flagOrderedList:
-        if line.hasMarker(reOrderedList):
+        if line.countWhitespace >= flag.oldepth:
+          if flag.hasEmptyLine: flag.looseOrdered = true
+          line.delete(0,flag.oldepth - 1)
+          lineBlock.add("\n" & line)
           flag.afterEmptyLine = false
-          flag.looseOrdered = true
+          continue
+        elif line.hasMarker(reOrderedList):
+          flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
           lineBlock = ""
           flag.oldepth = line.matchLen(reOrderedList)
           line = line.replace(reOrderedList)
           flag.flagOrderedListMarker = true
           break orderedListBlock
-        elif line.countWhitespace >= flag.oldepth:
-          if flag.hasEmptyLine: flag.looseOrdered = true
-          line.delete(0,flag.oldepth - 1)
-          lineBlock.add("\n" & line)
-          flag.afterEmptyLine = false
-          continue
         elif line.isEmptyOrWhitespace:
           lineBlock.add("\n")
           flag.hasEmptyLine = true
