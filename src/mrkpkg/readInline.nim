@@ -7,6 +7,8 @@ type
     both,
     opener,
     closer,
+    linkOpener,
+    mailOpener,
     none
 
   DelimStack* = ref DelimObj
@@ -74,7 +76,7 @@ proc readLinkOrImage*(line: string): seq[DelimStack] =
     of '[':
       if flag.isAfterX:
         flag.isAfterX = false
-        resultSeq.add(DelimStack(position: i, typeDelim: "![", numDelim: 1, isActive: true, potential: canOpen))
+        resultSeq.add(DelimStack(position: i-1, typeDelim: "![", numDelim: 1, isActive: true, potential: canOpen))
       else:
         resultSeq.add(DelimStack(position: i, typeDelim: "[", numDelim: 1, isActive: true, potential: canOpen))
 
@@ -249,9 +251,12 @@ proc readHardBreak*(line: string): seq[DelimStack] =
         flag.position = i
         flag.number.inc
 
-    else:
+    of '\n':
       if flag.number >= 2:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: " ", numDelim: flag.number, isActive: true, potential: both))
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: " ", numDelim: flag.number, isActive: true, potential: opener))
+      flag = newInlineFlag()
+    
+    else:
       flag = newInlineFlag()
   
   return resultSeq

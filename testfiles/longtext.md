@@ -1,4 +1,3 @@
-
 ### Headings
 The following HTML `<h1>—<h6>` elements represent six levels of section headings. `<h1>` is the highest section level while `<h6>` is the lowest.
 
@@ -50,7 +49,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 `inline code block`
 
 #### Fenced code blocks
-```rust
+```
 use std::io;
 
 fn main() {

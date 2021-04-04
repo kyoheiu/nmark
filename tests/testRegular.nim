@@ -231,8 +231,3 @@ with two lines.</p>
 </li>
 </ol>
 """
-
-test "inlineCodespan":
-  check markdown("testfiles/inlineCodespan.md") == """
-<p>Quo usque <code>tandem abutere``, Catilina, </code>patientia`` nostra?</p>
-"""

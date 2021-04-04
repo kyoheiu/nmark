@@ -45,13 +45,18 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
     elif element.typeDelim == ">":
       if flag.canMakeAutoLink:
         let str = line[flag.positionOpenerInString+1 .. element.position-1]
-        if str.match(reAutoLink) or str.match(reMailLink):
-          delimSeq[flag.positionOpener].potential = opener
+        if str.match(reAutoLink):
+          delimSeq[flag.positionOpener].potential = linkOpener
           element.potential = closer
-
           autoLinkPositions.add((flag.positionOpenerInString, element.position))
-
           flag = newParseFlag()
+        
+        elif str.match(reMailLink):
+          delimSeq[flag.positionOpener].potential = mailOpener
+          element.potential = closer
+          autoLinkPositions.add((flag.positionOpenerInString, element.position))
+          flag = newParseFlag()
+
       else:
         continue
     
@@ -203,6 +208,13 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
   return resultDelims
 
+
+
+proc processEmphasis*(line: string): seq[DelimStack] =
+  result =(line.readEmphasisAste & line.readEmphasisUnder)
+         .sortedByIt(it.position)
+         .parseEmphasis
+  
 
 
 proc parseInline*(line: string): seq[DelimStack] =

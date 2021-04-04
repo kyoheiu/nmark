@@ -1,4 +1,5 @@
-import defBlock, readInline, htmlgen, strutils
+import htmlgen
+import defBlock, insertMarker
 
 proc astToHtml*(mdast: Block, isTight: var bool): string =
 
@@ -10,21 +11,21 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.raw.strip(leading = false)
+      let value = mdast.raw.insertInline
       if isTight: return value & "\p"
       else: return p(value) & "\p"
 
-    of header1: return h1(mdast.raw) & "\p"
+    of header1: return h1(mdast.raw.insertInline) & "\p"
 
-    of header2: return h2(mdast.raw) & "\p"
+    of header2: return h2(mdast.raw.insertInline) & "\p"
 
-    of header3: return h3(mdast.raw) & "\p"
+    of header3: return h3(mdast.raw.insertInline) & "\p"
 
-    of header4: return h4(mdast.raw) & "\p"
+    of header4: return h4(mdast.raw.insertInline) & "\p"
 
-    of header5: return h5(mdast.raw) & "\p"
+    of header5: return h5(mdast.raw.insertInline) & "\p"
 
-    of header6: return h6(mdast.raw) & "\p"
+    of header6: return h6(mdast.raw.insertInline) & "\p"
 
     of htmlBlock: return mdast.raw & "\p"
 

@@ -387,13 +387,6 @@ proc mdToAst*(s: string): seq[Block] =
         mdast.add(openSetextHeader(header1, lineBlock))
         lineBlock = ""
 
-    elif line.hasMarker(reLinkLabel):
-      if lineBlock != "":
-        lineBlock.add("\n" & line.strip(trailing = false))
-      else:
-        flag.flagLinkReference = true
-        lineBlock.add("\n" & line.strip(trailing = false))
-
     elif line.isEmptyOrWhitespace:
       if flag.flagBlockQuote:
         if flag.flagBlockQuoteMarker:
@@ -453,6 +446,11 @@ proc mdToAst*(s: string): seq[Block] =
     if flag.looseOrdered: resultSeq.add(mdast.openLooseOL)
     else: resultSeq.add(mdast.openTightOL)
     return resultSeq
+
+  elif flag.flagHtmlBlock6:
+      mdast.add(openHtmlBlock(lineBlock))
+  elif flag.flagHtmlBlock7:
+      mdast.add(openHtmlBlock(lineBlock))
   
   elif lineBlock != "":
     if flag.flagIndentedCodeBlock:

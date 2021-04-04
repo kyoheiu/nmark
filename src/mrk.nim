@@ -1,16 +1,9 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml, mrkpkg/readInline, mrkpkg/parseInline, mrkpkg/concatInline
-import json
-
-proc echoResult(r: seq[Inline]) =
-  var j: seq[JsonNode]
-  for element in r:
-    j.add(%element)
-  
-  echo j
+import mrkpkg/mdToAst, mrkpkg/astToHtml
 
 proc markdown*(path: string): string =
-  let s = readFile(path)
-  let seqAst = s.mdToAst
+  let line = readFile(path)
+
+  let seqAst = line.mdToAst
 
   var resultHtml: string
   var isTight = false
@@ -23,6 +16,5 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  let f = readFile("testfiles/inline.md")
-
-  echoResult splitInline(f, f.parseInline)
+  let f = "testfiles/longtext.md"
+  echo f.markdown
