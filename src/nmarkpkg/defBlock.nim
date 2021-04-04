@@ -1,4 +1,5 @@
 import strutils, re
+from sequtils import filter
 
 type
   BlockType* = enum
@@ -102,8 +103,8 @@ let
   reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\)) +"
   reIndentedCodeBlock* = re"^ {4,}\S"
   reBreakIndentedCode* = re"^ {0,3}\S"
-  reFencedCodeBlockChar* = re"^ {0,3}(```*) *$"
-  reFencedCodeBlockTild* = re"^ {0,3}(~~~*) *$"
+  reFencedCodeBlockChar* = re"^ {0,3}`{3,}\S*$"
+  reFencedCodeBlockTild* = re"^ {0,3}~{3,}\S*$"
 
   reHtmlBlock1Begins* = re"(^(<script|<pre|<style)( |>|\n))"
   reHtmlBlock1Ends*   = re"(</script>|</pre>|</style>)"
@@ -117,6 +118,8 @@ let
   reHtmlBlock5Ends*   = re"\]\]>"
   reHtmlBlock6Begins* = re"^(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
   reHtmlBlock7Begins* = re"^<.*> *$"
+
+  reEntity* = re"^&[a-zA-Z0-9#]+;"
 
 proc hasMarker*(line: string, regex: Regex): bool =
   match(line, regex)
@@ -134,7 +137,7 @@ proc countWhitespace*(line: string): int =
     else: return i
 
 proc countBacktick*(line: string): int =
-  line.strip.len
+  line.filter(proc(x: char): bool = x == '`' or x == '~').len()
 
 proc openAtxHeader*(line: string): Block =
   case line.splitWhitespace[0]:

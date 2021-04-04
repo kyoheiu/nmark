@@ -1,3 +1,6 @@
+import re
+import defBlock
+
 const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
 
 type
@@ -233,6 +236,16 @@ proc readCodeSpan*(line: string): seq[DelimStack] =
   
   return resultSeq
 
+
+proc readEntity*(line: string): seq[DelimStack] =
+
+  var resultSeq: seq[DelimStack]
+
+  for i, c in line:
+    if c == '&' and line.match(reEntity, i):
+      resultSeq.add(DelimStack(position: i, typeDelim: "&", numDelim: 1, isActive: true, potential: canOpen))
+    else:
+      continue
 
 
 proc readHardBreak*(line: string): seq[DelimStack] =

@@ -210,6 +210,45 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
 
 
+proc parseEntity*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
+
+  var flag = newParseFlag()
+  var linkPositions: seq[tuple[begins: int, ends: int]]
+
+  for i, element in delimSeq:
+
+    if element.typeDelim == "]" and element.isActive:
+
+      flag.positionOpenerInString = element.position 
+
+      if line[element.position+1 .. ^1].startsWith(reLinkDest):
+        
+        for j, element in delimSeq[0..i].reversed:
+
+          if flag.inactivateLink:
+            if element.typeDelim == "[":
+              element.isActive = false
+              continue
+
+          elif (element.typeDelim == "[" or element.typeDelim == "![") and element.isActive and element.potential == canOpen:
+            element.potential = opener
+
+            delimSeq[i].potential = closer
+
+            linkPositions.add((element.position, flag.positionOpenerInString))
+
+            flag.inactivateLink = true
+
+  if linkPositions.len() != 0:
+    for linkPosition in linkPositions:
+      for element in delimSeq:
+        if element.position > linkPosition.begins and element.position < linkPosition.ends: 
+          element.isActive = false
+
+  return delimSeq
+
+
+
 proc processEmphasis*(line: string): seq[DelimStack] =
   result =(line.readEmphasisAste & line.readEmphasisUnder)
          .sortedByIt(it.position)
@@ -221,8 +260,8 @@ proc parseInline*(line: string): seq[DelimStack] =
 
   var r = (line.readAutoLink & line.readLinkOrImage & line.readCodeSpan & line.readEmphasisAste & line.readEmphasisUnder & line.readHardBreak).sortedByIt(it.position)
 
-  let n_em = r.parseAutoLink(line).parseCodeSpan.parseLink(line).filter(proc(x: DelimStack): bool = (x.typeDelim != "*" and x.typeDelim != "_"))
+  let n_em = r.parseAutoLink(line).parseLink(line).filter(proc(x: DelimStack): bool = (x.typeDelim != "*" and x.typeDelim != "_"))
 
   let em = r.parseEmphasis
 
-  return (n_em & em).sortedByIt(it.position).filter(proc(x: DelimStack): bool = (x.isActive) and x.potential != both)
+  return (n_em & em).parseCodeSpan.sortedByIt(it.position).filter(proc(x: DelimStack): bool = (x.isActive) and x.potential != both)
