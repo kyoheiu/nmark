@@ -1,4 +1,4 @@
-import mrkpkg/mdToAst, mrkpkg/astToHtml, json
+import nmarkpkg/mdToAst, nmarkpkg/astToHtml, json
 
 proc markdown*(path: string): string =
   let line = readFile(path)
@@ -21,5 +21,5 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  let f = "testfiles/bqandlist.md"
+  let f = "testfiles/longtext.md"
   echo f.markdown

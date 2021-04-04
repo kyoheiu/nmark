@@ -1,5 +1,5 @@
 import unittest
-import mrk
+import nmark
 
 test "themanticBreak":
   check markdown("testfiles/themanticBreak.md") == """

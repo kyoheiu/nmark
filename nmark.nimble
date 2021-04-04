@@ -6,8 +6,8 @@ description   = "A new awesome nimble package"
 license       = "MIT"
 srcDir        = "src"
 installExt    = @["nim"]
-bin           = @["mrk"]
-skipDirs      = @["mrk"]
+bin           = @["nmark"]
+skipDirs      = @["nmark"]
 
 
 # Dependencies
