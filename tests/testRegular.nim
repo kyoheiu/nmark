@@ -224,3 +224,21 @@ with two lines.</p>
 </li>
 </ol>
 """
+
+test "simpleList5":
+  check markdown("testfiles/simpleList5.md") == """
+<h4>Unordered List</h4>
+<ul>
+<li>List item</li>
+<li>Another item</li>
+<li>And another item<ul>
+<li>orange</li>
+<li>apple<ul>
+<li>banana</li>
+<li>watermelon</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+"""
