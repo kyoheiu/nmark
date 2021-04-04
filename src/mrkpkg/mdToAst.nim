@@ -10,7 +10,6 @@ proc mdToAst*(s: string): seq[Block] =
 
   for str in s.splitLines:
     var line = str
-    echo lineBlock
 
     flag.flagBlockQuoteMarker = false
     flag.flagUnorderedListMarker = false
@@ -26,6 +25,7 @@ proc mdToAst*(s: string): seq[Block] =
           flag.afterEmptyLine = false
           continue
         elif line.hasMarker(reUnorderedList):
+          if flag.afterEmptyLine: flag.looseUnordered = true
           flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
           lineBlock = ""
@@ -81,6 +81,7 @@ proc mdToAst*(s: string): seq[Block] =
           flag.afterEmptyLine = false
           continue
         elif line.hasMarker(reOrderedList):
+          if flag.afterEmptyLine: flag.looseOrdered = true
           flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
           lineBlock = ""

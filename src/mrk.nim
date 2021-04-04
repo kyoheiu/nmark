@@ -5,11 +5,10 @@ proc markdown*(path: string): string =
 
   let seqAst = line.mdToAst
 
-  var s: seq[JsonNode]
-  for bl in seqAst:
-    s.add(%bl)
-  echo s
-
+  #var s: seq[JsonNode]
+  #for bl in seqAst:
+    #s.add(%bl)
+  #echo s
 
   var resultHtml: string
   var isTight = false
@@ -22,5 +21,5 @@ proc markdown*(path: string): string =
 
 
 when isMainModule:
-  let f = "testfiles/simpleList5.md"
+  let f = "testfiles/longtext.md"
   echo f.markdown

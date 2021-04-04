@@ -183,10 +183,8 @@ bbb</p>
 test "simpleList1":
   check markdown("testfiles/simpleList1.md") == """
 <ul>
-<li>
-foo
-bar
-</li>
+<li>foo
+bar</li>
 </ul>
 <p>baz</p>
 """
@@ -194,14 +192,11 @@ bar
 test "simpleList2":
   check markdown("testfiles/simpleList2.md") == """
 <ul>
-<li>
-<p>a</p>
+<li><p>a</p>
 </li>
-<li>
-<p>b</p>
+<li><p>b</p>
 </li>
-<li>
-<p>c</p>
+<li><p>c</p>
 </li>
 </ul>
 """
@@ -209,8 +204,7 @@ test "simpleList2":
 test "simpleList3":
   check markdown("testfiles/simpleList3.md") == """
 <ul>
-<li>
-<p>one</p>
+<li><p>one</p>
 <p>two
 three</p>
 </li>
@@ -220,8 +214,7 @@ three</p>
 test "simpleList4":
   check markdown("testfiles/simpleList4.md") == """
 <ol>
-<li>
-<p>A paragraph
+<li><p>A paragraph
 with two lines.</p>
 <pre><code>indented code
 </code></pre>
