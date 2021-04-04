@@ -242,3 +242,18 @@ test "simpleList5":
 </li>
 </ul>
 """
+
+test "bqandlist":
+  check markdown("testfiles/bqandlist.md") == """
+<h4>Blockquote and Lists</h4>
+<blockquote>
+<h2>foo
+bar</h2>
+</blockquote>
+<ul>
+<li><p>abc</p>
+<p>efg</p>
+</li>
+</ul>
+<p>hij</p>
+"""

@@ -11,7 +11,6 @@ proc mdToAst*(s: string): seq[Block] =
   for str in s.splitLines:
     var line = str
 
-    flag.flagBlockQuoteMarker = false
     flag.flagUnorderedListMarker = false
     flag.flagOrderedListMarker = false
 
@@ -59,9 +58,13 @@ proc mdToAst*(s: string): seq[Block] =
         if line.delWhitespace.hasMarker(reThematicBreak):
           break unOrderedListBlock
         if lineBlock != "":
-          mdast.add(openParagraph(lineBlock))
-          lineBlock = ""
+          if flag.flagBlockQuote:
+            resultSeq.add(openBlockQuote(lineBlock.mdToAst))
+            flag.flagBlockQuote = false
+          else:
+            mdast.add(openParagraph(lineBlock))
         resultSeq = concat(resultSeq, mdast)
+        lineBlock = ""
         mdast = @[]
         flag.uldepth = line.matchLen(reUnorderedList)
         line = line.replace(reUnorderedList)
@@ -113,9 +116,13 @@ proc mdToAst*(s: string): seq[Block] =
         
       elif line.hasMarker(reOrderedList):
         if lineBlock != "":
-          mdast.add(openParagraph(lineBlock))
-          lineBlock = ""
+          if flag.flagBlockQuote:
+            resultSeq.add(openBlockQuote(lineBlock.mdToAst))
+            flag.flagBlockQuote = false
+          else:
+            mdast.add(openParagraph(lineBlock))
         resultSeq = concat(resultSeq, mdast)
+        lineBlock = ""
         mdast = @[]
         flag.oldepth = line.matchLen(reOrderedList)
         line = line.replace(reOrderedList)
@@ -128,22 +135,18 @@ proc mdToAst*(s: string): seq[Block] =
     block bqBlock:
 
       if flag.flagBlockQuote:
-        if line.hasMarker(reBlockQuote):
-          line = line.replace(reBlockQuote)
-          flag.flagBlockQuoteMarker = true
-          break bqBlock
+        if line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
 
-        elif line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
-
-          flag.flagBlockQuote = false
-          if lineBlock != "":
-            resultSeq.add(openBlockQuote(lineBlock.mdToAst))
+          echo "CHECK"
+          resultSeq.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
           mdast = @[]
           flag.flagBlockQuote = false
           break bqBlock
 
         else:
+          if line.hasMarker(reBlockQuote):
+            line = line.replace(reBlockQuote)
           lineBlock.add("\n" & line.strip(trailing = false))
           continue
 
@@ -160,7 +163,6 @@ proc mdToAst*(s: string): seq[Block] =
         mdast = @[]
         line = line.replace(reBlockQuote)
         flag.flagBlockQuote = true
-        flag.flagBlockQuoteMarker = true
         lineBlock.add(line.strip(trailing = false))
         continue
           
@@ -388,18 +390,6 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock = ""
 
     elif line.isEmptyOrWhitespace:
-      if flag.flagBlockQuote:
-        if flag.flagBlockQuoteMarker:
-          continue
-        else:
-          if lineBlock != "":
-            mdast.add(openParagraph(lineBlock))
-          resultSeq.add(openContainerBlock(blockQuote, mdast))
-          lineBlock = ""
-          mdast = @[]
-          flag.flagBlockQuote = false
-          flag.flagHtmlBlock6 = false
-          flag.flagHtmlBlock7 = false
       if flag.flagUnorderedList:
         continue
       if flag.flagOrderedList:

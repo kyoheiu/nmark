@@ -39,7 +39,6 @@ type
   FlagContainer* = ref FlagObj
   FlagObj = object
     flagBlockQuote*: bool
-    flagBlockQuoteMarker*: bool
     flagIndentedCodeBlock*: bool
     indentedCodeBlockDepth*: int
     flagFencedCodeBlockChar*: bool
@@ -68,7 +67,6 @@ type
 proc newFlag*(): FlagContainer =
   FlagContainer(
     flagBlockQuote: false,
-    flagBlockQuoteMarker: false,
     flagIndentedCodeBlock: false,
     indentedCodeBlockDepth: 0,
     flagFencedCodeBlockChar: false,
@@ -97,11 +95,11 @@ let
   reThematicBreak* = re"^ {0,3}(\*{3,}|-{3,}|_{3,})$"
   reSetextHeader1* = re"^ {0,3}(=+)$"
   reBreakOrHeader* = re"^ {0,3}(-{3,}) *$"
-  reAtxHeader* = re"^ {0,3}(#|##|###|####|#####|######) "
-  reAnotherAtxHeader* = re"^(#|##|###|####|#####|######)$"
+  reAtxHeader* = re"^ {0,3}(#{1,6}) "
+  reAnotherAtxHeader* = re"^(#{1,6})$"
   reBlockQuote* = re"^ {0,3}> {0,1}"
-  reUnorderedList* = re"^( {0,3}(-|\+|\*) +)"
-  reOrderedList* = re"^( {0,3}[0-9]{1,9}(\.|\)) +)"
+  reUnorderedList* = re"^ {0,3}(-|\+|\*) +"
+  reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\)) +"
   reIndentedCodeBlock* = re"^ {4,}\S"
   reBreakIndentedCode* = re"^ {0,3}\S"
   reFencedCodeBlockChar* = re"^ {0,3}(```*) *$"
