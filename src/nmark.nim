@@ -1,4 +1,4 @@
-import nmarkpkg/mdToAst, nmarkpkg/astToHtml
+import nmarkpkg/private/mdToAst, nmarkpkg/private/astToHtml
 
 proc markdown*(line: string): string =
   let seqAst = line.mdToAst
