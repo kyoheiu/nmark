@@ -33,6 +33,23 @@ proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
       return delim
     else: continue
 
+proc tagToLiteral*(line: string): string =
+  for c in line:
+    case c
+      of '<':
+        result.add("&lt;")
+        continue
+      
+      of '>':
+        result.add("&gt;")
+        continue
+    
+      else:
+        result.add(c)
+        continue
+
+
+
 proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
   
   var delimPos: seq[int]
@@ -48,10 +65,23 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
 
   for i, c in line:
 
-    block hardBreak:
-      if c == '\n' and flag.toCode:
-        continue
-      else: break hardBreak
+    block codeBlock:
+      if flag.toCode:
+        case c
+        
+        of '\n':
+          continue
+
+        of '<':
+          result.add("&lt;")
+          continue
+        
+        of '>':
+          result.add("&gt;")
+          continue
+      
+        else:
+          break codeBlock
 
     if skipCount > 0:
       skipCount.dec

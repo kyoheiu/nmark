@@ -28,5 +28,5 @@ proc markdownFromFile*(path: string): string =
 
 
 when isMainModule:
-  let f = "testfiles/entity.md"
+  let f = "testfiles/longtext2.md"
   echo f.markdownFromFile

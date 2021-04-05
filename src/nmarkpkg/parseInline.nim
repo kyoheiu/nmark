@@ -226,9 +226,7 @@ proc parseInline*(line: string): seq[DelimStack] =
 
   var r = (line.readAutoLink & line.readLinkOrImage & line.readCodeSpan & line.readEmphasisAste & line.readEmphasisUnder & line.readHardBreak & line.readEntity).sortedByIt(it.position)
 
-  echoDelims r
   let n_em = r.parseAutoLink(line).parseCodeSpan.parseLink(line).filter(proc(x: DelimStack): bool = (x.typeDelim != "*" and x.typeDelim != "_"))
-
 
   let em = r.parseEmphasis
 

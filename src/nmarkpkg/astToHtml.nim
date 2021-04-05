@@ -29,13 +29,13 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of htmlBlock: return mdast.raw & "\p"
 
-    of indentedCodeBlock: return pre(code(mdast.raw & "\p")) & "\p"
+    of indentedCodeBlock: return pre(code(mdast.raw.tagToLiteral & "\p")) & "\p"
 
     of fencedCodeBlock:
       if mdast.raw == "":
-        return pre(code(mdast.raw)) & "\p"
+        return pre(code(mdast.raw.tagToLiteral)) & "\p"
       else:
-        return pre(code(mdast.raw & "\p")) & "\p"
+        return pre(code(mdast.raw.tagToLiteral & "\p")) & "\p"
 
     else: return
 
