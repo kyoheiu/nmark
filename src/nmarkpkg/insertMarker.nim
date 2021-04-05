@@ -1,4 +1,5 @@
 from strutils import removeSuffix
+from htmlparser import entityToUtf8
 import json
 import readInline, parseInline
 
@@ -11,7 +12,8 @@ type
     toLinkDestination: bool
     toImagetext: bool
     toImageDestination: bool
-    deleteLineBreak: bool
+    toEntity: bool
+    toCode: bool
 
 proc newSplitFlag(): SplitFlag =
   SplitFlag(
@@ -21,7 +23,8 @@ proc newSplitFlag(): SplitFlag =
     toLinkDestination: false,
     toImagetext: false,
     toImageDestination: false,
-    deleteLineBreak: false
+    toEntity: false,
+    toCode: false
   )
 
 proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
@@ -46,7 +49,7 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
   for i, c in line:
 
     block hardBreak:
-      if c == '\n' and flag.deleteLineBreak:
+      if c == '\n' and flag.toCode:
         continue
       else: break hardBreak
 
@@ -106,6 +109,20 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       else:
         linkDestination.add(c)
     
+    elif flag.toEntity:
+      if c == ';':
+        tempStr.add(c)
+        let sliceStr = tempStr[1..^2]
+        let entity = sliceStr.entityToUtf8
+        if entity != "":
+          result.add(entity)
+        else:
+          result.add(tempStr)
+        tempStr = ""
+        flag.toEntity = false
+      else:
+        tempStr.add(c)
+    
     elif delimPos.contains(i):
     
       let currentDelim = delimSeq.returnMatchedDelim(i)
@@ -130,13 +147,13 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       of "`":
         if currentDelim.potential == opener:
           result.add("<code>")
-          flag.deleteLineBreak = true
+          flag.toCode = true
           if currentDelim.numDelim > 1:
             skipCount = currentDelim.numDelim - 1
         
         else:
           result.add("</code>")
-          flag.deleteLineBreak = false
+          flag.toCode = false
           if currentDelim.numDelim > 1:
             skipCount = currentDelim.numDelim - 1
         
@@ -158,6 +175,10 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
         if currentDelim.potential == opener:
           result.add("<br />\p")
           skipCount = currentDelim.numDelim
+      
+      of "&":
+        flag.toEntity = true
+        tempStr.add(c)
 
       else:
         result.add(c)

@@ -242,10 +242,12 @@ proc readEntity*(line: string): seq[DelimStack] =
   var resultSeq: seq[DelimStack]
 
   for i, c in line:
-    if c == '&' and line.match(reEntity, i):
+    if c == '&' and line[i..^1].startsWith(reEntity):
       resultSeq.add(DelimStack(position: i, typeDelim: "&", numDelim: 1, isActive: true, potential: canOpen))
     else:
       continue
+
+  return resultSeq
 
 
 proc readHardBreak*(line: string): seq[DelimStack] =
