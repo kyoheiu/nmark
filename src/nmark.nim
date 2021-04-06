@@ -20,7 +20,7 @@ proc markdown*(line: string): string =
   for ast in seqAst:
     resultHtml.add(ast.astToHtml(isTight))
 
-  return resultHtml & "\n"
+  return resultHtml
 
 
 proc markdownFromFile*(path: string): string =

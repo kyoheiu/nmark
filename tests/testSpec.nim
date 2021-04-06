@@ -12,10 +12,11 @@ for j in f:
   let md = j["markdown"].getStr
   let hl = j["html"].getStr
   let num = j["example"].getInt
+  echo num
   if markdown(md) == hl:
     continue
   else:
     i.inc
-    echo $num & "\p" & markdown(md) & hl
+    echo markdown(md) & hl
     if i == 5: break
     continue

@@ -99,9 +99,11 @@ let
   reAtxHeader* = re"^ {0,3}(#{1,6}) "
   reAnotherAtxHeader* = re"^(#{1,6})$"
   reBlockQuote* = re"^ {0,3}> {0,1}"
+  reBlockQuoteTab* = re"^ {0,3}>\t{1}"
   reUnorderedList* = re"^ {0,3}(-|\+|\*) +"
   reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\)) +"
-  reIndentedCodeBlock* = re"^( {4,}| *\t)\S"
+  reIndentedCodeBlock* = re"^( {4,})\S"
+  reTabStart* = re"^ *\t+"
   reBreakIndentedCode* = re"^ {0,3}\S"
   reFencedCodeBlockChar* = re"^ {0,3}`{3,}\S*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}\S*$"
@@ -135,6 +137,29 @@ proc countWhitespace*(line: string): int =
   for c in line:
     if c == ' ': i.inc
     else: return i
+
+proc deleteUntilTab*(line: string): string =
+  var flag = false
+  for c in line:
+    if flag: result.add(c)
+    if c == ' ': continue
+    elif c == '\t': flag = true
+
+proc countTab*(line: string): int =
+  var i: int
+  for c in line:
+    if c == '\t': i.inc
+    else: return i
+
+proc delWhitespaceAndTab*(line: string): string =
+  var flag = false
+  for c in line:
+    if flag:
+      result.add(c)
+    elif c == ' 'or c == '\t': continue
+    else:
+      result.add(c)
+      flag = true
 
 proc countBacktick*(line: string): int =
   line.filter(proc(x: char): bool = x == '`' or x == '~').len()

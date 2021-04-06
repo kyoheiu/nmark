@@ -55,7 +55,10 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       var listContainer: string
       for child in mdast.children:
         listContainer.add(child.astToHtml(isTight))
-      return li(listContainer) & "\p"
+      if isTight:
+        return li(listContainer) & "\p"
+      else:
+        return li("\p" & listContainer) & "\p"
 
     of Blocktype.unOrderedLooseList:
 

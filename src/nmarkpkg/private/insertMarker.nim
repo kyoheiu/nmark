@@ -254,9 +254,6 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
     elif c == '"':
       result.add("&quot;")
     
-    elif c == '\t':
-      result.add("U+0009")
-
     else:
       result.add(c)
 
