@@ -45,7 +45,7 @@ proc tagToLiteral*(line: string): string =
       of '>':
         result.add("&gt;")
         continue
-    
+
       else:
         result.add(c)
         continue
@@ -114,6 +114,9 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       of '\n':
         result.add("<br />")
         flag.toEscape = false
+      
+      of '\\':
+        continue
       
       else:
         result.add(c)
@@ -244,12 +247,15 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
 
       of "\\":
         flag.toEscape = true
-
+      
       else:
         result.add(c)
     
     elif c == '"':
       result.add("&quot;")
+    
+    elif c == '\t':
+      result.add("U+0009")
 
     else:
       result.add(c)

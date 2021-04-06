@@ -101,7 +101,7 @@ let
   reBlockQuote* = re"^ {0,3}> {0,1}"
   reUnorderedList* = re"^ {0,3}(-|\+|\*) +"
   reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\)) +"
-  reIndentedCodeBlock* = re"^ {4,}\S"
+  reIndentedCodeBlock* = re"^( {4,}| *\t)\S"
   reBreakIndentedCode* = re"^ {0,3}\S"
   reFencedCodeBlockChar* = re"^ {0,3}`{3,}\S*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}\S*$"

@@ -279,6 +279,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBLock.add(line.strip(trailing = false))
 
     elif line.hasMarker(reIndentedCodeBlock):
+      line = line.replace("\t", "    ")
       if lineBlock == "":
         flag.indentedCodeBlockDepth = line.countWhitespace - 1
         flag.flagIndentedCodeBlock = true
@@ -435,6 +436,10 @@ proc mdToAst*(s: string): seq[Block] =
     if flag.looseOrdered: resultSeq.add(mdast.openLooseOL)
     else: resultSeq.add(mdast.openTightOL)
     return resultSeq
+
+  elif flag.flagIndentedCodeBlock:
+    lineBlock.removeSuffix("\n")
+    mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
 
   elif flag.flagHtmlBlock6:
       mdast.add(openHtmlBlock(lineBlock))

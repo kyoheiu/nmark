@@ -48,7 +48,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       var blockQuoteContainer: string
       for child in mdast.children:
         blockQuoteContainer.add(child.astToHtml(isTight))
-      return htmlgen.blockquote("\p" & blockquoteContainer) & "\p"
+      return htmlgen.blockquote("\n" & blockquoteContainer) & "\p"
 
     of Blocktype.list:
 
