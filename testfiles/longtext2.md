@@ -83,3 +83,5 @@ _foo*
 *(**strong**)*
 
 *em**strong**em*
+
+***emstrongem***

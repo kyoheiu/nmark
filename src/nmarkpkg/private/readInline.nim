@@ -142,7 +142,7 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
       elif flag.isAfterE and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
       flag = newInlineFlag()
       flag.isAfterE = true
 
