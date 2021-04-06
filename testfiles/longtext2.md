@@ -73,7 +73,7 @@ a_"notem"_
 
 foo-_(em)_
 
-_foo*
+_notem*
 
 *notem notem
 *

@@ -257,3 +257,21 @@ bar</h2>
 </ul>
 <p>hij</p>
 """
+
+test "emphasis":
+  check markdownFromFile("testfiles/emphasis.md") == """
+<p><em>abc <strong>abc</strong> abc</em></p>
+<p><em>em em</em></p>
+<p>a*&quot;notem&quot;*</p>
+<p><em>em em</em></p>
+<p>a_&quot;notem&quot;_</p>
+<p>foo-<em>(em)</em></p>
+<p>_notem*</p>
+<p>*notem notem
+*</p>
+<p><em>(<em>em</em>)</em></p>
+<p><em>(<strong>strong</strong>)</em></p>
+<p><em>em<strong>strong</strong>em</em></p>
+<p><em><strong>emstrongem</strong></em></p>
+<p>foo<strong><strong><strong>bar</strong></strong></strong>***baz</p>
+"""
