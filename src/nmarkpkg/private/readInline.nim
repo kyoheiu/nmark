@@ -1,7 +1,7 @@
 import re
 import defBlock
 
-const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~']
+const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~']
 
 type
   DelimPotential* = enum
@@ -101,7 +101,7 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
   
   for i, c in str:
 
-    if c == ' ':
+    if c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
@@ -125,6 +125,9 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
       elif flag.isAfterP and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
         flag = newInlineFlag()
+        flag.isAfterP = true
+
+      else:
         flag.isAfterP = true
 
     elif c == '*':
@@ -160,7 +163,7 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
   
   for i, c in str:
 
-    if c == ' ':
+    if c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
@@ -185,6 +188,10 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: both))
         flag = newInlineFlag()
         flag.isAfterP = true
+      
+      else:
+        flag = newInlineFlag()
+        flag.isAfterP = true
 
     elif c == '_':
       if not flag.isAfterA:
@@ -195,8 +202,6 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
     else:
       if flag.isAfterW and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
-      elif flag.isAfterE and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: both))
       elif flag.isAfterP and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
       flag = newInlineFlag()
@@ -236,6 +241,17 @@ proc readCodeSpan*(line: string): seq[DelimStack] =
   
   return resultSeq
 
+proc readEscape*(line: string): seq[DelimStack] =
+
+  var resultSeq: seq[DelimStack]
+
+  for i, c in line:
+    if c == '\\':
+      resultSeq.add(DelimStack(position: i, typeDelim: "\\", numDelim: 1, isActive: true, potential: canOpen))
+    else:
+      continue
+
+  return resultSeq
 
 proc readEntity*(line: string): seq[DelimStack] =
 

@@ -180,7 +180,7 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
                 closingElement.potential = none
                 break doubleLoop
 
-            if openingElement.numDelim >= 2 and closingElement.numDelim == 1:
+            elif openingElement.numDelim >= 2 and closingElement.numDelim == 1:
               
               resultDelims.add(@[DelimStack(position: openingElement.position+openingElement.numDelim-1, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
 
@@ -188,7 +188,7 @@ proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
               closingElement.potential = none
               break doubleLoop
             
-            if openingElement.numDelim == 1 and closingElement.numDelim >= 2:
+            elif openingElement.numDelim == 1 and closingElement.numDelim >= 2:
               
               resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
 
@@ -224,10 +224,27 @@ proc echoDelims(r: seq[DelimStack]) =
 
 proc parseInline*(line: string): seq[DelimStack] =
 
-  var r = (line.readAutoLink & line.readLinkOrImage & line.readCodeSpan & line.readEmphasisAste & line.readEmphasisUnder & line.readHardBreak & line.readEntity).sortedByIt(it.position)
+  var r = (line.readAutoLink &
+   line.readLinkOrImage &
+   line.readCodeSpan &
+   line.readEmphasisAste &
+   line.readEmphasisUnder &
+   line.readHardBreak &
+   line.readEntity &
+   line.readEscape)
+   .sortedByIt(it.position)
+   
+  echoDelims r
 
-  let n_em = r.parseAutoLink(line).parseCodeSpan.parseLink(line).filter(proc(x: DelimStack): bool = (x.typeDelim != "*" and x.typeDelim != "_"))
+  let n_em = r.parseAutoLink(line)
+              .parseCodeSpan.parseLink(line)
+              .filter(proc(x: DelimStack): bool =
+              (x.typeDelim != "*" and x.typeDelim != "_"))
 
   let em = r.parseEmphasis
 
-  return (n_em & em).sortedByIt(it.position).filter(proc(x: DelimStack): bool = (x.isActive) and x.potential != both)
+
+  return (n_em & em)
+         .sortedByIt(it.position)
+         .filter(proc(x: DelimStack): bool =
+         (x.isActive) and x.potential != both)

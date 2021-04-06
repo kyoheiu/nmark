@@ -61,3 +61,25 @@ Content in the first column | Content in the second column
   - apple
     - banana
     - watermelon
+
+### emphasis
+*em em*
+
+a*"notem"*
+
+_em em_
+
+a_"notem"_
+
+foo-_(em)_
+
+_foo*
+
+*notem notem
+*
+
+*(*em*)*
+
+*(**strong**)*
+
+*em**strong**em*

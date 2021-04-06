@@ -13,6 +13,7 @@ type
     toImagetext: bool
     toImageDestination: bool
     toEntity: bool
+    toEscape: bool
     toCode: bool
 
 proc newSplitFlag(): SplitFlag =
@@ -24,6 +25,7 @@ proc newSplitFlag(): SplitFlag =
     toImagetext: false,
     toImageDestination: false,
     toEntity: false,
+    toEscape: false,
     toCode: false
   )
 
@@ -86,6 +88,33 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
     if skipCount > 0:
       skipCount.dec
       continue
+
+    if flag.toEscape:
+      case c
+
+      of '"':
+        result.add("&quot;")
+        flag.toEscape = false
+      
+      of '&':
+        result.add("&amp;")
+        flag.toEscape = false
+
+      of '<':
+        result.add("&lt;")
+        flag.toEscape = false
+
+      of '>':
+        result.add("&gt;")
+        flag.toEscape = false
+      
+      of '\n':
+        result.add("<br />")
+        flag.toEscape = false
+      
+      else:
+        result.add(c)
+        flag.toEscape = false
 
     elif flag.toAutoLink:
       if c == '>':
@@ -209,6 +238,9 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       of "&":
         flag.toEntity = true
         tempStr.add(c)
+
+      of "\\":
+        flag.toEscape = true
 
       else:
         result.add(c)
