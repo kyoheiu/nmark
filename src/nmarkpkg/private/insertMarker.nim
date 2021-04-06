@@ -235,7 +235,7 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       
       of " ":
         if currentDelim.potential == opener:
-          result.add("<br />\p")
+          result.add("<br />\n")
           skipCount = currentDelim.numDelim
       
       of "&":
