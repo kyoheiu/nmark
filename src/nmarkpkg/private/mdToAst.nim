@@ -75,7 +75,7 @@ proc mdToAst*(s: string): seq[Block] =
             flag.hasEmptyLine = false
             flag.uldepth = 0
             break unOrderedListBlock
-        
+
       elif line.startsWith(reUnorderedList):
         if line.delWhitespaceAndTab.startsWith(reThematicBreak):
           break unOrderedListBlock
@@ -92,17 +92,15 @@ proc mdToAst*(s: string): seq[Block] =
         let
           (first, second) = line.findBounds(reUnorderedList)
           replaced = line.replace(reUnorderedList)
+        echo first
+        echo second
         if line[second] == '\t':
           let remTabNum = replaced.countTab
           line = repeat(' ', (remTabNum + 1) * 3) & replaced
         else:
           line = replaced
         flag.flagUnorderedList = true
-        echo line
-        echo line.countWhitespace
         break unOrderedListBlock
-
-
 
     block orderedListBlock:
 
@@ -251,11 +249,9 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock.add("\n")
           continue
         else:
-          line.delete(0,flag.indentedCodeBlockDepth)
+          line.delete(0, 3)
           lineBlock.add("\n" & line)
           continue
-
-
 
     if flag.flagFencedCodeBlockChar:
       if line.startsWith(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
@@ -346,16 +342,16 @@ proc mdToAst*(s: string): seq[Block] =
 
     elif line.startsWith(reIndentedCodeBlock):
       if lineBlock == "":
-        flag.indentedCodeBlockDepth = line.countWhitespace - 1
         flag.flagIndentedCodeBlock = true
         line.delete(0, 3)
+        echo line.countWhitespace
+        echo line
         lineBlock.add(line)
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
 
     elif line.startsWith(reTabStart):
       if lineBlock == "":
-        flag.indentedCodeBlockDepth = 3 
         flag.flagIndentedCodeBlock = true
         lineBlock.add(line.deleteUntilTab)
       else:
@@ -511,6 +507,7 @@ proc mdToAst*(s: string): seq[Block] =
     return resultSeq
 
   elif flag.flagIndentedCodeBlock:
+    echo lineBlock & "508"
     lineBlock.removeSuffix("\n")
     mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
 
