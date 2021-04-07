@@ -1,5 +1,5 @@
 import json
-import nmarkpkg/private/mdToAst, nmarkpkg/private/astToHtml, nmarkpkg/private/defBlock
+import nmarkpkg/private/parseLines, nmarkpkg/private/astToHtml, nmarkpkg/private/defBlock
 
 
 
@@ -11,10 +11,8 @@ proc echoSeqBlock(s: seq[Block]) =
 
 
 
-proc markdown*(line: string): string =
-  let seqAst = line.mdToAst
-
-  echoSeqBlock seqAst
+proc markdown*(lines: string): string =
+  let seqAst = lines.parseLines
 
   var resultHtml: string
   var isTight = false
@@ -26,9 +24,9 @@ proc markdown*(line: string): string =
 
 
 proc markdownFromFile*(path: string): string =
-  let line = readFile(path)
+  let lines = readFile(path)
 
-  let seqAst = line.mdToAst
+  let seqAst = lines.parseLines
 
   var resultHtml: string
   var isTight = false
@@ -43,12 +41,13 @@ proc markdownFromFile*(path: string): string =
 when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
-    j = f[200]
+    n = 80
+    j = f[n-1]
     md = j["markdown"].getStr
     hl = j["html"].getStr
     num = j["example"].getInt
-  if markdown(md) != hl: echo "Success"
+  if markdown(md) != hl:
+    echo md
+    echo  markdown(md)
   else:
-    echo $num
-    stdout.write markdown(md)
-    stdout.write hl
+    echo "Success"

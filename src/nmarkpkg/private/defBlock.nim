@@ -5,12 +5,15 @@ type
   BlockType* = enum
     undefinedBlock,
     paragraph,
+    header,
+    headerEmpty,
     header1,
     header2,
     header3,
     header4,
     header5,
     header6,
+    setextHeader,
     themanticBreak,
     indentedCodeBlock,
     fencedCodeBlock,
@@ -22,6 +25,8 @@ type
     orderedTightList,
     orderedLooseList,
     list,
+    emptyLine,
+    none
 
 type
   BlockKind* = enum
@@ -88,10 +93,10 @@ proc newFlag*(): FlagContainer =
 
 let
   reThematicBreak* = re" {0,3}(\*{3,}|-{3,}|_{3,})$"
-  reSetextHeader1* = re" {0,3}(=+)$"
+  reSetextHeader* = re"^ {0,3}(=+|-+)\s*$"
   reBreakOrHeader* = re" {0,3}(-{3,}) *$"
   reAtxHeader* = re" {0,3}(#{1,6}) "
-  reAnotherAtxHeader* = re"(#{1,6})$"
+  reAnotherAtxHeader* = re"^#{1,6}$"
   reBlockQuote* = re" {0,3}> {0,1}"
   reBlockQuoteTab* = re" {0,3}>\t+"
   reUnorderedList* = re" {0,3}(-|\+|\*)( |\t)"
@@ -205,8 +210,11 @@ proc openContainerBlock*(blockType: BlockType, mdast: seq[Block]): Block =
 proc openCodeBlock*(blockType: BlockType, codeLines: string): Block =
   return Block(kind: leafBlock, leafType: blockType, raw: codeLines)
 
-proc openSetextHeader*(blockType: BlockType, lineBlock: string): Block =
-  return Block(kind: leafBlock, leafType: blockType, raw: lineBlock)
+proc openSetextHeader*(n: int, lineBlock: string): Block =
+  if n == 1:
+    return Block(kind: leafBlock, leafType: header1, raw: lineBlock)
+  else:
+    return Block(kind: leafBlock, leafType: header2, raw: lineBlock)
 
 proc openThemanticBreak*(): Block =
   return Block(kind: leafBlock, leafType: themanticBreak, raw: "")
