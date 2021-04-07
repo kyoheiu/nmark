@@ -89,38 +89,35 @@ proc newFlag*(): FlagContainer =
   )
 
 let
-  reThematicBreak* = re"^ {0,3}(\*{3,}|-{3,}|_{3,})$"
-  reSetextHeader1* = re"^ {0,3}(=+)$"
-  reBreakOrHeader* = re"^ {0,3}(-{3,}) *$"
-  reAtxHeader* = re"^ {0,3}(#{1,6}) "
-  reAnotherAtxHeader* = re"^(#{1,6})$"
-  reBlockQuote* = re"^ {0,3}> {0,1}"
-  reBlockQuoteTab* = re"^ {0,3}>\t+"
-  reUnorderedList* = re"^ {0,3}(-|\+|\*)( |\t)"
-  reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\))( |\t)+"
+  reThematicBreak* = re" {0,3}(\*{3,}|-{3,}|_{3,})$"
+  reSetextHeader1* = re" {0,3}(=+)$"
+  reBreakOrHeader* = re" {0,3}(-{3,}) *$"
+  reAtxHeader* = re" {0,3}(#{1,6}) "
+  reAnotherAtxHeader* = re"(#{1,6})$"
+  reBlockQuote* = re" {0,3}> {0,1}"
+  reBlockQuoteTab* = re" {0,3}>\t+"
+  reUnorderedList* = re" {0,3}(-|\+|\*)( |\t)"
+  reOrderedList* = re" {0,3}[0-9]{1,9}(\.|\))( |\t)+"
   reIndentedCodeBlock* = re"^ {4,}\S"
-  reTabStart* = re"^ *\t+"
-  reBreakIndentedCode* = re"^ {0,3}\S"
-  reFencedCodeBlockChar* = re"^ {0,3}`{3,}\S*$"
-  reFencedCodeBlockTild* = re"^ {0,3}~{3,}\S*$"
+  reTabStart* = re" *\t+"
+  reBreakIndentedCode* = re" {0,3}\S"
+  reFencedCodeBlockChar* = re" {0,3}`{3,}\S*$"
+  reFencedCodeBlockTild* = re" {0,3}~{3,}\S*$"
 
-  reHtmlBlock1Begins* = re"(^(<script|<pre|<style)( |>|\n))"
-  reHtmlBlock1Ends*   = re"(</script>|</pre>|</style>)"
-  reHtmlBlock2Begins* = re"^<!--"
+  reHtmlBlock1Begins* = re"(<script|<pre|<style)( |>|\n)"
+  reHtmlBlock1Ends*   = re"</script>|</pre>|</style>"
+  reHtmlBlock2Begins* = re"<!--"
   reHtmlBlock2Ends*   = re"-->"
-  reHtmlBlock3Begins* = re"^<\?"
+  reHtmlBlock3Begins* = re"<\?"
   reHtmlBlock3Ends*   = re"\?>"
-  reHtmlBlock4Begins* = re"^<![A-Z]"
+  reHtmlBlock4Begins* = re"<![A-Z]"
   reHtmlBlock4Ends*   = re">"
-  reHtmlBlock5Begins* = re"^<!\[CDATA\["
+  reHtmlBlock5Begins* = re"<!\[CDATA\["
   reHtmlBlock5Ends*   = re"\]\]>"
-  reHtmlBlock6Begins* = re"^(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
-  reHtmlBlock7Begins* = re"^<.*> *$"
+  reHtmlBlock6Begins* = re"(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
+  reHtmlBlock7Begins* = re"<.*> *$"
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
-
-proc hasMarker*(line: string, regex: Regex): bool =
-  match(line, regex)
 
 proc delWhitespace*(line: string): string =
   var str: string

@@ -761,9 +761,9 @@ static N_INLINE(NIM_BOOL, match__ATpcLUBGRWa2duwyoHgYLAre)(NimStringDesc* s, tyO
 	popFrame();
 	return result;
 }
-N_LIB_PRIVATE N_NIMCALL(NIM_BOOL, hasMarker__HboK8oxIrqNkDvsNG7wJow)(NimStringDesc* line, tyObject_RegexDesc__jxMAPyr9aBYX9b0g7iZ2E8zw* regex) {
+N_LIB_PRIVATE N_NIMCALL(NIM_BOOL, startsWith__HboK8oxIrqNkDvsNG7wJow)(NimStringDesc* line, tyObject_RegexDesc__jxMAPyr9aBYX9b0g7iZ2E8zw* regex) {
 	NIM_BOOL result;
-	nimfr_("hasMarker", "/home/kyohei/nim/nmark/src/nmarkpkg/private/defBlock.nim");
+	nimfr_("startsWith", "/home/kyohei/nim/nmark/src/nmarkpkg/private/defBlock.nim");
 	result = (NIM_BOOL)0;
 	nimln_(125, "/home/kyohei/nim/nmark/src/nmarkpkg/private/defBlock.nim");
 	result = match__ATpcLUBGRWa2duwyoHgYLAre(line, regex, ((NI) 0));

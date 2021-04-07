@@ -21,7 +21,7 @@ proc mdToAst*(s: string): seq[Block] =
           flag.afterEmptyLine = false
           continue
 
-        elif line.hasMarker(reTabStart):
+        elif line.startsWith(reTabStart):
           let tabAsSpace = line.countTab * 4
           if tabAsSpace >= flag.uldepth:
             if flag.hasEmptyLine: flag.looseUnordered = true
@@ -46,7 +46,7 @@ proc mdToAst*(s: string): seq[Block] =
               flag.uldepth = 0
               break unOrderedListBlock
 
-        elif line.hasMarker(reUnorderedList):
+        elif line.startsWith(reUnorderedList):
           if flag.afterEmptyLine: flag.looseUnordered = true
           flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
@@ -76,8 +76,8 @@ proc mdToAst*(s: string): seq[Block] =
             flag.uldepth = 0
             break unOrderedListBlock
         
-      elif line.hasMarker(reUnorderedList):
-        if line.delWhitespaceAndTab.hasMarker(reThematicBreak):
+      elif line.startsWith(reUnorderedList):
+        if line.delWhitespaceAndTab.startsWith(reThematicBreak):
           break unOrderedListBlock
         if lineBlock != "":
           if flag.flagBlockQuote:
@@ -114,7 +114,7 @@ proc mdToAst*(s: string): seq[Block] =
           flag.afterEmptyLine = false
           continue
 
-        elif line.hasMarker(reTabStart):
+        elif line.startsWith(reTabStart):
           let tabAsSpace = line.countTab * 4
           if tabAsSpace >= flag.oldepth:
             if flag.hasEmptyLine: flag.looseOrdered = true
@@ -139,7 +139,7 @@ proc mdToAst*(s: string): seq[Block] =
               flag.oldepth = 0
               break orderedListBlock
 
-        elif line.hasMarker(reOrderedList):
+        elif line.startsWith(reOrderedList):
           if flag.afterEmptyLine: flag.looseOrdered = true
           flag.afterEmptyLine = false
           mdast.add(lineBlock.mdToAst.openList)
@@ -169,7 +169,7 @@ proc mdToAst*(s: string): seq[Block] =
             flag.oldepth = 0
             break orderedListBlock
         
-      elif line.hasMarker(reOrderedList):
+      elif line.startsWith(reOrderedList):
         if lineBlock != "":
           if flag.flagBlockQuote:
             resultSeq.add(openBlockQuote(lineBlock.mdToAst))
@@ -189,7 +189,7 @@ proc mdToAst*(s: string): seq[Block] =
     block bqBlock:
 
       if flag.flagBlockQuote:
-        if line.hasMarker(reThematicBreak) or line.hasMarker(reUnorderedList) or line.hasMarker(reOrderedList) or line.hasMarker(reIndentedCodeBlock) or line.hasMarker(reFencedCodeBlockChar) or line.hasMarker(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
+        if line.startsWith(reThematicBreak) or line.startsWith(reUnorderedList) or line.startsWith(reOrderedList) or line.startsWith(reIndentedCodeBlock) or line.startsWith(reFencedCodeBlockChar) or line.startsWith(reFencedCodeBlockTild) or line.isEmptyOrWhitespace:
 
           resultSeq.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
@@ -198,12 +198,12 @@ proc mdToAst*(s: string): seq[Block] =
           break bqBlock
 
         else:
-          if line.hasMarker(reBlockQuote):
+          if line.startsWith(reBlockQuote):
             line = line.replace(reBlockQuote)
           lineBlock.add("\n" & line.strip(trailing = false))
           continue
 
-      elif line.hasMarker(reBlockQuoteTab):
+      elif line.startsWith(reBlockQuoteTab):
         if lineBlock != "":
           if flag.flagIndentedCodeBlock:
             lineBlock.removeSuffix("\n")
@@ -221,7 +221,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add(line)
         continue
 
-      elif line.hasMarker(reBlockQuote):
+      elif line.startsWith(reBlockQuote):
         if lineBlock != "":
           if flag.flagIndentedCodeBlock:
             lineBlock.removeSuffix("\n")
@@ -258,7 +258,7 @@ proc mdToAst*(s: string): seq[Block] =
 
 
     if flag.flagFencedCodeBlockChar:
-      if line.hasMarker(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
+      if line.startsWith(reFencedCodeBlockChar) and line.countBacktick >= flag.openingFenceLength:
         lineBlock.removeSuffix("\n")
         mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
         lineBlock = ""
@@ -271,7 +271,7 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock.add(line & "\n")
 
     elif flag.flagFencedCodeBlockTild:
-      if line.hasMarker(reFencedCodeBlockTild) and line.countBacktick >= flag.openingFenceLength: 
+      if line.startsWith(reFencedCodeBlockTild) and line.countBacktick >= flag.openingFenceLength: 
         lineBlock.removeSuffix("\n")
         mdast.add(openCodeBlock(fencedCodeBlock, lineBlock))
         lineBlock = ""
@@ -284,7 +284,7 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock.add(line & "\n")
 
     elif flag.flagHtmlBlock1:
-      if line.hasMarker(reHtmlBlock1Ends):
+      if line.contains(reHtmlBlock1Ends):
         lineBlock.add("\n" & line)
         mdast.add(openHtmlBlock(lineBLock))
         lineBlock = ""
@@ -293,7 +293,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add("\n" & line)
 
     elif flag.flagHtmlBlock2:
-      if line.hasMarker(reHtmlBlock2Ends):
+      if line.contains(reHtmlBlock2Ends):
         lineBlock.add("\n" & line)
         mdast.add(openHtmlBlock(lineBLock))
         lineBlock = ""
@@ -302,7 +302,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add("\n" & line)
 
     elif flag.flagHtmlBlock3:
-      if line.hasMarker(reHtmlBlock2Ends):
+      if line.contains(reHtmlBlock3Ends):
         lineBlock.add("\n" & line)
         mdast.add(openHtmlBlock(lineBLock))
         lineBlock = ""
@@ -311,7 +311,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add("\n" & line)
 
     elif flag.flagHtmlBlock4:
-      if line.hasMarker(reHtmlBlock2Ends):
+      if line.contains(reHtmlBlock4Ends):
         lineBlock.add("\n" & line)
         mdast.add(openHtmlBlock(lineBLock))
         lineBlock = ""
@@ -320,7 +320,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add("\n" & line)
 
     elif flag.flagHtmlBlock5:
-      if line.hasMarker(reHtmlBlock2Ends):
+      if line.contains(reHtmlBlock5Ends):
         lineBlock.add("\n" & line)
         mdast.add(openHtmlBlock(lineBLock))
         lineBlock = ""
@@ -350,7 +350,7 @@ proc mdToAst*(s: string): seq[Block] =
       else:
         lineBLock.add(line.strip(trailing = false))
 
-    elif line.hasMarker(reIndentedCodeBlock):
+    elif line.startsWith(reIndentedCodeBlock):
       if lineBlock == "":
         flag.indentedCodeBlockDepth = line.countWhitespace - 1
         flag.flagIndentedCodeBlock = true
@@ -359,7 +359,7 @@ proc mdToAst*(s: string): seq[Block] =
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
 
-    elif line.hasMarker(reTabStart):
+    elif line.startsWith(reTabStart):
       if lineBlock == "":
         flag.indentedCodeBlockDepth = 3 
         flag.flagIndentedCodeBlock = true
@@ -368,7 +368,7 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add("\n" & line.strip(trailing = false))
 
 
-    elif line.hasMarker(reFencedCodeBlockChar):
+    elif line.startsWith(reFencedCodeBlockChar):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -376,7 +376,7 @@ proc mdToAst*(s: string): seq[Block] =
       flag.openingFenceLength = line.countBacktick
       flag.fencedCodeBlocksdepth = line.countWhitespace
 
-    elif line.hasMarker(reFencedCodeBlockTild):
+    elif line.startsWith(reFencedCodeBlockTild):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -384,7 +384,7 @@ proc mdToAst*(s: string): seq[Block] =
       flag.openingFenceLength = line.countBacktick
       flag.fencedCodeBlocksdepth = line.countWhitespace
     
-    elif line.hasMarker(reHtmlBlock1Begins):
+    elif line.startsWith(reHtmlBlock1Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -392,7 +392,7 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock1 = true
         lineBlock.add(line)
   
-    elif line.hasMarker(reHtmlBlock2Begins):
+    elif line.startsWith(reHtmlBlock2Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -400,7 +400,7 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock2 = true
         lineBlock.add(line)
     
-    elif line.hasMarker(reHtmlBlock3Begins):
+    elif line.startsWith(reHtmlBlock3Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -408,7 +408,7 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock3 = true
         lineBlock.add(line)
     
-    elif line.hasMarker(reHtmlBlock4Begins):
+    elif line.startsWith(reHtmlBlock4Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -416,7 +416,7 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock4 = true
         lineBlock.add(line)
     
-    elif line.hasMarker(reHtmlBlock5Begins):
+    elif line.startsWith(reHtmlBlock5Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -424,7 +424,7 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock5 = true
         lineBlock.add(line)
     
-    elif line.hasMarker(reHtmlBlock6Begins):
+    elif line.startsWith(reHtmlBlock6Begins):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -432,37 +432,37 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagHtmlBlock6 = true
         lineBlock.add(line)
     
-    elif line.hasMarker(reHtmlBlock7Begins):
+    elif line.startsWith(reHtmlBlock7Begins):
       if lineBlock == "" and not flag.flagBlockQuote:
         flag.flagHtmlBlock7 = true
         lineBlock.add(line)
 
-    elif line.hasMarker(reAtxHeader):
+    elif line.startsWith(reAtxHeader):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
       mdast.add(openAtxHeader(line))
       lineBlock = ""
     
-    elif line.hasMarker(reAnotherAtxHeader):
+    elif line.startsWith(reAnotherAtxHeader):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
       mdast.add(openAtxHeader(line))
       lineBlock = ""
     
-    elif line.hasMarker(reBreakOrHeader):
+    elif line.startsWith(reBreakOrHeader):
       if lineBlock != "":
         mdast.add(openSetextHeader(header2, lineBlock))
         lineBlock = ""
       else:
         mdast.add(openThemanticBreak())
 
-    elif line.delWhitespace.hasMarker(reThematicBreak):
+    elif line.delWhitespace.startsWith(reThematicBreak):
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       mdast.add(openThemanticBreak())
 
-    elif line.hasMarker(reSetextHeader1):
+    elif line.startsWith(reSetextHeader1):
       if lineBlock == "":
         lineBlock.add(line)
       else:
