@@ -11,9 +11,6 @@ proc mdToAst*(s: string): seq[Block] =
   for str in s.splitLines:
     var line = str
 
-    flag.flagUnorderedListMarker = false
-    flag.flagOrderedListMarker = false
-
     block unOrderedListBlock:
 
       if flag.flagUnorderedList:
@@ -56,7 +53,6 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock = ""
           flag.uldepth = line.matchLen(reUnorderedList)
           line = line.replace(reUnorderedList)
-          flag.flagUnorderedListMarker = true
           break unOrderedListBlock
         elif line.isEmptyOrWhitespace:
           lineBlock.add("\n")
@@ -81,7 +77,7 @@ proc mdToAst*(s: string): seq[Block] =
             break unOrderedListBlock
         
       elif line.hasMarker(reUnorderedList):
-        if line.delWhitespace.hasMarker(reThematicBreak):
+        if line.delWhitespaceAndTab.hasMarker(reThematicBreak):
           break unOrderedListBlock
         if lineBlock != "":
           if flag.flagBlockQuote:
@@ -92,10 +88,18 @@ proc mdToAst*(s: string): seq[Block] =
         resultSeq = concat(resultSeq, mdast)
         lineBlock = ""
         mdast = @[]
-        flag.uldepth = line.matchLen(reUnorderedList)
-        line = line.replace(reUnorderedList)
+        flag.uldepth = line.countWhitespace + 2
+        let
+          (first, second) = line.findBounds(reUnorderedList)
+          replaced = line.replace(reUnorderedList)
+        if line[second] == '\t':
+          let remTabNum = replaced.countTab
+          line = repeat(' ', (remTabNum + 1) * 3) & replaced
+        else:
+          line = replaced
         flag.flagUnorderedList = true
-        flag.flagUnorderedListMarker = true
+        echo line
+        echo line.countWhitespace
         break unOrderedListBlock
 
 
@@ -142,7 +146,6 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock = ""
           flag.oldepth = line.matchLen(reOrderedList)
           line = line.replace(reOrderedList)
-          flag.flagOrderedListMarker = true
           break orderedListBlock
         elif line.isEmptyOrWhitespace:
           lineBlock.add("\n")
@@ -179,7 +182,6 @@ proc mdToAst*(s: string): seq[Block] =
         flag.oldepth = line.matchLen(reOrderedList)
         line = line.replace(reOrderedList)
         flag.flagOrderedList = true
-        flag.flagOrderedListMarker = true
         break orderedListBlock
 
 
@@ -212,11 +214,11 @@ proc mdToAst*(s: string): seq[Block] =
           lineBlock = ""
         resultSeq = concat(resultSeq, mdast)
         mdast = @[]
+        let lenTab = line.matchLen(reBlockQuoteTab)
         line = line.replace(reBlockQuoteTab)
-        line = repeat("   ", line.countTab + 1) & line
-        echo line
+        line = repeat(" ", lenTab * 2) & line
         flag.flagBlockQuote = true
-        lineBlock.add(line.strip(trailing = false))
+        lineBlock.add(line)
         continue
 
       elif line.hasMarker(reBlockQuote):
@@ -232,9 +234,9 @@ proc mdToAst*(s: string): seq[Block] =
         mdast = @[]
         line = line.replace(reBlockQuote)
         flag.flagBlockQuote = true
-        lineBlock.add(line.strip(trailing = false))
+        lineBlock.add(line)
         continue
-          
+        
 
 
     block indentedCBlock:
@@ -354,7 +356,6 @@ proc mdToAst*(s: string): seq[Block] =
         flag.flagIndentedCodeBlock = true
         line.delete(0, 3)
         lineBlock.add(line)
-        echo lineBlock
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
 

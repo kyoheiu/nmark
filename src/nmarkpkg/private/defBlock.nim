@@ -55,10 +55,8 @@ type
     flagHtmlBlock7*: bool
     flagLinkReference*: bool
     flagUnorderedList*: bool
-    flagUnorderedListMarker*: bool
     uldepth*: int
     flagOrderedList*: bool
-    flagOrderedListMarker*: bool
     oldepth*: int
     hasEmptyLine*: bool
     afterEmptyLine*: bool
@@ -81,10 +79,8 @@ proc newFlag*(): FlagContainer =
     flagHtmlBlock7: false,
     flagLinkReference: false,
     flagUnorderedList: false,
-    flagUnorderedListMarker: false,
     uldepth: 0,
     flagOrderedList: false,
-    flagOrderedListMarker: false,
     oldepth: 0,
     hasEmptyLine: false,
     afterEmptyLine: false,
@@ -99,10 +95,10 @@ let
   reAtxHeader* = re"^ {0,3}(#{1,6}) "
   reAnotherAtxHeader* = re"^(#{1,6})$"
   reBlockQuote* = re"^ {0,3}> {0,1}"
-  reBlockQuoteTab* = re"^ {0,3}>\t{1}"
-  reUnorderedList* = re"^ {0,3}(-|\+|\*) +"
-  reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\)) +"
-  reIndentedCodeBlock* = re"^( {4,})\S"
+  reBlockQuoteTab* = re"^ {0,3}>\t+"
+  reUnorderedList* = re"^ {0,3}(-|\+|\*)( |\t)"
+  reOrderedList* = re"^ {0,3}[0-9]{1,9}(\.|\))( |\t)+"
+  reIndentedCodeBlock* = re"^ {4,}\S"
   reTabStart* = re"^ *\t+"
   reBreakIndentedCode* = re"^ {0,3}\S"
   reFencedCodeBlockChar* = re"^ {0,3}`{3,}\S*$"
@@ -160,6 +156,14 @@ proc delWhitespaceAndTab*(line: string): string =
     else:
       result.add(c)
       flag = true
+
+proc countSpaceWithTab*(line: string): int =
+  var i: int
+  for c in line:
+    if c == ' ': i.inc
+    elif c == '\t': i += 3
+    else: continue
+  return i
 
 proc countBacktick*(line: string): int =
   line.filter(proc(x: char): bool = x == '`' or x == '~').len()

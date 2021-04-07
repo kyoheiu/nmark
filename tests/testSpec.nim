@@ -18,5 +18,5 @@ for j in f:
   else:
     i.inc
     echo markdown(md) & hl
-    if i == 5: break
-    continue
+    #if i == 5: break
+    break
