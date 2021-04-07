@@ -344,12 +344,6 @@ proc mdToAst*(s: string): seq[Block] =
       else:
         lineBlock.add("\n" & line)
 
-    elif flag.flagLinkReference:
-      if line.isEmptyOrWhitespace:
-        mdast.add(openLinkReference(lineBlock))
-      else:
-        lineBLock.add(line.strip(trailing = false))
-
     elif line.startsWith(reIndentedCodeBlock):
       if lineBlock == "":
         flag.indentedCodeBlockDepth = line.countWhitespace - 1

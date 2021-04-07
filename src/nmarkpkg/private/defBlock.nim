@@ -98,7 +98,7 @@ let
   reBlockQuoteTab* = re" {0,3}>\t+"
   reUnorderedList* = re" {0,3}(-|\+|\*)( |\t)"
   reOrderedList* = re" {0,3}[0-9]{1,9}(\.|\))( |\t)+"
-  reIndentedCodeBlock* = re"^ {4,}\S"
+  reIndentedCodeBlock* = re" {4,}\S"
   reTabStart* = re" *\t+"
   reBreakIndentedCode* = re" {0,3}\S"
   reFencedCodeBlockChar* = re" {0,3}`{3,}\S*$"
