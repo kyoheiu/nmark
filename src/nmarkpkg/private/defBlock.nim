@@ -1,5 +1,4 @@
 import sequtils, strutils, re
-from algorithm import reverse
 
 type
   BlockType* = enum
@@ -117,18 +116,18 @@ let
   reFencedCodeBlockBack* = re"^ {0,3}`{3,}[^`]*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}[^~]*~*$"
 
-  reHtmlBlock1Begins* = re"(<script|<pre|<style)( |>|\n)"
+  reHtmlBlock1Begins* = re" {0,3}(<script|<pre|<style)( |>|\n)"
   reHtmlBlock1Ends*   = re"</script>|</pre>|</style>"
-  reHtmlBlock2Begins* = re"<!--"
+  reHtmlBlock2Begins* = re" {0,3}<!--"
   reHtmlBlock2Ends*   = re"-->"
-  reHtmlBlock3Begins* = re"<\?"
+  reHtmlBlock3Begins* = re" {0,3}<\?"
   reHtmlBlock3Ends*   = re"\?>"
-  reHtmlBlock4Begins* = re"<![A-Z]"
+  reHtmlBlock4Begins* = re" {0,3}<![A-Z]"
   reHtmlBlock4Ends*   = re">"
-  reHtmlBlock5Begins* = re"<!\[CDATA\["
+  reHtmlBlock5Begins* = re" {0,3}<!\[CDATA\["
   reHtmlBlock5Ends*   = re"\]\]>"
-  reHtmlBlock6Begins* = re"(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
-  reHtmlBlock7Begins* = re"<[a-zA-Z][a-zA-Z0-9\-]*(>|/>) *$"
+  reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
+  reHtmlBlock7Begins* = re" {0,3}<[a-zA-Z][a-zA-Z0-9\-]*(>|/>) *$"
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 

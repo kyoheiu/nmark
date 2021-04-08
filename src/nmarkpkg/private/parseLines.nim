@@ -32,7 +32,6 @@ proc newMarkerFlag(): MarkerFlag =
 proc parseLines*(s: string): seq[Block] =
   
   var m = newMarkerFlag()
-  var flag = newFlag()
   var lineBlock: string
   var mdast: seq[Block]
 

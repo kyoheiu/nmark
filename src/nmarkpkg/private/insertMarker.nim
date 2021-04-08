@@ -196,6 +196,8 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
           flag.toAutoLink = true
         elif currentDelim.potential == mailOpener:
           flag.toMailLink = true
+        else:
+          result.add(c)
       
       of "[":
         if currentDelim.potential == opener:

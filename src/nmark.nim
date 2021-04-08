@@ -14,7 +14,7 @@ proc echoSeqBlock(s: seq[Block]) =
 proc markdown*(lines: string): string =
   let seqAst = lines.parseLines
 
- #echoSeqBlock seqAst
+  #echoSeqBlock seqAst
 
   var resultHtml: string
   var isTight = false
