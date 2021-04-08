@@ -4,26 +4,14 @@ import defBlock
 type
   MarkerFlag* = ref MFObj
   MFObj = object
-    numWSpace: int
-    maybeBQ: bool
-    maybeULdash: bool
-    maybeULaste: bool
-    maybeULplus: bool
-    maybeOLdot: bool
-    maybeOLbra: bool
+    numHeadSpace: int
     numHeading: int
     kind: BlockType
     width: int
   
 proc newMarkerFlag(): MarkerFlag =
   MarkerFlag(
-    numWSpace: 0,
-    maybeBQ: false,
-    maybeULdash: false,
-    maybeULaste: false,
-    maybeULplus: false,
-    maybeOLdot: false,
-    maybeOLbra: false,
+    numHeadSpace: 0,
     numHeading: 0,
     kind: none,
     width: 0
@@ -41,26 +29,46 @@ proc parseLines*(s: string): seq[Block] =
   for str in s.splitLines:
     var line = str
 
-    if line.isEmptyOrWhitespace:
-      m.kind = emptyLine
-
-    elif m.kind == paragraph and line.match(reSetextHeader):
-      m.kind = setextHeader
-    
-    elif line.delWhitespace.startsWith(reThematicBreak):
-      m.kind = themanticBreak
-    
-    elif line.match(reAnotherAtxHeader):
-      m.kind = headerEmpty
-
-
-
     #check for marker begins
     for i, c in line:
 
-      if m.kind != none:
+
+
+      block ICBblock:
+
+        if m.kind == indentedCodeBlock:
+          if (not line.isEmptyOrWhitespace) and
+            line.countWhitespace < 4:
+            lineBlock.removeSuffix("\n")
+            mdast.add(openCodeBlock(indentedCodeBlock, lineBlock))
+            lineBlock = ""
+            m.kind = none
+            break ICBblock
+          elif line.isEmptyOrWhiteSpace:
+            lineBlock.add("\n")
+            continue
+          else:
+            line.delete(0, 3)
+            lineBlock.add("\n" & line)
+            continue
+
+
+
+      if line.isEmptyOrWhitespace:
+        m.kind = emptyLine
         break
 
+      elif lineBlock != "" and line.match(reSetextHeader):
+        m.kind = setextHeader
+        break
+      
+      elif line.delWhitespace.startsWith(reThematicBreak):
+        m.kind = themanticBreak
+        break
+      
+      elif line.match(reAnotherAtxHeader):
+        m.kind = headerEmpty
+        break
 
 
 
@@ -69,9 +77,11 @@ proc parseLines*(s: string): seq[Block] =
 
         of '#':
           m.numHeading = 1
+          continue
         
         of ' ':
-          m.numWSpace = 1
+          m.numHeadSpace = 1
+          continue
 
         else: continue
     
@@ -79,23 +89,28 @@ proc parseLines*(s: string): seq[Block] =
       case c
 
       of '#':
-        if m.numHeading != 0:
-          m.numHeading.inc
-        else: continue
+        m.numHeading.inc
       
       of ' ':
         if (1..6).contains(m.numHeading):
+          m = newMarkerFlag()
           m.kind = header
-          m.width = m.numWSpace + m.numHeading
+          break
         else:
-          m.numWSpace.inc
+          m.numHeadSpace.inc
+          if m.numHeadSpace  == 4 and m.kind != paragraph:
+            m = newMarkerFlag()
+            m.kind = indentedCodeBlock
+            break
 
       else:
+        m = newMarkerFlag()
         m.kind = paragraph
         break
     #check for marker ends
 
-    echo m.kind
+
+
     #line-adding begins
     if m.kind == themanticBreak:
       if lineBlock != "":
@@ -127,7 +142,15 @@ proc parseLines*(s: string): seq[Block] =
         else: n = 2
         mdast.add(openSetextHeader(n, lineBlock))
         lineBlock = ""
-
+        m.kind = none
+      
+    elif m.kind == indentedCodeBlock:
+      if lineBlock == "":
+        line.delete(0, 3)
+        lineBlock.add(line)
+      else:
+        lineBlock.add("\n" & line.strip(trailing = false))
+    
     elif m.kind == emptyLine:
       if flag.flagUnorderedList:
         continue

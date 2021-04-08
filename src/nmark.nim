@@ -41,11 +41,12 @@ proc markdownFromFile*(path: string): string =
 when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
-    n = 80
+    n = 114
     j = f[n-1]
     md = j["markdown"].getStr
     hl = j["html"].getStr
     num = j["example"].getInt
+  echo n
   if markdown(md) != hl:
     echo md
     echo  markdown(md)
