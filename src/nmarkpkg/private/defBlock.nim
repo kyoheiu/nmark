@@ -19,6 +19,13 @@ type
     fencedCodeBlockBack,
     fencedCodeBlockTild,
     fencedCodeBlock,
+    htmlBlock1,
+    htmlBlock2,
+    htmlBlock3,
+    htmlBlock4,
+    htmlBlock5,
+    htmlBlock6,
+    htmlBlock7,
     htmlBlock,
     linkReference,
     blockQuote,
@@ -121,7 +128,7 @@ let
   reHtmlBlock5Begins* = re"<!\[CDATA\["
   reHtmlBlock5Ends*   = re"\]\]>"
   reHtmlBlock6Begins* = re"(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)"
-  reHtmlBlock7Begins* = re"<.*> *$"
+  reHtmlBlock7Begins* = re"<[a-zA-Z][a-zA-Z0-9\-]*(>|/>) *$"
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
@@ -276,6 +283,9 @@ proc openLooseOL*(mdast: seq[Block]): Block =
 
 proc openTightOL*(mdast: seq[Block]): Block =
   Block(kind: containerBlock, containerType: orderedTightList, children: mdast)
+
+proc openHTML*(lineBlock: string): Block =
+  Block(kind: leafBlock, leafType: htmlBlock, raw: lineBlock)
 
 proc openParagraph*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: paragraph, raw: lineBlock)

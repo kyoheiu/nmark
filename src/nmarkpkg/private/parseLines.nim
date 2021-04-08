@@ -127,10 +127,144 @@ proc parseLines*(s: string): seq[Block] =
           continue
 
 
+    # html block
+    block hblock:
+
+      if m.kind == htmlBlock1:
+        if line.contains(reHtmlBlock1Ends):
+          lineBlock.add("\n" & line)
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock2:
+        if line.contains(reHtmlBlock2Ends):
+          lineBlock.add("\n" & line)
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock3:
+        if line.contains(reHtmlBlock3Ends):
+          lineBlock.add("\n" & line)
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock4:
+        if line.contains(reHtmlBlock4Ends):
+          lineBlock.add("\n" & line)
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock5:
+        if line.contains(reHtmlBlock5Ends):
+          lineBlock.add("\n" & line)
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock6:
+        if line.isEmptyOrWhitespace:
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if m.kind == htmlBlock7:
+        if line.isEmptyOrWhitespace:
+          mdast.add(openHTML(lineBlock))
+          lineBlock = ""
+          m = newMarkerFlag()
+          continue
+        else:
+          lineBlock.add("\n" & line)
+          continue
+
+      if line.startsWith(reHtmlBlock1Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock1
+        lineBlock.add(line)
+        continue
+    
+      if line.startsWith(reHtmlBlock2Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock2
+        lineBlock.add(line)
+        continue
+      
+      if line.startsWith(reHtmlBlock3Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock3
+        lineBlock.add(line)
+        continue
+      
+      if line.startsWith(reHtmlBlock4Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock4
+        lineBlock.add(line)
+        continue
+      
+      if line.startsWith(reHtmlBlock5Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock5
+        lineBlock.add(line)
+        continue
+      
+      if line.startsWith(reHtmlBlock6Begins):
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+          lineBlock = ""
+        m.kind = htmlBlock6
+        lineBlock.add(line)
+        continue
+      
+      if line.startsWith(reHtmlBlock7Begins):
+        if lineBlock != "":
+          lineBlock.add("\n" & line.strip(trailing = false))
+        else:
+          m.kind = htmlBlock7
+          lineBlock.add(line)
+          continue
+
+
 
     #check for marker begins
     for i, c in line:
-
 
 
 
@@ -234,8 +368,8 @@ proc parseLines*(s: string): seq[Block] =
     #check for marker ends
 
 
-    #line-adding begins
 
+    #line-adding begins
     if m.kind == fencedCodeBlockBack or
        m.kind == fencedCodeBlockTild:
       if lineBlock != "":
