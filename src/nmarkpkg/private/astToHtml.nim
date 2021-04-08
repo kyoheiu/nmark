@@ -33,13 +33,17 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of fencedCodeBlock:
       if mdast.raw == "":
-        return pre(code(mdast.raw.asLiteral)) & "\p"
+        if mdast.attr != "":
+          var t = pre(code(mdast.raw.asLiteral)) & "\p"
+          return t.replace("<code>", "<code class=\"language-" & mdast.attr & "\">")
+        else:
+          return pre(code(mdast.raw.asLiteral)) & "\p"
       else:
-        #if mdast.attr != "":
-          #var t = pre(code(mdast.raw.asLiteral & "\p")) & "\p"
-          #t.replace("<code>", "<code class=\"language-" & mdast.attr & ">")
-        #else:
-        return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
+        if mdast.attr != "":
+          var t = pre(code(mdast.raw.asLiteral & "\p")) & "\p"
+          return t.replace("<code>", "<code class=\"language-" & mdast.attr & "\">")
+        else:
+          return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
 
     else: return
 

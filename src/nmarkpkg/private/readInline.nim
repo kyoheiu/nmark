@@ -225,9 +225,12 @@ proc readCodeSpan*(line: string): seq[DelimStack] =
     case c
 
     of '`':
-      flag.isAfterB = true
-      flag.number.inc
-      flag.position = i
+      if flag.isAfterB:
+        flag.number.inc
+      else:
+        flag.isAfterB = true
+        flag.position = i
+        flag.number.inc
 
     else:
       if flag.isAfterB:
@@ -240,6 +243,8 @@ proc readCodeSpan*(line: string): seq[DelimStack] =
       resultSeq.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.number, isActive: true, potential: both))
   
   return resultSeq
+
+
 
 proc readEscape*(line: string): seq[DelimStack] =
 

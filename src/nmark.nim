@@ -14,6 +14,8 @@ proc echoSeqBlock(s: seq[Block]) =
 proc markdown*(lines: string): string =
   let seqAst = lines.parseLines
 
+ #echoSeqBlock seqAst
+
   var resultHtml: string
   var isTight = false
 
@@ -42,8 +44,8 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 107
-    ends = 118
+    begins = 139
+    ends = 148
   for j in f:
     let
       j = f[begins-1]

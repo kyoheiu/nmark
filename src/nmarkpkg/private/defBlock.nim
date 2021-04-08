@@ -186,14 +186,18 @@ proc countTild*(line: string): int =
   return i
 
 proc delSpaceAndFence*(line: string): string =
+  var flag = false
   for c in line:
-    if c == ' ' or c == '`' or c == '~': continue
-    else: result.add(c)
+    if flag:
+      result.add(c)
+    elif c == ' ' or c == '`' or c == '~': continue
+    else:
+      flag = true
+      result.add(c)
 
 proc takeAttr*(line: string): string =
-  for c in line:
-    if c == ' ': break
-    else: result.add(c)
+  let s = line.splitWhitespace
+  return s[0]
 
 proc openAtxHeader*(line: string): Block =
   var s = line.splitWhitespace

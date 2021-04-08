@@ -39,6 +39,8 @@ proc parseLines*(s: string): seq[Block] =
   for str in s.splitLines:
     var line = str
 
+
+
     block iCBblock:
       if m.kind == indentedCodeBlock:
         if (not line.isEmptyOrWhitespace) and
@@ -69,23 +71,41 @@ proc parseLines*(s: string): seq[Block] =
           m.numEmptyLine = 0
           continue
 
+
+
     block fencedCodeBackblock:
       if m.kind == fencedCodeBlockBack:
-        if line.match(reFencedCodeBlockBack) and
+        let rem = line.delSpaceAndFence
+
+        if rem != "":
+          let numWS = line.countWhitespace
+          if numWS >= m.width:
+            line.delete(0, m.width - 1)
+          if numWS > 0 and
+               numWS < m.width:
+            line.removePrefix(' ')
+          lineBlock.add(line & "\n")
+          continue
+
+        elif line.match(reFencedCodeBlockBack) and
             line.countBacktick >= m.numOpenfence:
           lineBlock.removeSuffix("\n")
           mdast.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
           lineBlock = ""
           m = newMarkerFlag()
           continue
+
         else:
-          if line.countWhitespace < m.width:
-            lineBLock.add(line.strip(trailing = false) & "\n")
-            continue
-          else:
-            line.delete(0, m.width)
-            lineBlock.add(line & "\n")
-            continue
+          let numWS = line.countWhitespace
+          if numWS >= m.width:
+            line.delete(0, m.width - 1)
+          if numWS > 0 and
+               numWS < m.width:
+            line.removePrefix(' ')
+          lineBlock.add(line & "\n")
+          continue
+
+
 
     block fencedCodeTildblock:
       if m.kind == fencedCodeBlockTild:
@@ -97,13 +117,14 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else:
-          if line.countWhitespace < m.width:
-            lineBLock.add(line.strip(trailing = false) & "\n")
-            continue
-          else:
-            line.delete(0, m.width)
-            lineBlock.add(line & "\n")
-            continue
+          let numWS = line.countWhitespace
+          if numWS >= m.width:
+            line.delete(0, m.width - 1)
+          if numWS > 0 and
+               numWS < m.width:
+            line.removePrefix(' ')
+          lineBlock.add(line & "\n")
+          continue
 
 
 
@@ -182,7 +203,7 @@ proc parseLines*(s: string): seq[Block] =
           m.width = line.countWhitespace
           m.numOpenfence = line.countBacktick
           m.kind = fencedCodeBlockBack
-          continue
+          break
       
       of '~':
         m.numTild.inc
@@ -194,7 +215,7 @@ proc parseLines*(s: string): seq[Block] =
           m.width = line.countWhitespace
           m.numOpenfence = line.countTild
           m.kind = fencedCodeBlockTild
-          continue
+          break
 
 
 
@@ -207,10 +228,21 @@ proc parseLines*(s: string): seq[Block] =
 
     if line.isEmptyOrWhitespace:
       m.kind = emptyLine
+
+    if m.kind == none:
+      m.kind = paragraph
     #check for marker ends
 
 
     #line-adding begins
+
+    if m.kind == fencedCodeBlockBack or
+       m.kind == fencedCodeBlockTild:
+      if lineBlock != "":
+        mdast.add(openParagraph(lineBlock))
+        lineBlock = ""
+      continue
+
     if m.kind == themanticBreak:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
@@ -287,7 +319,7 @@ proc parseLines*(s: string): seq[Block] =
   if lineBlock != "":
     if m.kind == fencedCodeBlockBack or
       m.kind == fencedCodeBlockTild:
-      lineBlock.removeSuffix("\n")
+      lineBlock.removeSuffix('\n')
       mdast.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
     
     elif m.kind == indentedCodeBlock:
