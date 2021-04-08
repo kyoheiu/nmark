@@ -35,7 +35,7 @@ proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
       return delim
     else: continue
 
-proc tagToLiteral*(line: string): string =
+proc asLiteral*(line: string): string =
   for c in line:
     case c
       of '<':

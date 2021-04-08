@@ -41,14 +41,21 @@ proc markdownFromFile*(path: string): string =
 when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
-    n = 114
-    j = f[n-1]
-    md = j["markdown"].getStr
-    hl = j["html"].getStr
-    num = j["example"].getInt
-  echo n
-  if markdown(md) != hl:
-    echo md
-    echo  markdown(md)
-  else:
-    echo "Success"
+  var
+    begins = 62
+    ends = 106
+  for j in f:
+    let
+      j = f[begins-1]
+      md = j["markdown"].getStr
+      hl = j["html"].getStr
+      num = j["example"].getInt
+    if markdown(md) != hl:
+      echo num
+      echo md
+      echo  markdown(md)
+    else:
+      echo "Success"
+    begins.inc
+    if begins == ends:
+      break

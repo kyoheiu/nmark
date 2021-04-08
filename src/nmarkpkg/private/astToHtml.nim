@@ -1,4 +1,4 @@
-import htmlgen
+import htmlgen, strutils
 import defBlock, insertMarker
 
 proc astToHtml*(mdast: Block, isTight: var bool): string =
@@ -29,13 +29,17 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of htmlBlock: return mdast.raw & "\p"
 
-    of indentedCodeBlock: return pre(code(mdast.raw.tagToLiteral & "\p")) & "\p"
+    of indentedCodeBlock: return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
 
     of fencedCodeBlock:
       if mdast.raw == "":
-        return pre(code(mdast.raw.tagToLiteral)) & "\p"
+        return pre(code(mdast.raw.asLiteral)) & "\p"
       else:
-        return pre(code(mdast.raw.tagToLiteral & "\p")) & "\p"
+        #if mdast.attr != "":
+          #var t = pre(code(mdast.raw.asLiteral & "\p")) & "\p"
+          #t.replace("<code>", "<code class=\"language-" & mdast.attr & ">")
+        #else:
+        return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
 
     else: return
 

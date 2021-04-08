@@ -1,5 +1,5 @@
-import strutils, re
-from sequtils import filter
+import sequtils, strutils, re
+from algorithm import reverse
 
 type
   BlockType* = enum
@@ -16,6 +16,8 @@ type
     setextHeader,
     themanticBreak,
     indentedCodeBlock,
+    fencedCodeBlockBack,
+    fencedCodeBlockTild,
     fencedCodeBlock,
     htmlBlock,
     linkReference,
@@ -40,13 +42,14 @@ type
       children*: seq[Block]
     of leafBlock:
       leafType*: BlockType
+      attr*: string
       raw*: string
   
   FlagContainer* = ref FlagObj
   FlagObj = object
     flagBlockQuote*: bool
     flagIndentedCodeBlock*: bool
-    flagFencedCodeBlockChar*: bool
+    flagFencedCodeBlockBack*: bool
     flagFencedCodeBlockTild*: bool
     openingFenceLength*: int
     fencedCodeBlocksdepth*: int
@@ -71,7 +74,7 @@ proc newFlag*(): FlagContainer =
   FlagContainer(
     flagBlockQuote: false,
     flagIndentedCodeBlock: false,
-    flagFencedCodeBlockChar: false,
+    flagFencedCodeBlockBack: false,
     flagFencedCodeBlockTild: false,
     flagHtmlBlock1: false,
     flagHtmlBlock2: false,
@@ -104,8 +107,8 @@ let
   reIndentedCodeBlock* = re"\s{4,}\S+"
   reTabStart* = re" *\t+"
   reBreakIndentedCode* = re" {0,3}\S"
-  reFencedCodeBlockChar* = re" {0,3}`{3,}\S*$"
-  reFencedCodeBlockTild* = re" {0,3}~{3,}\S*$"
+  reFencedCodeBlockBack* = re"^ {0,3}`{3,}[^`]*$"
+  reFencedCodeBlockTild* = re"^ {0,3}~{3,}[^~]*~*$"
 
   reHtmlBlock1Begins* = re"(<script|<pre|<style)( |>|\n)"
   reHtmlBlock1Ends*   = re"</script>|</pre>|</style>"
@@ -133,6 +136,7 @@ proc countWhitespace*(line: string): int =
   for c in line:
     if c == ' ': i.inc
     else: return i
+  return i
 
 proc deleteUntilTab*(line: string): string =
   var flag = false
@@ -166,27 +170,52 @@ proc countSpaceWithTab*(line: string): int =
   return i
 
 proc countBacktick*(line: string): int =
-  line.filter(proc(x: char): bool = x == '`' or x == '~').len()
+  var i: int
+  for c in line:
+    if c == ' ': continue
+    elif c == '`': i.inc
+    else: return i
+  return i
+
+proc countTild*(line: string): int =
+  var i: int
+  for c in line:
+    if c == ' ': continue
+    elif c == '~': i.inc
+    else: return i
+  return i
+
+proc delSpaceAndFence*(line: string): string =
+  for c in line:
+    if c == ' ' or c == '`' or c == '~': continue
+    else: result.add(c)
+
+proc takeAttr*(line: string): string =
+  for c in line:
+    if c == ' ': break
+    else: result.add(c)
 
 proc openAtxHeader*(line: string): Block =
-  case line.splitWhitespace[0]:
+  var s = line.splitWhitespace
+  let l = s.len()
+  let marker = s[0]
+  if s[l-1].all(proc(c: char): bool = c == '#'):
+    s.delete(l-1, l-1)
+  s.delete(0,0)
+  let str = s.join(" ")
+
+  case marker:
     of "#":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header1, raw: str)
     of "##":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header2, raw: str)
     of "###":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header3, raw: str)
     of "####":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header4, raw: str)
     of "#####":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header5, raw: str)
     of "######":
-      let str = line.strip(chars = {' ', '#'})
       return Block(kind: leafBlock, leafType: header6, raw: str)
 
 proc openAnotherAtxHeader*(line: string): Block =
@@ -207,8 +236,8 @@ proc openAnotherAtxHeader*(line: string): Block =
 proc openContainerBlock*(blockType: BlockType, mdast: seq[Block]): Block =
   return Block(kind: containerBlock, containerType: blockType, children: mdast)
 
-proc openCodeBlock*(blockType: BlockType, codeLines: string): Block =
-  return Block(kind: leafBlock, leafType: blockType, raw: codeLines)
+proc openCodeBlock*(blockType: BlockType, atr: string, codeLines: string): Block =
+  return Block(kind: leafBlock, leafType: blockType, attr: atr, raw: codeLines)
 
 proc openSetextHeader*(n: int, lineBlock: string): Block =
   if n == 1:
