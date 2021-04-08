@@ -9,6 +9,7 @@ type
     numBacktick: int
     numTild: int
     numOpenfence: int
+    numEmptyLine: int
     attr: string
     kind: BlockType
     width: int
@@ -20,6 +21,7 @@ proc newMarkerFlag(): MarkerFlag =
     numBacktick: 0,
     numTild: 0,
     numOpenfence: 0,
+    numEmptyLine: 0,
     attr: "",
     kind: none,
     width: 0
@@ -41,17 +43,30 @@ proc parseLines*(s: string): seq[Block] =
       if m.kind == indentedCodeBlock:
         if (not line.isEmptyOrWhitespace) and
           line.countWhitespace < 4:
-          lineBlock.removeSuffix("\n")
+          if m.numEmptyLine != 0:
+            var s = lineBlock.splitLines
+            let l = s.len() - 1
+            s.delete(l - m.numEmptyLine + 1, l)
+            lineBlock = s.join("\n")
           mdast.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
           lineBlock = ""
+          m.numEmptyLine = 0
           m.kind = none
           break iCBblock
         elif line.isEmptyOrWhiteSpace:
-          lineBlock.add("\n")
-          continue
+          m.numEmptyLine.inc
+          let w = line.countWhitespace
+          if w >= 4:
+            line.delete(0, 3)
+            lineBlock.add("\n" & line)
+            continue
+          else:
+            lineBlock.add("\n")
+            continue
         else:
           line.delete(0, 3)
           lineBlock.add("\n" & line)
+          m.numEmptyLine = 0
           continue
 
     block fencedCodeBackblock:
@@ -220,11 +235,12 @@ proc parseLines*(s: string): seq[Block] =
     elif m.kind == setextHeader:
       if lineBlock == "":
         lineBlock.add(line)
+        m.kind = paragraph
       else:
         var n: int
         if line.contains('='): n = 1
         else: n = 2
-        mdast.add(openSetextHeader(n, lineBlock))
+        mdast.add(openSetextHeader(n, lineBlock.strip(chars = {' ', '\t'})))
         lineBlock = ""
         m.kind = none
       
@@ -275,7 +291,11 @@ proc parseLines*(s: string): seq[Block] =
       mdast.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
     
     elif m.kind == indentedCodeBlock:
-      lineBlock.removeSuffix("\n")
+      if m.numEmptyLine != 0:
+        var s = lineBlock.splitLines
+        let l = s.len() - 1
+        s.delete(l - m.numEmptyLine + 1, l)
+        lineBlock = s.join("\n")
       mdast.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
 
     else:

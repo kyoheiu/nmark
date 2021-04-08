@@ -42,18 +42,19 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 62
-    ends = 106
+    begins = 107
+    ends = 118
   for j in f:
     let
       j = f[begins-1]
       md = j["markdown"].getStr
+      mdd = md.markdown
       hl = j["html"].getStr
       num = j["example"].getInt
     if markdown(md) != hl:
       echo num
-      echo md
-      echo  markdown(md)
+      echo "---\p" & md & "---" 
+      echo mdd
     else:
       echo "Success"
     begins.inc

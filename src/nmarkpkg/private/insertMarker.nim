@@ -115,9 +115,6 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
         result.add("<br />")
         flag.toEscape = false
       
-      of '\\':
-        continue
-      
       else:
         result.add(c)
         flag.toEscape = false

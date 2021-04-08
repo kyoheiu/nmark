@@ -241,6 +241,7 @@ proc openCodeBlock*(blockType: BlockType, atr: string, codeLines: string): Block
 
 proc openSetextHeader*(n: int, lineBlock: string): Block =
   if n == 1:
+    echo lineBlock
     return Block(kind: leafBlock, leafType: header1, raw: lineBlock)
   else:
     return Block(kind: leafBlock, leafType: header2, raw: lineBlock)
