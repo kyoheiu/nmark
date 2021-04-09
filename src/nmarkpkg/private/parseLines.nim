@@ -208,41 +208,66 @@ proc parseLines*(s: string): seq[Block] =
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock1
-        lineBlock.add(line)
-        continue
+        if line.contains(reHtmlBlock1Ends):
+          mdast.add(openHTML(line))
+          m = newMarkerFlag()
+          continue
+        else:
+          m.kind = htmlBlock1
+          lineBlock.add(line)
+          continue
     
       if line.startsWith(reHtmlBlock2Begins):
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock2
-        lineBlock.add(line)
-        continue
+        if line.contains(reHtmlBlock2Ends):
+          mdast.add(openHTML(line))
+          m = newMarkerFlag()
+          continue
+        else:
+          m.kind = htmlBlock2
+          lineBlock.add(line)
+          continue
       
       if line.startsWith(reHtmlBlock3Begins):
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock3
-        lineBlock.add(line)
-        continue
+        if line.contains(reHtmlBlock3Ends):
+          mdast.add(openHTML(line))
+          m = newMarkerFlag()
+          continue
+        else: 
+          m.kind = htmlBlock3
+          lineBlock.add(line)
+          continue
       
       if line.startsWith(reHtmlBlock4Begins):
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock4
-        lineBlock.add(line)
-        continue
+        if line.contains(reHtmlBlock4Ends):
+          mdast.add(openHTML(line))
+          m = newMarkerFlag()
+          continue
+        else:
+          m.kind = htmlBlock4
+          lineBlock.add(line)
+          continue
       
       if line.startsWith(reHtmlBlock5Begins):
         if lineBlock != "":
           mdast.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock5
-        lineBlock.add(line)
-        continue
+        if line.contains(reHtmlBlock5Ends):
+          mdast.add(openHTML(line))
+          m = newMarkerFlag()
+          continue
+        else:
+          m.kind = htmlBlock5
+          lineBlock.add(line)
+          continue
       
       if line.startsWith(reHtmlBlock6Begins):
         if lineBlock != "":
@@ -255,6 +280,7 @@ proc parseLines*(s: string): seq[Block] =
       if line.startsWith(reHtmlBlock7Begins):
         if lineBlock != "":
           lineBlock.add("\n" & line.strip(trailing = false))
+          continue
         else:
           m.kind = htmlBlock7
           lineBlock.add(line)
@@ -462,6 +488,10 @@ proc parseLines*(s: string): seq[Block] =
         s.delete(l - m.numEmptyLine + 1, l)
         lineBlock = s.join("\n")
       mdast.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
+
+    elif m.kind == htmlBlock1:
+      lineBlock.removeSuffix("\n")
+      mdast.add(openHTML(lineBlock))
 
     else:
       mdast.add(openParagraph(lineBlock))

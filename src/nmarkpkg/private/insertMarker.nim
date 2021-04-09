@@ -250,9 +250,6 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       else:
         result.add(c)
     
-    elif c == '"':
-      result.add("&quot;")
-    
     else:
       result.add(c)
 

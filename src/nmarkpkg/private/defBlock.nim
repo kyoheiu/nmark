@@ -116,8 +116,8 @@ let
   reFencedCodeBlockBack* = re"^ {0,3}`{3,}[^`]*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}[^~]*~*$"
 
-  reHtmlBlock1Begins* = re" {0,3}(<script|<pre|<style)( |>|\n)"
-  reHtmlBlock1Ends*   = re"</script>|</pre>|</style>"
+  reHtmlBlock1Begins* = re" {0,3}<(script|pre|style|textarea)( |>|$)"
+  reHtmlBlock1Ends*   = re"</script>|</pre>|</style>|</textarea>"
   reHtmlBlock2Begins* = re" {0,3}<!--"
   reHtmlBlock2Ends*   = re"-->"
   reHtmlBlock3Begins* = re" {0,3}<\?"
@@ -127,7 +127,7 @@ let
   reHtmlBlock5Begins* = re" {0,3}<!\[CDATA\["
   reHtmlBlock5Ends*   = re"\]\]>"
   reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
-  reHtmlBlock7Begins* = re" {0,3}<[a-zA-Z][a-zA-Z0-9\-]*(>|/>) *$"
+  reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
