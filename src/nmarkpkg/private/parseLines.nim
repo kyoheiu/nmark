@@ -285,6 +285,25 @@ proc parseLines*(s: string): seq[Block] =
           m.kind = htmlBlock7
           lineBlock.add(line)
           continue
+      
+
+
+      #if m.kind = linkReference:
+        #if line.isEmptyOrWhitespace:
+
+        #if not lineBlock.match(reLinkDest):
+          #lineBlock.add(line)
+        #if lineBlock.match(reLinkDest) and
+           #not lineBlock.match(reLinkTitle):
+          
+
+      #if line.startsWith(reLinkRef):
+        #if lineBlock != "":
+          #lineBlock.add("\n" & line.strip(trailing = false))
+        #else:
+          #m.kind = linkReference
+          #lineBlock.add(line)
+          #continue
 
 
 

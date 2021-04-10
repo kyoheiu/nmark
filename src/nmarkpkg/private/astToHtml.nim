@@ -31,21 +31,23 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
     of indentedCodeBlock: return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
 
-    of fencedCodeBlock:
-      if mdast.raw == "":
-        if mdast.attr != "":
-          var t = pre(code(mdast.raw.asLiteral)) & "\p"
-          return t.replace("<code>", "<code class=\"language-" & mdast.attr & "\">")
-        else:
-          return pre(code(mdast.raw.asLiteral)) & "\p"
-      else:
-        if mdast.attr != "":
-          var t = pre(code(mdast.raw.asLiteral & "\p")) & "\p"
-          return t.replace("<code>", "<code class=\"language-" & mdast.attr & "\">")
-        else:
-          return pre(code(mdast.raw.asLiteral & "\p")) & "\p"
-
     else: return
+
+  of fencedCode:
+
+    if mdast.codeText == "":
+      if mdast.codeAttr != "":
+        var t = pre(code(mdast.codeText.asLiteral)) & "\p"
+        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr & "\">")
+      else:
+        return pre(code(mdast.codeText.asLiteral)) & "\p"
+
+    else:
+      if mdast.codeAttr != "":
+        var t = pre(code(mdast.codeText.asLiteral & "\p")) & "\p"
+        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr & "\">")
+      else:
+        return pre(code(mdast.codeText.asLiteral & "\p")) & "\p"
 
   of containerBlock:
 
@@ -103,3 +105,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       return ol("\p" & orderedListContainer) & "\p"
 
     else: return
+  
+
+
+  else: return

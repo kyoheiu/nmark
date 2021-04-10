@@ -39,17 +39,32 @@ type
 type
   BlockKind* = enum
     containerBlock,
-    leafBlock
+    leafBlock,
+    fencedCode,
+    linkRef
+
   Block* = ref BlockObj
   BlockObj = object
     case kind*: BlockKind
+
     of containerBlock:
       containerType*: BlockType
       children*: seq[Block]
+
     of leafBlock:
       leafType*: BlockType
-      attr*: string
       raw*: string
+    
+    of fencedCode:
+      codeType*: BlockType
+      codeAttr*: string
+      codeText*: string
+    
+    of linkRef:
+      linkLabel: string
+      linkUrl: string
+      linkTitle: string
+
   
   FlagContainer* = ref FlagObj
   FlagObj = object
@@ -128,6 +143,12 @@ let
   reHtmlBlock5Ends*   = re"\]\]>"
   reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
+
+  reLinkRef* = re" {0,3}\[\S+\]:( *|\n)"
+  reLinkDest* = re" *(<.+>( |\n)|\w+) *"
+  reLinkTitle* = re"""
+  ".*"|'.*'|\(.*\)
+  """
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
@@ -243,11 +264,8 @@ proc openAnotherAtxHeader*(line: string): Block =
     of "######":
       return Block(kind: leafBlock, leafType: header6, raw: "")
 
-proc openContainerBlock*(blockType: BlockType, mdast: seq[Block]): Block =
-  return Block(kind: containerBlock, containerType: blockType, children: mdast)
-
-proc openCodeBlock*(blockType: BlockType, atr: string, codeLines: string): Block =
-  return Block(kind: leafBlock, leafType: blockType, attr: atr, raw: codeLines)
+proc openCodeBlock*(blockType: BlockType, atr: string, lines: string): Block =
+  return Block(kind: fencedCode, codeType: blockType, codeAttr: atr, codeText: lines)
 
 proc openSetextHeader*(n: int, lineBlock: string): Block =
   if n == 1:
@@ -288,3 +306,33 @@ proc openHTML*(lineBlock: string): Block =
 
 proc openParagraph*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: paragraph, raw: lineBlock)
+
+
+
+type LRflag = enum
+  flabel,
+  fdest,
+  ftitle
+
+proc parseLinkRef*(line: string): seq[string] =
+  var
+    label: string
+    dest: string
+    title: string
+    flag = flabel
+  for i, c in line:
+    if i == 0: continue
+
+    case flag
+    of flabel:
+      if c == ']': flag = fdest
+      else: label.add(c)
+    
+    of fdest:
+      if c == ' ' or c == '\n': flag = ftitle
+      else: dest.add(c)
+    
+    else:
+      title.add(c)
+  
+  return @[]
