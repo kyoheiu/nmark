@@ -4,7 +4,7 @@ import readInline
 let
   reAutoLink = re"^[a-zA-Z][a-zA-Z0-9\+\.-]{1,31}:[^\s<>]$"
   reMailLink = re"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-  reLinkDest = re"^\([^\(\)\[\]]*\)"
+  reLinkDest = re"\([^\(\)\[\]]*\)"
 
 type
   ParseFlag = ref PObj
@@ -130,7 +130,9 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
               element.isActive = false
               continue
 
-          elif (element.typeDelim == "[" or element.typeDelim == "![") and element.isActive and element.potential == canOpen:
+          elif (element.typeDelim == "[" or element.typeDelim == "![") and
+               element.isActive and
+               element.potential == canOpen:
             element.potential = opener
 
             delimSeq[i].potential = closer
@@ -519,9 +521,10 @@ proc parseInline*(line: string): seq[DelimStack] =
 
   let em = r.parseEmphasis
 
-  #echoDelims (n_em & em)
+  echoDelims (n_em & em)
 
   return (n_em & em)
          .sortedByIt(it.position)
          .filter(proc(x: DelimStack): bool =
-         (x.isActive) and x.potential != both)
+         (x.isActive) and
+          x.potential != both)

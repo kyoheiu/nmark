@@ -61,9 +61,9 @@ type
       codeText*: string
     
     of linkRef:
-      linkLabel: string
-      linkUrl: string
-      linkTitle: string
+      linkLabel*: string
+      linkUrl*: string
+      linkTitle*: string
 
   
   FlagContainer* = ref FlagObj
@@ -144,10 +144,9 @@ let
   reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
-  reLinkRef* = re" {0,3}\[\S+\]:( *|\n)"
-  reLinkDest* = re" *(<.+>( |\n)|\w+) *"
-  reLinkTitle* = re"""
-  ".*"|'.*'|\(.*\)
+  reLinkRef = re" {0,3}\[.*\S+\.*\]:(\s*\n?\s*)"
+  reLinkTitle = re"""
+  ("[^"]*"|'[^']*'|\([^\(\)]*\))
   """
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
@@ -304,35 +303,173 @@ proc openTightOL*(mdast: seq[Block]): Block =
 proc openHTML*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: htmlBlock, raw: lineBlock)
 
-proc openParagraph*(lineBlock: string): Block =
-  Block(kind: leafBlock, leafType: paragraph, raw: lineBlock)
 
 
+type linkKind = enum
+  toLabel
+  skipToUrl
+  toUrl
+  toUrlLT
+  skipToTitle
+  toTitleDouble
+  toTitleSingle
+  toTitlePare
+  afterTitle
 
-type LRflag = enum
-  flabel,
-  fdest,
-  ftitle
-
-proc parseLinkRef*(line: string): seq[string] =
-  var
-    label: string
-    dest: string
-    title: string
-    flag = flabel
-  for i, c in line:
-    if i == 0: continue
-
-    case flag
-    of flabel:
-      if c == ']': flag = fdest
-      else: label.add(c)
-    
-    of fdest:
-      if c == ' ' or c == '\n': flag = ftitle
-      else: dest.add(c)
-    
-    else:
-      title.add(c)
+proc openParagraph*(lineBlock: var string): seq[Block] =
   
-  return @[]
+  if lineBlock.startsWith(reLinkRef):
+
+    block linkDetecting:
+
+      while true:
+
+        var
+          label: string
+          url: string
+          title: string
+          endPos: int
+          isAfterBreak = false
+          flag = toLabel
+
+        for i, c in lineBlock:
+          if i == 0: continue
+
+          case flag
+          of toLabel:
+            if c == '[' and lineBlock[i-1] != '\\': break linkDetecting
+            elif c == ']' and lineBlock[i-1] != '\\':
+              flag = skipToUrl
+              continue
+            else:
+              label.add(c)
+              continue
+          
+          of skipToUrl:
+            if c == ':' or c == ' ' or c == '\n': continue
+            elif c == '<':
+              flag = toUrlLT
+              continue
+            else:
+              url.add(c)
+              flag = toUrl
+              continue
+          
+          of toUrlLT:
+            if c == '\n': break linkDetecting
+            elif c == '<' and lineBlock[i-1] != '\\': break linkDetecting
+            elif c == '>' and lineBlock[i-1] != '\\':
+              endPos = i
+              flag = skipToTitle
+              continue
+            elif c == ' ':
+              url.add("%20")
+              continue
+            else:
+              url.add(c)
+              continue
+          
+          of toUrl:
+            if (c == '(' or c == ')') and lineBlock[i-1] != '\\': break linkDetecting
+            elif c == ' ':
+              endPos = i
+              flag = skipToTitle
+              continue
+            elif c == '\n':
+              echo "382"
+              endPos = i
+              flag = skipToTitle
+              isAfterBreak = true
+              continue
+            else:
+              url.add(c)
+              continue
+          
+          of skipToTitle:
+            if c == ' ': continue 
+            elif c == '\n':
+              if isAfterBreak:
+                result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
+                lineBlock.delete(0, endPos)
+                break linkDetecting
+              else:
+                isAfterBreak = true
+                continue
+            elif c == '"':
+              flag = toTitleDouble
+              continue
+            elif c == '\'':
+              flag = toTitleSingle
+              continue
+            elif c == '(':
+              flag = toTitlePare
+              continue
+            else:
+              if isAfterBreak:
+                result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
+                lineBlock.delete(0, endPos)
+                break linkDetecting
+              else:
+                break linkDetecting
+          
+          of toTitleDouble:
+            if c == '"' and lineBlock[i-1] != '\\':
+              endPos = i
+              flag = afterTitle
+              continue
+            else:
+              title.add(c)
+              continue
+
+
+          of toTitleSingle:
+            if c == '\'' and lineBlock[i-1] != '\\':
+              endPos = i
+              flag = afterTitle
+              continue
+            else:
+              title.add(c)
+              continue
+
+          of toTitlePare:
+            if c == '(' and lineBlock[i-1] != '\\': break linkDetecting
+            elif c == ')' and lineBlock[i-1] != '\\':
+              endPos = i
+              flag = afterTitle
+              continue
+            else:
+              title.add(c)
+              continue
+          
+          of afterTitle:
+            if c == ' ': continue
+            elif c == '\n':
+              result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
+              lineBlock.delete(0, endPos)
+              break linkDetecting
+            else:
+              break linkDetecting
+        
+        if label != "" and url != "" and title == "":
+          result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
+          return result
+      
+        elif label != "" and url != "" and title != "":
+          if title.match(reLinkTitle):
+            result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
+          else:
+            break linkDetecting
+
+          return result
+
+        else:
+          if lineBlock.startsWith(reLinkRef):
+            continue
+          else: break
+
+
+  if lineBlock == "":
+    return result
+  else:
+    result.add(Block(kind: leafBlock, leafType: paragraph, raw: lineBlock))
+    return result

@@ -288,25 +288,6 @@ proc parseLines*(s: string): seq[Block] =
       
 
 
-      #if m.kind = linkReference:
-        #if line.isEmptyOrWhitespace:
-
-        #if not lineBlock.match(reLinkDest):
-          #lineBlock.add(line)
-        #if lineBlock.match(reLinkDest) and
-           #not lineBlock.match(reLinkTitle):
-          
-
-      #if line.startsWith(reLinkRef):
-        #if lineBlock != "":
-          #lineBlock.add("\n" & line.strip(trailing = false))
-        #else:
-          #m.kind = linkReference
-          #lineBlock.add(line)
-          #continue
-
-
-
     #check for marker begins
     for i, c in line:
 

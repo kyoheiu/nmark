@@ -14,13 +14,18 @@ proc echoSeqBlock(s: seq[Block]) =
 proc markdown*(lines: string): string =
   let seqAst = lines.parseLines
 
-  #echoSeqBlock seqAst
+  var linkSeq: seq[Block]
+  for e in seqAst:
+    if e.kind == BlockKind.linkRef:
+      linkSeq.add(e)
+    else:
+      continue
 
   var resultHtml: string
   var isTight = false
 
   for ast in seqAst:
-    resultHtml.add(ast.astToHtml(isTight))
+    resultHtml.add(ast.astToHtml(isTight, linkseq))
 
   return resultHtml
 
@@ -30,11 +35,18 @@ proc markdownFromFile*(path: string): string =
 
   let seqAst = lines.parseLines
 
+  var linkSeq: seq[Block]
+  for e in seqAst:
+    if e.kind == BlockKind.linkRef:
+      linkSeq.add(e)
+    else:
+      continue
+
   var resultHtml: string
   var isTight = false
 
   for ast in seqAst:
-    resultHtml.add(ast.astToHtml(isTight))
+    resultHtml.add(ast.astToHtml(isTight, linkSeq))
 
   return resultHtml
 
@@ -44,8 +56,8 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 143
-    ends = 146
+    begins = 193
+    ends = 194
   for j in f:
     let
       j = f[begins-1]

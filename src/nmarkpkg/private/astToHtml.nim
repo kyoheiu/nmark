@@ -1,7 +1,7 @@
 import htmlgen, strutils
 import defBlock, insertMarker
 
-proc astToHtml*(mdast: Block, isTight: var bool): string =
+proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 
   case mdast.kind
   of leafBlock:
@@ -11,21 +11,21 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
     of themanticBreak: return hr() & "\p"
 
     of paragraph:
-      let value = mdast.raw.insertInline
+      let value = mdast.raw.insertInline(linkSeq)
       if isTight: return value
       else: return p(value) & "\p"
 
-    of header1: return h1(mdast.raw.insertInline) & "\p"
+    of header1: return h1(mdast.raw.insertInline(linkSeq)) & "\p"
 
-    of header2: return h2(mdast.raw.insertInline) & "\p"
+    of header2: return h2(mdast.raw.insertInline(linkSeq)) & "\p"
 
-    of header3: return h3(mdast.raw.insertInline) & "\p"
+    of header3: return h3(mdast.raw.insertInline(linkSeq)) & "\p"
 
-    of header4: return h4(mdast.raw.insertInline) & "\p"
+    of header4: return h4(mdast.raw.insertInline(linkSeq)) & "\p"
 
-    of header5: return h5(mdast.raw.insertInline) & "\p"
+    of header5: return h5(mdast.raw.insertInline(linkSeq)) & "\p"
 
-    of header6: return h6(mdast.raw.insertInline) & "\p"
+    of header6: return h6(mdast.raw.insertInline(linkSeq)) & "\p"
 
     of htmlBlock: return mdast.raw & "\p"
 
@@ -57,14 +57,14 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
 
       var blockQuoteContainer: string
       for child in mdast.children:
-        blockQuoteContainer.add(child.astToHtml(isTight))
+        blockQuoteContainer.add(child.astToHtml(isTight, linkSeq))
       return htmlgen.blockquote("\n" & blockquoteContainer) & "\p"
 
     of Blocktype.list:
 
       var listContainer: string
       for child in mdast.children:
-        listContainer.add(child.astToHtml(isTight))
+        listContainer.add(child.astToHtml(isTight, linkSeq))
       if isTight:
         return li(listContainer) & "\p"
       else:
@@ -75,7 +75,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       isTight = false
       var unOrderedListContainer: string
       for child in mdast.children:
-        unOrderedListContainer.add(child.astToHtml(isTight))
+        unOrderedListContainer.add(child.astToHtml(isTight, linkSeq))
       return ul("\p" & unOrderedListContainer) & "\p"
 
     of Blocktype.unOrderedTightList:
@@ -83,7 +83,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       isTight = true
       var unOrderedListContainer: string
       for child in mdast.children:
-        unOrderedListContainer.add(child.astToHtml(isTight))
+        unOrderedListContainer.add(child.astToHtml(isTight, linkSeq))
       isTight = false
       return ul("\p" & unOrderedListContainer) & "\p"
 
@@ -92,7 +92,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       isTight = false
       var orderedListContainer: string
       for child in mdast.children:
-        orderedListContainer.add(child.astToHtml(isTight))
+        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
       return ol("\p" & orderedListContainer) & "\p"
 
     of Blocktype.orderedTightList:
@@ -100,7 +100,7 @@ proc astToHtml*(mdast: Block, isTight: var bool): string =
       isTight = true
       var orderedListContainer: string
       for child in mdast.children:
-        orderedListContainer.add(child.astToHtml(isTight))
+        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
       isTight = false
       return ol("\p" & orderedListContainer) & "\p"
 

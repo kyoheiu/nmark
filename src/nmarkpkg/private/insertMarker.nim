@@ -1,7 +1,7 @@
 from strutils import removeSuffix
 from htmlparser import entityToUtf8
 import json
-import readInline, parseInline
+import readInline, parseInline, defBlock
 
 type
   SplitFlag = ref SObj
@@ -12,6 +12,7 @@ type
     toLinkDestination: bool
     toImagetext: bool
     toImageDestination: bool
+    toLinkRef: bool
     toEntity: bool
     toEscape: bool
     toCode: bool
@@ -24,6 +25,7 @@ proc newSplitFlag(): SplitFlag =
     toLinkDestination: false,
     toImagetext: false,
     toImageDestination: false,
+    toLinkRef: false,
     toEntity: false,
     toEscape: false,
     toCode: false
@@ -52,7 +54,7 @@ proc asLiteral*(line: string): string =
 
 
 
-proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
+proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]): string =
   
   var delimPos: seq[int]
   var flag = newSplitFlag()
@@ -147,12 +149,32 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       if c == ')':
         flag.toLinkDestination = false
         let delimInLink = linkText.processEmphasis
-        let processedText = linkText.insertMarker(delimInLink)
+        let processedText = linkText.insertMarker(linkSeq, delimInLink)
         result.add("<a href=\"" & linkDestination & "\">" & processedText & "</a>")
         linkText = ""
         linkDestination = ""
       else:
         linkDestination.add(c)
+    
+    elif flag.toLinkRef:
+      if c == ']':
+        flag.toLinkRef = false
+        var l : seq[string]
+        for e in linkSeq:
+          if e.linkLabel == tempStr:
+            if e.linkTitle == "":
+              result.add("<a href=\"" & e.linkUrl & "\">" & e.linkLabel & "</a>")
+              tempStr = ""
+            else:
+              result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & e.linkLabel &  "</a>")
+              tempStr = ""
+          else:
+            result.add("[" & tempStr & "]")
+            continue
+
+      else:
+        tempStr.add(c)
+        continue
 
     elif flag.toImagetext:
       if c == ']':
@@ -202,6 +224,8 @@ proc insertMarker(line: string, delimSeq: seq[DelimStack]): string =
       of "[":
         if currentDelim.potential == opener:
           flag.toLinktext = true
+        elif currentDelim.potential == canOpen:
+          flag.toLinkRef = true
       
       of "![":
         if currentDelim.potential == opener:
@@ -268,5 +292,5 @@ proc echoDelims(r: seq[DelimStack]) =
 
 
 
-proc insertInline*(line: string): string =
-  insertMarker(line, line.parseInline)
+proc insertInline*(line: string, linkSeq: seq[Block]): string =
+  insertMarker(line, linkSeq, line.parseInline)
