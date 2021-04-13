@@ -16,6 +16,7 @@ type
     toEntity: bool
     toEscape: bool
     toCode: bool
+    afterBS: bool
 
 proc newSplitFlag(): SplitFlag =
   SplitFlag(
@@ -28,7 +29,8 @@ proc newSplitFlag(): SplitFlag =
     toLinkRef: false,
     toEntity: false,
     toEscape: false,
-    toCode: false
+    toCode: false,
+    afterBS: false
   )
 
 proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
@@ -158,21 +160,29 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
     
     elif flag.toLinkRef:
       if c == ']':
-        flag.toLinkRef = false
-        var l : seq[string]
-        for e in linkSeq:
-          if e.linkLabel == tempStr:
-            if e.linkTitle == "":
-              result.add("<a href=\"" & e.linkUrl & "\">" & e.linkLabel & "</a>")
-              tempStr = ""
+        if flag.afterBS:
+          tempStr.add(c)
+          flag.afterBS = false
+          continue
+        else:
+          flag.toLinkRef = false
+          var l : seq[string]
+          for e in linkSeq:
+            if e.linkLabel == tempStr:
+              if e.linkTitle == "":
+                result.add("<a href=\"" & e.linkUrl & "\">" & e.linkLabel & "</a>")
+                tempStr = ""
+              else:
+                result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & e.linkLabel &  "</a>")
+                tempStr = ""
             else:
-              result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & e.linkLabel &  "</a>")
-              tempStr = ""
-          else:
-            result.add("[" & tempStr & "]")
-            continue
-
+              result.add("[" & tempStr & "]")
+              continue
+      elif c == '\\':
+        flag.afterBS = true
+        continue
       else:
+        flag.afterBS = false
         tempStr.add(c)
         continue
 
@@ -293,4 +303,5 @@ proc echoDelims(r: seq[DelimStack]) =
 
 
 proc insertInline*(line: string, linkSeq: seq[Block]): string =
+  echoDelims line.parseInline
   insertMarker(line, linkSeq, line.parseInline)

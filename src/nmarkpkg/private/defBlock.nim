@@ -329,6 +329,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           url: string
           title: string
           endPos: int
+          numOpenP: int
+          numCloseP: int
           isAfterBreak = false
           flag = toLabel
 
@@ -340,6 +342,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             if c == '[' and lineBlock[i-1] != '\\': break linkDetecting
             elif c == ']' and lineBlock[i-1] != '\\':
               flag = skipToUrl
+              continue
+            elif c == '\\':
               continue
             else:
               label.add(c)
@@ -370,17 +374,26 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
               continue
           
           of toUrl:
-            if (c == '(' or c == ')') and lineBlock[i-1] != '\\': break linkDetecting
+            if c == '(' and lineBlock[i-1] != '\\':
+              numOpenP.inc
+              url.add(c)
+            elif c == ')' and lineBlock[i-1] != '\\':
+              numCloseP.inc
+              url.add(c)
             elif c == ' ':
-              endPos = i
-              flag = skipToTitle
-              continue
+              if numOpenP == numCloseP:
+                endPos = i
+                flag = skipToTitle
+                continue
+              else:
+                break linkDetecting
             elif c == '\n':
-              echo "382"
-              endPos = i
-              flag = skipToTitle
-              isAfterBreak = true
-              continue
+              if numOpenP == numCloseP:
+                endPos = i
+                flag = skipToTitle
+                continue
+              else:
+                break linkDetecting
             else:
               url.add(c)
               continue
@@ -455,11 +468,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           return result
       
         elif label != "" and url != "" and title != "":
-          if title.match(reLinkTitle):
-            result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
-          else:
-            break linkDetecting
-
+          result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
           return result
 
         else:

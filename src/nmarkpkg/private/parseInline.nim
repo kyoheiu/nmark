@@ -26,6 +26,18 @@ proc newParseFlag(): ParseFlag =
     inactivateLink: false
   )
 
+proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
+  var escapePos: int
+  for i, element in delimSeq:
+    if element.typeDelim == "\\" and element.isActive:
+      escapePos = element.position
+    if element.position == escapePos+1:
+      element.isActive = false
+      escapePos = 0
+  
+  return delimSeq
+      
+
 proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack] =
 
   var flag = newParseFlag()
@@ -514,14 +526,15 @@ proc parseInline*(line: string): seq[DelimStack] =
 
   #echoDelims r
    
-  let n_em = r.parseAutoLink(line)
+  let n_em = r.parseEscape
+              .parseAutoLink(line)
               .parseCodeSpan.parseLink(line)
               .filter(proc(x: DelimStack): bool =
               (x.typeDelim != "*" and x.typeDelim != "_"))
 
   let em = r.parseEmphasis
 
-  echoDelims (n_em & em)
+  #echoDelims (n_em & em)
 
   return (n_em & em)
          .sortedByIt(it.position)
