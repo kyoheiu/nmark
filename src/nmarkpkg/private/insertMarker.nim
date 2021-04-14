@@ -51,6 +51,9 @@ proc asLiteral*(line: string): string =
         result.add("&gt;")
         continue
 
+      of '"':
+        result.add("&quot;")
+
       else:
         result.add(c)
         continue
@@ -180,9 +183,10 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
                   tempStr = ""
                   break
               else:
-                result.add("[" & tempStr & "]")
-                tempStr = ""
                 continue
+            if tempStr != "":
+              result.add("[" & tempStr & "]")
+              tempStr = ""
           else:
             result.add("[" & tempStr & "]")
             tempStr = ""

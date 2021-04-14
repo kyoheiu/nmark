@@ -327,7 +327,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           label: string
           url: string
           title: string
-          endPos: int
+          urlEndPos: int
+          titleEndPos: int
           numOpenP: int
           numCloseP: int
           isAfterBreak = false
@@ -367,7 +368,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             if c == '\n': break linkDetecting
             elif c == '<' and lineBlock[i-1] != '\\': break linkDetecting
             elif c == '>' and lineBlock[i-1] != '\\':
-              endPos = i
+              urlEndPos = i
               flag = skipToTitle
               continue
             elif c == ' ':
@@ -389,7 +390,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
               continue
             elif c == ' ':
               if numOpenP == numCloseP:
-                endPos = i
+                urlEndPos = i
                 flag = skipToTitle
                 isAfterWS = true
                 continue
@@ -397,7 +398,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 break linkDetecting
             elif c == '\n':
               if numOpenP == numCloseP:
-                endPos = i
+                urlEndPos = i
                 flag = skipToTitle
                 isAfterBreak = true
                 continue
@@ -421,7 +422,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             elif c == '\n':
               if isAfterBreak:
                 result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
-                lineBlock.delete(0, endPos)
+                lineBlock.delete(0, urlEndPos)
                 break linkDetecting
               else:
                 isAfterBreak = true
@@ -454,7 +455,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               if isAfterBreak:
                 result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
-                lineBlock.delete(0, endPos)
+                lineBlock.delete(0, urlEndPos)
                 nextLoop = true
                 break 
               else:
@@ -463,7 +464,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           of toTitleDouble:
             if c == '"' and not(isAfterBS):
               title.add(c)
-              endPos = i
+              titleEndPos = i
               flag = afterTitle
               continue
             elif c == '"' and isAfterBS:
@@ -483,20 +484,53 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 continue
 
           of toTitleSingle:
-            if c == '\'' and lineBlock[i-1] != '\\':
+            if c == '\'' and not(isAfterBS):
               title.add(c)
-              endPos = i
+              titleEndPos = i
               flag = afterTitle
               continue
-            else:
+            elif c == '\'' and isAfterBS:
               title.add(c)
+              isAfterBS = false
               continue
+            elif c == '\\':
+              isAfterBS = true
+              continue
+            else:
+              if isAfterBS:
+                isAfterBS = false
+                title.add("\\" & c)
+                continue
+              else:
+                title.add(c)
+                continue
 
           of toTitlePare:
+            if c == '(' and not(isAfterBS): break linkDetecting
+            if c == ')' and not(isAfterBS):
+              title.add(c)
+              titleEndPos = i
+              flag = afterTitle
+              continue
+            elif c == ')' and isAfterBS:
+              title.add(c)
+              isAfterBS = false
+              continue
+            elif c == '\\':
+              isAfterBS = true
+              continue
+            else:
+              if isAfterBS:
+                isAfterBS = false
+                title.add("\\" & c)
+                continue
+              else:
+                title.add(c)
+                continue
             if c == '(' and lineBlock[i-1] != '\\': break linkDetecting
             elif c == ')' and lineBlock[i-1] != '\\':
               title.add(c)
-              endPos = i
+              titleEndPos = i
               flag = afterTitle
               continue
             else:
@@ -506,11 +540,15 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           of afterTitle:
             if c == ' ': continue
             elif c == '\n':
-              result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
-              lineBlock.delete(0, endPos)
-              break linkDetecting
+              result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title[1..^2]))
+              lineBlock.delete(0, i)
+              nextLoop = true
+              break
             else:
+              result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
+              lineBlock.delete(0, urlEndPos)
               break linkDetecting
+              
         
         if nextLoop:
           continue
