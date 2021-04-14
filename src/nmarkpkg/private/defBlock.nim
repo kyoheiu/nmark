@@ -144,9 +144,9 @@ let
   reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
-  reLinkRef = re" {0,3}\[.*\S+\.*\]:(\s*\n?\s*)"
+  reLinkRef = re" {0,3}\[\s*\S+\s*\]:(\s*\n?\s*)"
   reLinkTitle = re"""
-  ("[^"]*"|'[^']*'|\([^\(\)]*\))
+  (".*"|'.*'|\(.*\))
   """
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
@@ -268,7 +268,6 @@ proc openCodeBlock*(blockType: BlockType, atr: string, lines: string): Block =
 
 proc openSetextHeader*(n: int, lineBlock: string): Block =
   if n == 1:
-    echo lineBlock
     return Block(kind: leafBlock, leafType: header1, raw: lineBlock)
   else:
     return Block(kind: leafBlock, leafType: header2, raw: lineBlock)
@@ -332,6 +331,10 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           numOpenP: int
           numCloseP: int
           isAfterBreak = false
+          isAfterBS = false
+          isAfterWS = false
+          isUrlLT = false
+          nextLoop = false
           flag = toLabel
 
         for i, c in lineBlock:
@@ -353,6 +356,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             if c == ':' or c == ' ' or c == '\n': continue
             elif c == '<':
               flag = toUrlLT
+              isUrlLT = true
               continue
             else:
               url.add(c)
@@ -380,10 +384,14 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             elif c == ')' and lineBlock[i-1] != '\\':
               numCloseP.inc
               url.add(c)
+            elif c == '\\':
+              isAfterBS = true
+              continue
             elif c == ' ':
               if numOpenP == numCloseP:
                 endPos = i
                 flag = skipToTitle
+                isAfterWS = true
                 continue
               else:
                 break linkDetecting
@@ -391,15 +399,25 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
               if numOpenP == numCloseP:
                 endPos = i
                 flag = skipToTitle
+                isAfterBreak = true
                 continue
               else:
                 break linkDetecting
-            else:
+            elif c == '*':
+              isAfterBS = false
               url.add(c)
-              continue
+            else:
+              if isAfterBS:
+                isAfterBS = false
+                url.add("%5C" & c)
+              else:
+                url.add(c)
+                continue
           
           of skipToTitle:
-            if c == ' ': continue 
+            if c == ' ':
+              isAfterWS = true
+              continue 
             elif c == '\n':
               if isAfterBreak:
                 result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
@@ -409,34 +427,64 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 isAfterBreak = true
                 continue
             elif c == '"':
-              flag = toTitleDouble
-              continue
+              if isAfterWS or isAfterBreak:
+                title.add(c)
+                flag = toTitleDouble
+                isAfterWS = false
+                isAfterBreak = false
+                continue
+              else:
+                break linkDetecting
             elif c == '\'':
-              flag = toTitleSingle
-              continue
+              if isAfterWS or isAfterBreak:
+                title.add(c)
+                flag = toTitleDouble
+                isAfterWS = false
+                isAfterBreak = false
+                continue
+              else: break linkDetecting
             elif c == '(':
-              flag = toTitlePare
-              continue
+              if isAfterWS or isAfterBreak:
+                title.add(c)
+                flag = toTitleDouble
+                isAfterWS = false
+                isAfterBreak = false
+                continue
+              else: break linkDetecting
             else:
               if isAfterBreak:
                 result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
                 lineBlock.delete(0, endPos)
-                break linkDetecting
+                nextLoop = true
+                break 
               else:
                 break linkDetecting
           
           of toTitleDouble:
-            if c == '"' and lineBlock[i-1] != '\\':
+            if c == '"' and not(isAfterBS):
+              title.add(c)
               endPos = i
               flag = afterTitle
               continue
-            else:
-              title.add(c)
+            elif c == '"' and isAfterBS:
+              title.add("&quot;")
+              isAfterBS = false
               continue
-
+            elif c == '\\':
+              isAfterBS = true
+              continue
+            else:
+              if isAfterBS:
+                isAfterBS = false
+                title.add("\\" & c)
+                continue
+              else:
+                title.add(c)
+                continue
 
           of toTitleSingle:
             if c == '\'' and lineBlock[i-1] != '\\':
+              title.add(c)
               endPos = i
               flag = afterTitle
               continue
@@ -447,6 +495,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           of toTitlePare:
             if c == '(' and lineBlock[i-1] != '\\': break linkDetecting
             elif c == ')' and lineBlock[i-1] != '\\':
+              title.add(c)
               endPos = i
               flag = afterTitle
               continue
@@ -463,13 +512,28 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               break linkDetecting
         
-        if label != "" and url != "" and title == "":
+        if nextLoop:
+          continue
+
+        elif url == "":
+          if isUrlLT:
+            result.add(Block(kind: linkRef, linkLabel: label, linkUrl: "", linkTitle: ""))
+            return result
+          else:
+            break linkDetecting
+
+        elif url != "" and title == "":
           result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
           return result
       
-        elif label != "" and url != "" and title != "":
-          result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title))
-          return result
+        elif url != "" and title != "":
+          if (title[0] == '"' and title[^1] == '"') or
+             (title[0] == '\'' and title[^1] == '\'') or
+             (title[0] == '(' and title[^1] == ')'):
+            result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: title[1..^2]))
+            return result
+          else:
+            break linkDetecting
 
         else:
           if lineBlock.startsWith(reLinkRef):

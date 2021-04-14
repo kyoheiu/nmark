@@ -1,4 +1,5 @@
 from strutils import removeSuffix
+from unicode import toLower
 from htmlparser import entityToUtf8
 import json
 import readInline, parseInline, defBlock
@@ -167,22 +168,32 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         else:
           flag.toLinkRef = false
           var l : seq[string]
-          for e in linkSeq:
-            if e.linkLabel == tempStr:
-              if e.linkTitle == "":
-                result.add("<a href=\"" & e.linkUrl & "\">" & e.linkLabel & "</a>")
-                tempStr = ""
+          if linkSeq.len() != 0:
+            for e in linkSeq:
+              if e.linkLabel.toLower == tempStr.toLower:
+                if e.linkTitle == "":
+                  result.add("<a href=\"" & e.linkUrl & "\">" & tempStr & "</a>")
+                  tempStr = ""
+                  break
+                else:
+                  result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & tempStr &  "</a>")
+                  tempStr = ""
+                  break
               else:
-                result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & e.linkLabel &  "</a>")
+                result.add("[" & tempStr & "]")
                 tempStr = ""
-            else:
-              result.add("[" & tempStr & "]")
-              continue
+                continue
+          else:
+            result.add("[" & tempStr & "]")
+            tempStr = ""
+            continue
+
       elif c == '\\':
         flag.afterBS = true
         continue
       else:
-        flag.afterBS = false
+        if flag.afterBS:
+          flag.afterBS = false
         tempStr.add(c)
         continue
 
@@ -284,6 +295,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       else:
         result.add(c)
     
+    elif c == '"':
+      result.add("&quot;")
+
     else:
       result.add(c)
 
