@@ -55,6 +55,7 @@ proc parseLines*(s: string): seq[Block] =
              line.startsWith(reHtmlBlock6Begins) or
              line.startsWith(reHtmlBlock7Begins) or
              line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+            m.kind = none
             break
 
           if i == 0 :
@@ -80,6 +81,7 @@ proc parseLines*(s: string): seq[Block] =
 
             of '>':
               line.delete(0, 0)
+              if line[0] == ' ': line.delete(0, 0)
               break
 
             else: continue
@@ -99,6 +101,7 @@ proc parseLines*(s: string): seq[Block] =
             else:
               m.numHeadSpace.inc
               if m.numHeadSpace == 4:
+                m.kind = indentedCodeBlock
                 break
 
           of '`':
@@ -127,6 +130,7 @@ proc parseLines*(s: string): seq[Block] =
 
           of '>':
             line.delete(0, i)
+            if line[0] == ' ': line.delete(0, 0)
             break
 
           else:
@@ -137,6 +141,7 @@ proc parseLines*(s: string): seq[Block] =
           continue
         else:
           result.add(openBlockQuote(lineBlock.parseLines))
+          lineBlock = ""
           m = newMarkerFlag()
           break bqblock
 
@@ -437,6 +442,7 @@ proc parseLines*(s: string): seq[Block] =
           if m.kind == paragraph:
             result.add(openParagraph(lineBlock))
           line.delete(0, i)
+          if line[0] == ' ': line.delete(0, 0)
           m.kind = blockQuote
           break
 
@@ -491,7 +497,7 @@ proc parseLines*(s: string): seq[Block] =
         if lineBlock != "":
           result.add(openParagraph(lineBlock))
         line.delete(0, i)
-        lineBlock = line
+        if line[0] == ' ': line.delete(0, 0)
         m.kind = blockQuote
         break
 
