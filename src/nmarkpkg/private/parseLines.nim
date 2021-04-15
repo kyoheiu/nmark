@@ -9,6 +9,7 @@ type
     numBacktick: int
     numTild: int
     numOpenfence: int
+    numQuote: int
     numEmptyLine: int
     attr: string
     kind: BlockType
@@ -21,6 +22,7 @@ proc newMarkerFlag(): MarkerFlag =
     numBacktick: 0,
     numTild: 0,
     numOpenfence: 0,
+    numQuote: 0,
     numEmptyLine: 0,
     attr: "",
     kind: none,
@@ -329,6 +331,15 @@ proc parseLines*(s: string): seq[Block] =
           m.kind = paragraph
           break
 
+        of '>':
+          if m.kind == paragraph:
+            mdast.add(openParagraph(lineBlock))
+          line.delete(0, i)
+          lineBlock = line
+          result.add(mdast)
+          mdast = @[]
+          break
+
         else: continue
     
       
@@ -376,7 +387,15 @@ proc parseLines*(s: string): seq[Block] =
           m.kind = fencedCodeBlockTild
           break
 
-
+      of '>':
+        m.kind = blockQuote
+        if lineBlock != "":
+          mdast.add(openParagraph(lineBlock))
+        line.delete(0, i)
+        lineBlock = line
+        result.add(mdast)
+        mdast = @[]
+        break
 
       else:
         m = newMarkerFlag()
@@ -402,14 +421,18 @@ proc parseLines*(s: string): seq[Block] =
         lineBlock = ""
       continue
 
-    if m.kind == themanticBreak:
+    elif m.kind == blockQuote:
+      continue
+
+
+    elif m.kind == themanticBreak:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
       mdast.add(openThemanticBreak())
       m.kind = none
 
-    if m.kind == header:
+    elif m.kind == header:
       if lineBlock != "":
         mdast.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -441,6 +464,11 @@ proc parseLines*(s: string): seq[Block] =
         lineBlock.add(line)
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
+    
+    elif m.kind == blockQuote:
+      if lineBlock != "":
+        mdast.add(openParagraph(lineBlock))
+      continue
 
     elif m.kind == emptyLine:
       #if flag.flagUnorderedList:
