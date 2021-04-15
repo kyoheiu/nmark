@@ -41,6 +41,109 @@ proc parseLines*(s: string): seq[Block] =
 
 
 
+    block bqblock:
+      if m.kind == blockQuote:
+        
+        # check if (lazy) continuation lines
+        for i, c in line:
+
+          if line.startsWith(reHtmlBlock1Begins) or
+             line.startsWith(reHtmlBlock2Begins) or
+             line.startsWith(reHtmlBlock3Begins) or
+             line.startsWith(reHtmlBlock4Begins) or
+             line.startsWith(reHtmlBlock5Begins) or
+             line.startsWith(reHtmlBlock6Begins) or
+             line.startsWith(reHtmlBlock7Begins) or
+             line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+            break
+
+          if i == 0 :
+            case c
+
+            of '#':
+              m.numHeading = 1
+              continue
+            
+            of ' ':
+              m.numHeadSpace = 1
+              continue
+
+            of '`':
+              m.numBacktick = 1
+
+            of '~':
+              m.numTild = 1
+            
+            of '\\':
+              m.kind = paragraph
+              break
+
+            of '>':
+              line.delete(0, 0)
+              break
+
+            else: continue
+    
+      
+          case c
+
+          of '#':
+            m.numHeading.inc
+          
+          of ' ':
+            if m.numBacktick > 0: m.numBacktick = -128
+            if (1..6).contains(m.numHeading):
+              m = newMarkerFlag()
+              m.kind = header
+              break
+            else:
+              m.numHeadSpace.inc
+              if m.numHeadSpace == 4:
+                break
+
+          of '`':
+            m.numBacktick.inc
+            if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
+              m = newMarkerFlag()
+              let rem = line.delSpaceAndFence
+              if rem != "":
+                m.attr = rem.takeAttr
+              m.width = line.countWhitespace
+              m.numOpenfence = line.countBacktick
+              m.kind = fencedCodeBlockBack
+              break
+          
+          of '~':
+            m.numTild.inc
+            if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
+              m = newMarkerFlag()
+              let rem = line.delSpaceAndFence
+              if rem != "":
+                m.attr = rem.splitWhitespace[0]
+              m.width = line.countWhitespace
+              m.numOpenfence = line.countTild
+              m.kind = fencedCodeBlockTild
+              break
+
+          of '>':
+            line.delete(0, i)
+            break
+
+          else:
+            break
+
+        if m.kind == blockQuote:
+          lineBlock.add("\n" & line)
+          continue
+        else:
+          result.add(openBlockQuote(lineBlock.parseLines))
+          m = newMarkerFlag()
+          break bqblock
+
+
+
+
+
     block iCBblock:
       if m.kind == indentedCodeBlock:
         if (not line.isEmptyOrWhitespace) and
@@ -334,7 +437,7 @@ proc parseLines*(s: string): seq[Block] =
           if m.kind == paragraph:
             result.add(openParagraph(lineBlock))
           line.delete(0, i)
-          lineBlock = line
+          m.kind = blockQuote
           break
 
         else: continue
@@ -385,11 +488,11 @@ proc parseLines*(s: string): seq[Block] =
           break
 
       of '>':
-        m.kind = blockQuote
         if lineBlock != "":
           result.add(openParagraph(lineBlock))
         line.delete(0, i)
         lineBlock = line
+        m.kind = blockQuote
         break
 
       else:
@@ -417,6 +520,7 @@ proc parseLines*(s: string): seq[Block] =
       continue
 
     elif m.kind == blockQuote:
+      lineBlock.add(line)
       continue
 
 
@@ -515,6 +619,9 @@ proc parseLines*(s: string): seq[Block] =
     elif m.kind == htmlBlock1:
       lineBlock.removeSuffix("\n")
       result.add(openHTML(lineBlock))
+
+    elif m.kind == blockQuote:
+      result.add(openBlockQuote(lineBlock.parseLines))
 
     else:
       result.add(openParagraph(lineBlock))

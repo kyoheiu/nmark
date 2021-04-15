@@ -145,9 +145,6 @@ let
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
   reLinkRef = re" {0,3}\[\s*\S+\s*\]:(\s*\n?\s*)"
-  reLinkTitle = re"""
-  (".*"|'.*'|\(.*\))
-  """
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
