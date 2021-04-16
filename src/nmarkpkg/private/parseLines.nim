@@ -41,8 +41,6 @@ proc parseLines*(s: string): seq[Block] =
   for str in s.splitLines:
     var line = str
 
-    m.isAfterEmptyLine = false
-
 
 
     block bqblock:
@@ -96,7 +94,10 @@ proc parseLines*(s: string): seq[Block] =
                 line.delete(0, 0)
               if line.isEmptyOrWhitespace:
                 m.isAfterEmptyLine = true
-              break
+                break
+              else:
+                m.isAfterEmptyLine = false
+                break
 
             else: continue
     
@@ -149,20 +150,18 @@ proc parseLines*(s: string): seq[Block] =
               line.delete(0, 0)
             if line.isEmptyOrWhitespace:
               m.isAfterEmptyLine = true
-            break
+              break
+            else:
+              m.isAfterEmptyLine = false
+              break
 
           else:
+            if m.isAfterEmptyLine: m.kind = paragraph
             break
 
         if m.kind == blockQuote:
-          if m.isAfterEmptyLine:
-            result.add(openBlockQuote(lineBlock.parseLines))
-            lineBlock = ""
-            m = newMarkerFlag()
-            break bqblock
-          else:
-            lineBlock.add("\n" & line)
-            continue
+          lineBlock.add("\n" & line)
+          continue
         else:
           result.add(openBlockQuote(lineBlock.parseLines))
           lineBlock = ""

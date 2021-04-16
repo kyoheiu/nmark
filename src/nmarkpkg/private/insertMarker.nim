@@ -302,6 +302,12 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
     elif c == '"':
       result.add("&quot;")
 
+    elif c == '<':
+      result.add("&lt;")
+        
+    elif c == '>':
+      result.add("&gt;")
+
     else:
       result.add(c)
 
@@ -321,5 +327,5 @@ proc echoDelims(r: seq[DelimStack]) =
 
 
 proc insertInline*(line: string, linkSeq: seq[Block]): string =
-  echoDelims line.parseInline
+  #echoDelims line.parseInline
   insertMarker(line, linkSeq, line.parseInline)

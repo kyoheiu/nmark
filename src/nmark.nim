@@ -23,7 +23,7 @@ proc markdown*(lines: string): string =
     else:
       continue
 
-  echoSeqBlock linkSeq
+  #echoSeqBlock linkSeq
 
   var resultHtml: string
   var isTight = false
@@ -60,7 +60,7 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 251
+    begins = 43
     ends = 253
   for j in f:
     let
