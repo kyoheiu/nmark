@@ -11,6 +11,7 @@ type
     numOpenfence: int
     numQuote: int
     numEmptyLine: int
+    isAfterEmptyLine: bool
     attr: string
     kind: BlockType
     width: int
@@ -24,6 +25,7 @@ proc newMarkerFlag(): MarkerFlag =
     numOpenfence: 0,
     numQuote: 0,
     numEmptyLine: 0,
+    isAfterEmptyLine: false,
     attr: "",
     kind: none,
     width: 0
@@ -32,18 +34,26 @@ proc newMarkerFlag(): MarkerFlag =
 
 
 proc parseLines*(s: string): seq[Block] =
-  
+
   var m = newMarkerFlag()
   var lineBlock: string
 
   for str in s.splitLines:
     var line = str
 
+    m.isAfterEmptyLine = false
+
 
 
     block bqblock:
       if m.kind == blockQuote:
-        
+
+        if line.isEmptyOrWhitespace:
+          result.add(openBlockQuote(lineBlock.parseLines))
+          lineBlock = ""
+          m = newMarkerFlag()
+          break bqblock
+
         # check if (lazy) continuation lines
         for i, c in line:
 
@@ -81,7 +91,11 @@ proc parseLines*(s: string): seq[Block] =
 
             of '>':
               line.delete(0, 0)
-              if line[0] == ' ': line.delete(0, 0)
+              if (not line.isEmptyOrWhitespace) and
+                line[0] == ' ':
+                line.delete(0, 0)
+              if line.isEmptyOrWhitespace:
+                m.isAfterEmptyLine = true
               break
 
             else: continue
@@ -130,15 +144,25 @@ proc parseLines*(s: string): seq[Block] =
 
           of '>':
             line.delete(0, i)
-            if line[0] == ' ': line.delete(0, 0)
+            if (not line.isEmptyOrWhitespace) and
+              line[0] == ' ':
+              line.delete(0, 0)
+            if line.isEmptyOrWhitespace:
+              m.isAfterEmptyLine = true
             break
 
           else:
             break
 
         if m.kind == blockQuote:
-          lineBlock.add("\n" & line)
-          continue
+          if m.isAfterEmptyLine:
+            result.add(openBlockQuote(lineBlock.parseLines))
+            lineBlock = ""
+            m = newMarkerFlag()
+            break bqblock
+          else:
+            lineBlock.add("\n" & line)
+            continue
         else:
           result.add(openBlockQuote(lineBlock.parseLines))
           lineBlock = ""
@@ -441,8 +465,11 @@ proc parseLines*(s: string): seq[Block] =
         of '>':
           if m.kind == paragraph:
             result.add(openParagraph(lineBlock))
+            lineBlock = ""
           line.delete(0, i)
-          if line[0] == ' ': line.delete(0, 0)
+          if (not line.isEmptyOrWhitespace) and
+             line[0] == ' ':
+            line.delete(0, 0)
           m.kind = blockQuote
           break
 
@@ -496,8 +523,11 @@ proc parseLines*(s: string): seq[Block] =
       of '>':
         if lineBlock != "":
           result.add(openParagraph(lineBlock))
+          lineBlock = ""
         line.delete(0, i)
-        if line[0] == ' ': line.delete(0, 0)
+        if not line.isEmptyOrWhitespace and
+            line[0] == ' ':
+          line.delete(0, 0)
         m.kind = blockQuote
         break
 
@@ -508,7 +538,7 @@ proc parseLines*(s: string): seq[Block] =
 
 
 
-    if line.isEmptyOrWhitespace:
+    if m.kind != blockQuote and line.isEmptyOrWhitespace:
       m.kind = emptyLine
 
     if m.kind == none:
@@ -608,6 +638,11 @@ proc parseLines*(s: string): seq[Block] =
 
 
   #after EOF
+
+  if m.kind == blockQuote:
+    result.add(openBlockQuote(lineBlock.parseLines))
+    return result
+
   if lineBlock != "":
     if m.kind == fencedCodeBlockBack or
       m.kind == fencedCodeBlockTild:
@@ -625,9 +660,6 @@ proc parseLines*(s: string): seq[Block] =
     elif m.kind == htmlBlock1:
       lineBlock.removeSuffix("\n")
       result.add(openHTML(lineBlock))
-
-    elif m.kind == blockQuote:
-      result.add(openBlockQuote(lineBlock.parseLines))
 
     else:
       result.add(openParagraph(lineBlock))
