@@ -170,7 +170,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           continue
         else:
           flag.toLinkRef = false
-          var l : seq[string]
           if linkSeq.len() != 0:
             for e in linkSeq:
               if e.linkLabel.toLower == tempStr.toLower:

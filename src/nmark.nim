@@ -20,6 +20,10 @@ proc markdown*(lines: string): string =
   for e in seqAst:
     if e.kind == BlockKind.linkRef:
       linkSeq.add(e)
+    elif e.kind == BlockKind.containerBlock:
+      for c in e.children:
+        if c.kind == BlockKind.linkRef:
+          linkSeq.add(c)
     else:
       continue
 
