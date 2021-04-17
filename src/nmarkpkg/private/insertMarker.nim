@@ -9,6 +9,7 @@ type
   SObj = object
     toAutoLink: bool
     toMailLink: bool
+    toHtmlTag: bool
     toLinktext: bool
     toLinkDestination: bool
     toImagetext: bool
@@ -23,6 +24,7 @@ proc newSplitFlag(): SplitFlag =
   SplitFlag(
     toAutoLink: false,
     toMailLink: false,
+    toHtmlTag: false,
     toLinktext: false,
     toLinkDestination: false,
     toImagetext: false,
@@ -143,6 +145,14 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       else:
         tempStr.add(c)
     
+    elif flag.toHtmlTag:
+      if c == '>':
+        result.add("<" & tempStr & ">")
+        tempStr = ""
+        flag.toHtmlTag = false
+      else:
+        tempStr.add(c)
+    
     elif flag.toLinktext:
       if c == ']':
         flag.toLinktext = false
@@ -242,8 +252,10 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           flag.toAutoLink = true
         elif currentDelim.potential == mailOpener:
           flag.toMailLink = true
+        elif currentDelim.potential == htmlTag:
+          flag.toHtmlTag = true
         else:
-          result.add(c)
+          result.add("&lt;")
       
       of "[":
         if currentDelim.potential == opener:
@@ -294,7 +306,10 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
       of "\\":
         flag.toEscape = true
-      
+
+      of ">":
+        result.add("&gt;")
+
       else:
         result.add(c)
     
@@ -309,6 +324,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
     else:
       result.add(c)
+
+  if flag.toEscape: result.add('\\')
 
   result.removeSuffix({' ', '\n'})
   

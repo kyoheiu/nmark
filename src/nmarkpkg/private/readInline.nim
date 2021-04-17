@@ -12,6 +12,7 @@ type
     closer,
     linkOpener,
     mailOpener,
+    htmlTag,
     none
 
   DelimStack* = ref DelimObj

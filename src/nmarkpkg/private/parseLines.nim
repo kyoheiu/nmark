@@ -656,7 +656,13 @@ proc parseLines*(s: string): seq[Block] =
         lineBlock = s.join("\n")
       result.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
 
-    elif m.kind == htmlBlock1:
+    elif m.kind == htmlBlock1 or
+         m.kind == htmlBlock2 or
+         m.kind == htmlBlock3 or
+         m.kind == htmlBlock4 or
+         m.kind == htmlBlock5 or
+         m.kind == htmlBlock6 or
+         m.kind == htmlBlock7:
       lineBlock.removeSuffix("\n")
       result.add(openHTML(lineBlock))
 
