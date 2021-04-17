@@ -429,16 +429,14 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 title.add(c)
                 flag = toTitleDouble
                 isAfterWS = false
-                isAfterBreak = false
                 continue
               else:
                 break linkDetecting
             elif c == '\'':
               if isAfterWS or isAfterBreak:
                 title.add(c)
-                flag = toTitleDouble
+                flag = toTitleSingle
                 isAfterWS = false
-                isAfterBreak = false
                 continue
               else: break linkDetecting
             elif c == '(':
@@ -446,7 +444,6 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 title.add(c)
                 flag = toTitleDouble
                 isAfterWS = false
-                isAfterBreak = false
                 continue
               else: break linkDetecting
             else:
@@ -542,9 +539,12 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
               nextLoop = true
               break
             else:
-              result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
-              lineBlock.delete(0, urlEndPos)
-              break linkDetecting
+              if isAfterBreak:
+                result.add(Block(kind: linkRef, linkLabel: label, linkUrl: url, linkTitle: ""))
+                lineBlock.delete(0, urlEndPos)
+                break linkDetecting
+              else:
+                break linkDetecting
               
         
         if nextLoop:
