@@ -144,7 +144,7 @@ let
   reHtmlBlock6Begins* = re(" {0,3}(<|</)(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)( |\n|>|/>)", {reIgnoreCase})
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
-  reLinkRef = re" {0,3}\[\s*\S+\s*\]:(\s*\n?\s*)"
+  reLinkRef = re" {0,3}\[\s*.*\s*]:(\s*\n?\s*)"
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
