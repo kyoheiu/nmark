@@ -510,14 +510,12 @@ proc parseLines*(s: string): seq[Block] =
       of ' ':
         if m.numBacktick > 0: m.numBacktick = -128
         if (1..6).contains(m.numHeading):
-          m = newMarkerFlag()
           a = newAttrFlag()
           a.kind = header
           break
         else:
           m.numHeadSpace.inc
           if m.numHeadSpace == 4 and a.kind != paragraph:
-            m = newMarkerFlag()
             a = newAttrFlag()
             a.kind = indentedCodeBlock
             break
@@ -528,7 +526,6 @@ proc parseLines*(s: string): seq[Block] =
         m.numBacktick.inc
         if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
           a = newAttrFlag()
-          m = newMarkerFlag()
           let rem = line.delSpaceAndFence
           if rem != "":
             a.attr = rem.takeAttr
@@ -541,7 +538,6 @@ proc parseLines*(s: string): seq[Block] =
         m.numTild.inc
         if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
           a = newAttrFlag()
-          m = newMarkerFlag()
           let rem = line.delSpaceAndFence
           if rem != "":
             a.attr = rem.splitWhitespace[0]
@@ -564,7 +560,6 @@ proc parseLines*(s: string): seq[Block] =
 
       else: 
         a = newAttrFlag()
-        m = newMarkerFlag()
         a.kind = paragraph
         break
 
@@ -625,6 +620,7 @@ proc parseLines*(s: string): seq[Block] =
         else: n = 2
         result.add(openSetextHeader(n, lineBlock.strip(chars = {' ', '\t'})))
         lineBlock = ""
+        a = newAttrFlag()
         a.kind = none
       
     elif a.kind == indentedCodeBlock:
@@ -657,10 +653,8 @@ proc parseLines*(s: string): seq[Block] =
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
-        m = newMarkerFlag()
         continue
       else:
-        m = newMarkerFlag()
         continue
 
     elif a.kind == paragraph:
