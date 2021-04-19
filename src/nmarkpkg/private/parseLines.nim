@@ -8,8 +8,10 @@ type
     numHeading: int
     numBacktick: int
     numTild: int
+  
+  AttrFlag* = ref AtFObj
+  AtFObj = object
     numOpenfence: int
-    numQuote: int
     numEmptyLine: int
     isAfterEmptyLine: bool
     attr: string
@@ -21,9 +23,12 @@ proc newMarkerFlag(): MarkerFlag =
     numHeadSpace: 0,
     numHeading: 0,
     numBacktick: 0,
-    numTild: 0,
+    numTild: 0
+  )
+
+proc newAttrFlag(): AttrFlag =
+  AttrFlag(
     numOpenfence: 0,
-    numQuote: 0,
     numEmptyLine: 0,
     isAfterEmptyLine: false,
     attr: "",
@@ -35,21 +40,22 @@ proc newMarkerFlag(): MarkerFlag =
 
 proc parseLines*(s: string): seq[Block] =
 
-  var m = newMarkerFlag()
   var lineBlock: string
+  var a = newAttrFlag()
 
   for str in s.splitLines:
     var line = str
+    var m = newMarkerFlag()
 
 
 
     block bqblock:
-      if m.kind == blockQuote:
+      if a.kind == blockQuote:
 
         if line.isEmptyOrWhitespace:
           result.add(openBlockQuote(lineBlock.parseLines))
           lineBlock = ""
-          m = newMarkerFlag()
+          a = newAttrFlag()
           break bqblock
 
         # check if (lazy) continuation lines
@@ -63,7 +69,7 @@ proc parseLines*(s: string): seq[Block] =
              line.startsWith(reHtmlBlock6Begins) or
              line.startsWith(reHtmlBlock7Begins) or
              line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
-            m.kind = none
+            a.kind = none
             break
 
           if i == 0 :
@@ -84,7 +90,7 @@ proc parseLines*(s: string): seq[Block] =
               m.numTild = 1
             
             of '\\':
-              m.kind = paragraph
+              a.kind = paragraph
               break
 
             of '>':
@@ -93,10 +99,10 @@ proc parseLines*(s: string): seq[Block] =
                 line[0] == ' ':
                 line.delete(0, 0)
               if line.isEmptyOrWhitespace:
-                m.isAfterEmptyLine = true
+                a.isAfterEmptyLine = true
                 break
               else:
-                m.isAfterEmptyLine = false
+                a.isAfterEmptyLine = false
                 break
 
             else: continue
@@ -111,12 +117,12 @@ proc parseLines*(s: string): seq[Block] =
             if m.numBacktick > 0: m.numBacktick = -128
             if (1..6).contains(m.numHeading):
               m = newMarkerFlag()
-              m.kind = header
+              a.kind = header
               break
             else:
               m.numHeadSpace.inc
               if m.numHeadSpace == 4:
-                m.kind = indentedCodeBlock
+                a.kind = indentedCodeBlock
                 break
 
           of '`':
@@ -125,10 +131,10 @@ proc parseLines*(s: string): seq[Block] =
               m = newMarkerFlag()
               let rem = line.delSpaceAndFence
               if rem != "":
-                m.attr = rem.takeAttr
-              m.width = line.countWhitespace
-              m.numOpenfence = line.countBacktick
-              m.kind = fencedCodeBlockBack
+                a.attr = rem.takeAttr
+              a.width = line.countWhitespace
+              a.numOpenfence = line.countBacktick
+              a.kind = fencedCodeBlockBack
               break
           
           of '~':
@@ -137,10 +143,10 @@ proc parseLines*(s: string): seq[Block] =
               m = newMarkerFlag()
               let rem = line.delSpaceAndFence
               if rem != "":
-                m.attr = rem.splitWhitespace[0]
-              m.width = line.countWhitespace
-              m.numOpenfence = line.countTild
-              m.kind = fencedCodeBlockTild
+                a.attr = rem.splitWhitespace[0]
+              a.width = line.countWhitespace
+              a.numOpenfence = line.countTild
+              a.kind = fencedCodeBlockTild
               break
 
           of '>':
@@ -149,22 +155,23 @@ proc parseLines*(s: string): seq[Block] =
               line[0] == ' ':
               line.delete(0, 0)
             if line.isEmptyOrWhitespace:
-              m.isAfterEmptyLine = true
+              a.isAfterEmptyLine = true
               break
             else:
-              m.isAfterEmptyLine = false
+              a.isAfterEmptyLine = false
               break
 
           else:
-            if m.isAfterEmptyLine: m.kind = paragraph
+            if a.isAfterEmptyLine: a.kind = paragraph
             break
 
-        if m.kind == blockQuote:
+        if a.kind == blockQuote:
           lineBlock.add("\n" & line)
           continue
         else:
           result.add(openBlockQuote(lineBlock.parseLines))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           break bqblock
 
@@ -173,21 +180,20 @@ proc parseLines*(s: string): seq[Block] =
 
 
     block iCBblock:
-      if m.kind == indentedCodeBlock:
+      if a.kind == indentedCodeBlock:
         if (not line.isEmptyOrWhitespace) and
           line.countWhitespace < 4:
-          if m.numEmptyLine != 0:
+          if a.numEmptyLine != 0:
             var s = lineBlock.splitLines
             let l = s.len() - 1
-            s.delete(l - m.numEmptyLine + 1, l)
+            s.delete(l - a.numEmptyLine + 1, l)
             lineBlock = s.join("\n")
           result.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
           lineBlock = ""
-          m.numEmptyLine = 0
-          m.kind = none
+          a = newAttrFlag()
           break iCBblock
         elif line.isEmptyOrWhiteSpace:
-          m.numEmptyLine.inc
+          a.numEmptyLine.inc
           let w = line.countWhitespace
           if w >= 4:
             line.delete(0, 3)
@@ -199,39 +205,40 @@ proc parseLines*(s: string): seq[Block] =
         else:
           line.delete(0, 3)
           lineBlock.add("\n" & line)
-          m.numEmptyLine = 0
+          a.numEmptyLine = 0
           continue
 
 
 
     block fencedCodeBackblock:
-      if m.kind == fencedCodeBlockBack:
+      if a.kind == fencedCodeBlockBack:
         let rem = line.delSpaceAndFence
 
         if rem != "":
           let numWS = line.countWhitespace
-          if numWS >= m.width:
-            line.delete(0, m.width - 1)
+          if numWS >= a.width:
+            line.delete(0, a.width - 1)
           if numWS > 0 and
-               numWS < m.width:
+               numWS < a.width:
             line.removePrefix(' ')
           lineBlock.add(line & "\n")
           continue
 
         elif line.match(reFencedCodeBlockBack) and
-            line.countBacktick >= m.numOpenfence:
+            line.countBacktick >= a.numOpenfence:
           lineBlock.removeSuffix("\n")
-          result.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
+          result.add(openCodeBlock(fencedCodeBlock, a.attr, lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
 
         else:
           let numWS = line.countWhitespace
-          if numWS >= m.width:
-            line.delete(0, m.width - 1)
+          if numWS >= a.width:
+            line.delete(0, a.width - 1)
           if numWS > 0 and
-               numWS < m.width:
+               numWS < a.width:
             line.removePrefix(' ')
           lineBlock.add(line & "\n")
           continue
@@ -239,20 +246,21 @@ proc parseLines*(s: string): seq[Block] =
 
 
     block fencedCodeTildblock:
-      if m.kind == fencedCodeBlockTild:
+      if a.kind == fencedCodeBlockTild:
         if line.match(reFencedCodeBlockTild) and
-            line.countTild >= m.numOpenfence:
+            line.countTild >= a.numOpenfence:
           lineBlock.removeSuffix("\n")
-          result.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
+          result.add(openCodeBlock(fencedCodeBlock, a.attr, lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           let numWS = line.countWhitespace
-          if numWS >= m.width:
-            line.delete(0, m.width - 1)
+          if numWS >= a.width:
+            line.delete(0, a.width - 1)
           if numWS > 0 and
-               numWS < m.width:
+               numWS < a.width:
             line.removePrefix(' ')
           lineBlock.add(line & "\n")
           continue
@@ -261,75 +269,82 @@ proc parseLines*(s: string): seq[Block] =
     # html block
     block hblock:
 
-      if m.kind == htmlBlock1:
+      if a.kind == htmlBlock1:
         if line.contains(reHtmlBlock1Ends):
           lineBlock.add("\n" & line)
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock2:
+      if a.kind == htmlBlock2:
         if line.contains(reHtmlBlock2Ends):
           lineBlock.add("\n" & line)
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock3:
+      if a.kind == htmlBlock3:
         if line.contains(reHtmlBlock3Ends):
           lineBlock.add("\n" & line)
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock4:
+      if a.kind == htmlBlock4:
         if line.contains(reHtmlBlock4Ends):
           lineBlock.add("\n" & line)
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock5:
+      if a.kind == htmlBlock5:
         if line.contains(reHtmlBlock5Ends):
           lineBlock.add("\n" & line)
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock6:
+      if a.kind == htmlBlock6:
         if line.isEmptyOrWhitespace:
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
           lineBlock.add("\n" & line)
           continue
 
-      if m.kind == htmlBlock7:
+      if a.kind == htmlBlock7:
         if line.isEmptyOrWhitespace:
           result.add(openHTML(lineBlock))
           lineBlock = ""
+          a = newAttrFlag()
           m = newMarkerFlag()
           continue
         else:
@@ -345,7 +360,8 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else:
-          m.kind = htmlBlock1
+          a = newAttrFlag()
+          a.kind = htmlBlock1
           lineBlock.add(line)
           continue
     
@@ -358,7 +374,8 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else:
-          m.kind = htmlBlock2
+          a = newAttrFlag()
+          a.kind = htmlBlock2
           lineBlock.add(line)
           continue
       
@@ -371,7 +388,8 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else: 
-          m.kind = htmlBlock3
+          a = newAttrFlag()
+          a.kind = htmlBlock3
           lineBlock.add(line)
           continue
       
@@ -384,7 +402,8 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else:
-          m.kind = htmlBlock4
+          a = newAttrFlag()
+          a.kind = htmlBlock4
           lineBlock.add(line)
           continue
       
@@ -397,7 +416,8 @@ proc parseLines*(s: string): seq[Block] =
           m = newMarkerFlag()
           continue
         else:
-          m.kind = htmlBlock5
+          a = newAttrFlag()
+          a.kind = htmlBlock5
           lineBlock.add(line)
           continue
       
@@ -405,7 +425,8 @@ proc parseLines*(s: string): seq[Block] =
         if lineBlock != "":
           result.add(openParagraph(lineBlock))
           lineBlock = ""
-        m.kind = htmlBlock6
+        a = newAttrFlag()
+        a.kind = htmlBlock6
         lineBlock.add(line)
         continue
       
@@ -413,8 +434,9 @@ proc parseLines*(s: string): seq[Block] =
         if lineBlock != "":
           lineBlock.add("\n" & line.strip(trailing = false))
           continue
-        else:
-          m.kind = htmlBlock7
+        else: 
+          a = newAttrFlag()
+          a.kind = htmlBlock7
           lineBlock.add(line)
           continue
       
@@ -426,16 +448,19 @@ proc parseLines*(s: string): seq[Block] =
 
 
       if lineBlock != "" and line.match(reSetextHeader):
-        m.kind = setextHeader
+        a = newAttrFlag()
+        a.kind = setextHeader
         break
       
       elif line.countWhitespace < 4 and
            line.delWhitespace.startsWith(reThematicBreak):
-        m.kind = themanticBreak
+        a = newAttrFlag()
+        a.kind = themanticBreak
         break
       
       elif line.match(reAnotherAtxHeader):
-        m.kind = headerEmpty
+        a = newAttrFlag()
+        a.kind = headerEmpty
         break
 
 
@@ -458,18 +483,20 @@ proc parseLines*(s: string): seq[Block] =
           m.numTild = 1
         
         of '\\':
-          m.kind = paragraph
+          a = newAttrFlag()
+          a.kind = paragraph
           break
 
         of '>':
-          if m.kind == paragraph:
+          if a.kind == paragraph:
             result.add(openParagraph(lineBlock))
             lineBlock = ""
           line.delete(0, i)
           if (not line.isEmptyOrWhitespace) and
              line[0] == ' ':
             line.delete(0, 0)
-          m.kind = blockQuote
+          a = newAttrFlag()
+          a.kind = blockQuote
           break
 
         else: continue
@@ -484,39 +511,43 @@ proc parseLines*(s: string): seq[Block] =
         if m.numBacktick > 0: m.numBacktick = -128
         if (1..6).contains(m.numHeading):
           m = newMarkerFlag()
-          m.kind = header
+          a = newAttrFlag()
+          a.kind = header
           break
         else:
           m.numHeadSpace.inc
-          if m.numHeadSpace == 4 and m.kind != paragraph:
+          if m.numHeadSpace == 4 and a.kind != paragraph:
             m = newMarkerFlag()
-            m.kind = indentedCodeBlock
+            a = newAttrFlag()
+            a.kind = indentedCodeBlock
             break
-          elif m.numHeadSpace == 4 and m.kind == paragraph:
+          elif m.numHeadSpace == 4 and a.kind == paragraph:
             break
 
       of '`':
         m.numBacktick.inc
         if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
+          a = newAttrFlag()
           m = newMarkerFlag()
           let rem = line.delSpaceAndFence
           if rem != "":
-            m.attr = rem.takeAttr
-          m.width = line.countWhitespace
-          m.numOpenfence = line.countBacktick
-          m.kind = fencedCodeBlockBack
+            a.attr = rem.takeAttr
+          a.width = line.countWhitespace
+          a.numOpenfence = line.countBacktick
+          a.kind = fencedCodeBlockBack
           break
       
       of '~':
         m.numTild.inc
         if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
+          a = newAttrFlag()
           m = newMarkerFlag()
           let rem = line.delSpaceAndFence
           if rem != "":
-            m.attr = rem.splitWhitespace[0]
-          m.width = line.countWhitespace
-          m.numOpenfence = line.countTild
-          m.kind = fencedCodeBlockTild
+            a.attr = rem.splitWhitespace[0]
+          a.width = line.countWhitespace
+          a.numOpenfence = line.countTild
+          a.kind = fencedCodeBlockTild
           break
 
       of '>':
@@ -527,84 +558,88 @@ proc parseLines*(s: string): seq[Block] =
         if not line.isEmptyOrWhitespace and
             line[0] == ' ':
           line.delete(0, 0)
-        m.kind = blockQuote
+        a = newAttrFlag()
+        a.kind = blockQuote
         break
 
-      else:
+      else: 
+        a = newAttrFlag()
         m = newMarkerFlag()
-        m.kind = paragraph
+        a.kind = paragraph
         break
 
 
 
-    if m.kind != blockQuote and line.isEmptyOrWhitespace:
-      m.kind = emptyLine
+    if a.kind != blockQuote and line.isEmptyOrWhitespace:
+      a = newAttrFlag()
+      a.kind = emptyLine
 
-    if m.kind == none:
-      m.kind = paragraph
+    if a.kind == none: 
+      a = newAttrFlag()
+      a.kind = paragraph
     #check for marker ends
 
 
 
     #line-adding begins
-    if m.kind == fencedCodeBlockBack or
-       m.kind == fencedCodeBlockTild:
+    if a.kind == fencedCodeBlockBack or
+       a.kind == fencedCodeBlockTild:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
       continue
 
-    elif m.kind == blockQuote:
+    elif a.kind == blockQuote:
       lineBlock.add(line)
       continue
 
 
-    elif m.kind == themanticBreak:
+    elif a.kind == themanticBreak:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
       result.add(openThemanticBreak())
-      m.kind = none
+      a.kind = none
 
-    elif m.kind == header:
+    elif a.kind == header:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
       result.add(openAtxHeader(line))
-      m.kind = none
+      a.kind = none
     
-    elif m.kind == headerEmpty:
+    elif a.kind == headerEmpty:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
       result.add(openAnotherAtxHeader(line))
-      m.kind = none
+      a.kind = none
     
-    elif m.kind == setextHeader:
+    elif a.kind == setextHeader:
       if lineBlock == "":
         lineBlock.add(line)
-        m.kind = paragraph
+        a.kind = paragraph
       else:
         var n: int
         if line.contains('='): n = 1
         else: n = 2
         result.add(openSetextHeader(n, lineBlock.strip(chars = {' ', '\t'})))
         lineBlock = ""
-        m.kind = none
+        a.kind = none
       
-    elif m.kind == indentedCodeBlock:
+    elif a.kind == indentedCodeBlock:
       if lineBlock == "":
         line.delete(0, 3)
         lineBlock.add(line)
       else:
         lineBlock.add("\n" & line.strip(trailing = false))
     
-    elif m.kind == blockQuote:
+    elif a.kind == blockQuote:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
       continue
 
-    elif m.kind == emptyLine:
+    elif a.kind == emptyLine:
       #if flag.flagUnorderedList:
         #continue
       #elif flag.flagOrderedList:
@@ -628,7 +663,7 @@ proc parseLines*(s: string): seq[Block] =
         m = newMarkerFlag()
         continue
 
-    elif m.kind == paragraph:
+    elif a.kind == paragraph:
       if lineBlock != "":
         lineBlock.add("\n" & line.strip(trailing = false))
       else:
@@ -638,31 +673,31 @@ proc parseLines*(s: string): seq[Block] =
 
   #after EOF
 
-  if m.kind == blockQuote:
+  if a.kind == blockQuote and lineBlock != "":
     result.add(openBlockQuote(lineBlock.parseLines))
     return result
 
   if lineBlock != "":
-    if m.kind == fencedCodeBlockBack or
-      m.kind == fencedCodeBlockTild:
+    if a.kind == fencedCodeBlockBack or
+      a.kind == fencedCodeBlockTild:
       lineBlock.removeSuffix('\n')
-      result.add(openCodeBlock(fencedCodeBlock, m.attr, lineBlock))
+      result.add(openCodeBlock(fencedCodeBlock, a.attr, lineBlock))
     
-    elif m.kind == indentedCodeBlock:
-      if m.numEmptyLine != 0:
+    elif a.kind == indentedCodeBlock:
+      if a.numEmptyLine != 0:
         var s = lineBlock.splitLines
         let l = s.len() - 1
-        s.delete(l - m.numEmptyLine + 1, l)
+        s.delete(l - a.numEmptyLine + 1, l)
         lineBlock = s.join("\n")
       result.add(openCodeBlock(indentedCodeBlock, "", lineBlock))
 
-    elif m.kind == htmlBlock1 or
-         m.kind == htmlBlock2 or
-         m.kind == htmlBlock3 or
-         m.kind == htmlBlock4 or
-         m.kind == htmlBlock5 or
-         m.kind == htmlBlock6 or
-         m.kind == htmlBlock7:
+    elif a.kind == htmlBlock1 or
+         a.kind == htmlBlock2 or
+         a.kind == htmlBlock3 or
+         a.kind == htmlBlock4 or
+         a.kind == htmlBlock5 or
+         a.kind == htmlBlock6 or
+         a.kind == htmlBlock7:
       lineBlock.removeSuffix("\n")
       result.add(openHTML(lineBlock))
 
