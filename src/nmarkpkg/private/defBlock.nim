@@ -68,68 +68,11 @@ type
       linkTitle*: string
 
   
-  FlagContainer* = ref FlagObj
-  FlagObj = object
-    flagBlockQuote*: bool
-    flagIndentedCodeBlock*: bool
-    flagFencedCodeBlockBack*: bool
-    flagFencedCodeBlockTild*: bool
-    openingFenceLength*: int
-    fencedCodeBlocksdepth*: int
-    flagHtmlBlock1*: bool
-    flagHtmlBlock2*: bool
-    flagHtmlBlock3*: bool
-    flagHtmlBlock4*: bool
-    flagHtmlBlock5*: bool
-    flagHtmlBlock6*: bool
-    flagHtmlBlock7*: bool
-    flagLinkReference*: bool
-    flagUnorderedList*: bool
-    uldepth*: int
-    flagOrderedList*: bool
-    oldepth*: int
-    hasEmptyLine*: bool
-    afterEmptyLine*: bool
-    looseUnordered*: bool
-    looseOrdered*: bool
-
-proc newFlag*(): FlagContainer =
-  FlagContainer(
-    flagBlockQuote: false,
-    flagIndentedCodeBlock: false,
-    flagFencedCodeBlockBack: false,
-    flagFencedCodeBlockTild: false,
-    flagHtmlBlock1: false,
-    flagHtmlBlock2: false,
-    flagHtmlBlock3: false,
-    flagHtmlBlock4: false,
-    flagHtmlBlock5: false,
-    flagHtmlBlock6: false,
-    flagHtmlBlock7: false,
-    flagLinkReference: false,
-    flagUnorderedList: false,
-    uldepth: 0,
-    flagOrderedList: false,
-    oldepth: 0,
-    hasEmptyLine: false,
-    afterEmptyLine: false,
-    looseUnordered: false,
-    looseOrdered: false
-  )
 
 let
   reThematicBreak* = re" {0,3}(\*{3,}|-{3,}|_{3,})$"
   reSetextHeader* = re"^ {0,3}(=+|-+)\s*$"
-  reBreakOrHeader* = re" {0,3}(-{3,}) *$"
-  reAtxHeader* = re" {0,3}(#{1,6}) "
   reAnotherAtxHeader* = re"^#{1,6}$"
-  reBlockQuote* = re" {0,3}> {0,1}"
-  reBlockQuoteTab* = re" {0,3}>\t+"
-  reUnorderedList* = re" {0,3}(-|\+|\*)( |\t)"
-  reOrderedList* = re" {0,3}[0-9]{1,9}(\.|\))( |\t)+"
-  reIndentedCodeBlock* = re"\s{4,}\S+"
-  reTabStart* = re" *\t+"
-  reBreakIndentedCode* = re" {0,3}\S"
   reFencedCodeBlockBack* = re"^ {0,3}`{3,}[^`]*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}[^~]*~*$"
 
@@ -183,36 +126,6 @@ proc delULMarker*(line: var string): (int, string) =
       return (n, s)
 
 
-proc deleteUntilTab*(line: string): string =
-  var flag = false
-  for c in line:
-    if flag: result.add(c)
-    if c == ' ': continue
-    elif c == '\t': flag = true
-
-proc countTab*(line: string): int =
-  var i: int
-  for c in line:
-    if c == '\t': i.inc
-    else: return i
-
-proc delWhitespaceAndTab*(line: string): string =
-  var flag = false
-  for c in line:
-    if flag:
-      result.add(c)
-    elif c == ' 'or c == '\t': continue
-    else:
-      result.add(c)
-      flag = true
-
-proc countSpaceWithTab*(line: string): int =
-  var i: int
-  for c in line:
-    if c == ' ': i.inc
-    elif c == '\t': i += 3
-    else: continue
-  return i
 
 proc countBacktick*(line: string): int =
   var i: int
@@ -293,9 +206,6 @@ proc openSetextHeader*(n: int, lineBlock: string): Block =
 
 proc openThemanticBreak*(): Block =
   return Block(kind: leafBlock, leafType: themanticBreak, raw: "")
-
-proc openHtmlBlock*(lineBlock: string): Block =
-  return Block(kind: leafBlock, leaftype: htmlblock, raw: lineBlock) 
 
 proc openLinkReference*(lineBlock: string): Block =
   return Block(kind: leafBlock, leaftype: linkReference, raw: lineBlock)
