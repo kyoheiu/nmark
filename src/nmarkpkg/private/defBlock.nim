@@ -28,8 +28,10 @@ type
     htmlBlock,
     linkReference,
     blockQuote,
+    unOrderedList,
     unOrderedTightList,
     unOrderedLooseList,
+    orderedList,
     orderedTightList,
     orderedLooseList,
     list,
@@ -160,6 +162,26 @@ proc countWhitespace*(line: string): int =
     if c == ' ': i.inc
     else: return i
   return i
+
+proc delULMarker*(line: var string): (int, string) =
+  var n: int
+  var s: string
+  var flag = false
+  for i, c in line:
+    if c == ' ': continue
+    elif c == '-' or c == '+' or c == '*':
+      if flag:
+        n = i
+        s = line[i..^1]
+        return (n, s)
+      else:
+        flag = true
+        continue
+    else:
+      n = i
+      s = line[i..^1]
+      return (n, s)
+
 
 proc deleteUntilTab*(line: string): string =
   var flag = false

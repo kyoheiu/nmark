@@ -8,12 +8,15 @@ type
     numHeading: int
     numBacktick: int
     numTild: int
+    isAfterULMarker: int
   
   AttrFlag* = ref AtFObj
   AtFObj = object
     numOpenfence: int
     numEmptyLine: int
     isAfterEmptyLine: bool
+    isLoose: bool
+    listSeq: seq[Block]
     attr: string
     kind: BlockType
     width: int
@@ -23,7 +26,8 @@ proc newMarkerFlag(): MarkerFlag =
     numHeadSpace: 0,
     numHeading: 0,
     numBacktick: 0,
-    numTild: 0
+    numTild: 0,
+    isAfterULMarker: 0
   )
 
 proc newAttrFlag(): AttrFlag =
@@ -31,6 +35,7 @@ proc newAttrFlag(): AttrFlag =
     numOpenfence: 0,
     numEmptyLine: 0,
     isAfterEmptyLine: false,
+    isLoose: false,
     attr: "",
     kind: none,
     width: 0
@@ -116,7 +121,6 @@ proc parseLines*(s: string): seq[Block] =
           of ' ':
             if m.numBacktick > 0: m.numBacktick = -128
             if (1..6).contains(m.numHeading):
-              m = newMarkerFlag()
               a.kind = header
               break
             else:
@@ -128,24 +132,12 @@ proc parseLines*(s: string): seq[Block] =
           of '`':
             m.numBacktick.inc
             if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
-              m = newMarkerFlag()
-              let rem = line.delSpaceAndFence
-              if rem != "":
-                a.attr = rem.takeAttr
-              a.width = line.countWhitespace
-              a.numOpenfence = line.countBacktick
               a.kind = fencedCodeBlockBack
               break
           
           of '~':
             m.numTild.inc
             if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
-              m = newMarkerFlag()
-              let rem = line.delSpaceAndFence
-              if rem != "":
-                a.attr = rem.splitWhitespace[0]
-              a.width = line.countWhitespace
-              a.numOpenfence = line.countTild
               a.kind = fencedCodeBlockTild
               break
 
@@ -176,6 +168,127 @@ proc parseLines*(s: string): seq[Block] =
           break bqblock
 
 
+
+    block ulblock:
+      if a.kind == unOrderedList:
+        if line.isEmptyOrWhitespace:
+          lineBlock.add("\n")
+          a.isAfterEmptyLine = true
+          continue
+        elif line.countWhitespace >= a.width:
+          if a.isAfterEmptyLine:
+            a.isLoose = true
+          a.isAfterEmptyLine = false
+          lineBlock.add("\n" & line[a.width..^1])
+          continue
+        else:
+          if a.isAfterEmptyLine:
+            if a.isLoose:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              result.add(a.listSeq.openLooseUL)
+              lineBlock = ""
+              a = newAttrFlag()
+              break ulblock
+            else:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              result.add(a.listSeq.openTightUL)
+              lineBlock = ""
+              a = newAttrFlag()
+              break ulblock
+          else:
+
+            for i, c in line:
+
+              if line.startsWith(reHtmlBlock1Begins) or
+                line.startsWith(reHtmlBlock2Begins) or
+                line.startsWith(reHtmlBlock3Begins) or
+                line.startsWith(reHtmlBlock4Begins) or
+                line.startsWith(reHtmlBlock5Begins) or
+                line.startsWith(reHtmlBlock6Begins) or
+                line.startsWith(reHtmlBlock7Begins) or
+                line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+                a.kind = none
+                break
+
+              if i == 0 :
+                case c
+
+                of '#':
+                  m.numHeading = 1
+                  continue
+                
+                of ' ':
+                  m.numHeadSpace = 1
+                  continue
+
+                of '`':
+                  m.numBacktick = 1
+
+                of '~':
+                  m.numTild = 1
+                
+                of '\\':
+                  a.kind = paragraph
+                  break
+
+                of '>':
+                  a.kind = blockQuote
+                  break
+
+                else: continue
+        
+          
+              case c
+
+              of '#':
+                m.numHeading.inc
+              
+              of ' ':
+                if m.numBacktick > 0: m.numBacktick = -128
+                if (1..6).contains(m.numHeading):
+                  a.kind = header
+                  break
+                else:
+                  m.numHeadSpace.inc
+                  continue
+
+              of '`':
+                m.numBacktick.inc
+                if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
+                  a.kind = fencedCodeBlockBack
+                  break
+              
+              of '~':
+                m.numTild.inc
+                if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
+                  a.kind = fencedCodeBlockTild
+                  break
+
+              of '>':
+                a.kind = blockQuote
+                break
+
+              else:
+                break
+
+            if a.kind == unOrderedList:
+              lineBlock.add("\n" & line)
+              continue
+            else:
+              if a.isLoose:
+                a.listSeq.add(lineBlock.parseLines.openList)
+                result.add(a.listSeq.openLooseUL)
+                lineBlock = ""
+                a = newAttrFlag()
+                m = newMarkerFlag()
+                break ulblock
+              else:
+                a.listSeq.add(lineBlock.parseLines.openList)
+                result.add(a.listSeq.openLooseUL)
+                lineBlock = ""
+                a = newAttrFlag()
+                m = newMarkerFlag()
+                break ulblock
 
 
 
@@ -445,6 +558,8 @@ proc parseLines*(s: string): seq[Block] =
     #check for marker begins
     for i, c in line:
 
+      if m.isAfterULMarker > 0:
+        m.isAfterULMarker.dec
 
 
       if lineBlock != "" and line.match(reSetextHeader):
@@ -499,6 +614,10 @@ proc parseLines*(s: string): seq[Block] =
           a.kind = blockQuote
           break
 
+        of '-', '+', '*':
+          m.isAfterULMarker = 2
+          continue
+
         else: continue
     
       
@@ -512,6 +631,9 @@ proc parseLines*(s: string): seq[Block] =
         if (1..6).contains(m.numHeading):
           a = newAttrFlag()
           a.kind = header
+          break
+        if m.isAfterULMarker == 1:
+          a.kind = unOrderedList
           break
         else:
           m.numHeadSpace.inc
@@ -558,6 +680,12 @@ proc parseLines*(s: string): seq[Block] =
         a.kind = blockQuote
         break
 
+      of '-', '+', '*':
+        if m.isAfterULMarker > 0:
+          break
+        else:
+          m.isAfterULMarker = 2
+
       else: 
         a = newAttrFlag()
         a.kind = paragraph
@@ -588,6 +716,14 @@ proc parseLines*(s: string): seq[Block] =
       lineBlock.add(line)
       continue
 
+    elif a.kind == unorderedList:
+      let (n, s) = line.delULMarker
+      a.width = n
+      if lineBlock != "":
+        result.add(openParagraph(lineBlock))
+        lineBlock = ""
+      lineBlock.add(s)
+      continue
 
     elif a.kind == themanticBreak:
       if lineBlock != "":
@@ -666,13 +802,20 @@ proc parseLines*(s: string): seq[Block] =
 
 
   #after EOF
-
-  if a.kind == blockQuote and lineBlock != "":
-    result.add(openBlockQuote(lineBlock.parseLines))
-    return result
-
   if lineBlock != "":
-    if a.kind == fencedCodeBlockBack or
+
+    if a.kind == blockQuote:
+      result.add(openBlockQuote(lineBlock.parseLines))
+
+    elif a.kind == unOrderedList:
+      if a.isLoose:
+        a.listSeq.add(lineBlock.parseLines.openList)
+        result.add(a.listSeq.openLooseUL)
+      else:
+        a.listSeq.add(lineBlock.parseLines.openList)
+        result.add(a.listSeq.openLooseUL)
+
+    elif a.kind == fencedCodeBlockBack or
       a.kind == fencedCodeBlockTild:
       lineBlock.removeSuffix('\n')
       result.add(openCodeBlock(fencedCodeBlock, a.attr, lineBlock))
