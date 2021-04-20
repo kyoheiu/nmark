@@ -789,6 +789,7 @@ proc parseLines*(s: string): seq[Block] =
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
+        a = newAttrFlag()
         continue
       else:
         continue
