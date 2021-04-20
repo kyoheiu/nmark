@@ -109,23 +109,57 @@ proc countWhitespace*(line: string): int =
 proc delULMarker*(line: var string): (int, string) =
   var n: int
   var s: string
-  var flag = false
+  var flag: bool
+  var mPos: int
+  var ws: int
   for i, c in line:
-    if c == ' ': continue
-    elif c == '-' or c == '+' or c == '*':
+    if c == '-' or c == '+' or c == '*':
       if flag:
-        n = i
-        s = line[i..^1]
+        n = mPos + ws + 1
+        s = line[n..^1]
         return (n, s)
       else:
         flag = true
-        continue
+        mPos = i
+    elif c == ' ':
+      if flag:
+        ws.inc
+        if ws == 4:
+          n = mPos + ws + 1
+          s = line[n..^1]
+          return (n, s)
+      else: continue
     else:
-      n = i
-      s = line[i..^1]
-      return (n, s)
+      if flag:
+        n = mPos + ws + 1
+        s = line[n..^1]
+        return (n, s)
+      else: continue
 
-
+proc delOLMarker*(line: var string): (int, string) =
+  var n: int
+  var s: string
+  var flag: bool
+  var mPos: int
+  var ws: int
+  for i, c in line:
+    if c == '.' or c == ')':
+      flag = true
+      mPos = i
+    elif c == ' ':
+      if flag:
+        ws.inc
+        if ws == 4:
+          n = mPos + ws + 1
+          s = line[n..^1]
+          return (n, s)
+      else: continue
+    else:
+      if flag:
+        n = mPos + ws + 1
+        s = line[n..^1]
+        return (n, s)
+      else: continue
 
 proc countBacktick*(line: string): int =
   var i: int

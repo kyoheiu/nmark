@@ -9,6 +9,8 @@ type
     numBacktick: int
     numTild: int
     isAfterULMarker: int
+    isAfterNumber: int
+    isAfterOLMarker: int
   
   AttrFlag* = ref AtFObj
   AtFObj = object
@@ -20,6 +22,7 @@ type
     attr: string
     kind: BlockType
     width: int
+    was: BlockType
   
 proc newMarkerFlag(): MarkerFlag =
   MarkerFlag(
@@ -27,7 +30,9 @@ proc newMarkerFlag(): MarkerFlag =
     numHeading: 0,
     numBacktick: 0,
     numTild: 0,
-    isAfterULMarker: 0
+    isAfterULMarker: 0,
+    isAfterNumber: 0,
+    isAfterOLMarker: 0
   )
 
 proc newAttrFlag(): AttrFlag =
@@ -38,9 +43,11 @@ proc newAttrFlag(): AttrFlag =
     isLoose: false,
     attr: "",
     kind: none,
-    width: 0
+    width: 0,
+    was: none,
   )
 
+const olNum = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 proc parseLines*(s: string): seq[Block] =
@@ -169,8 +176,9 @@ proc parseLines*(s: string): seq[Block] =
 
 
 
-    block ulblock:
-      if a.kind == unOrderedList:
+    block listblock:
+      if a.kind == unOrderedList or
+         a.kind == orderedList:
         if line.isEmptyOrWhitespace:
           lineBlock.add("\n")
           a.isAfterEmptyLine = true
@@ -185,16 +193,22 @@ proc parseLines*(s: string): seq[Block] =
           if a.isAfterEmptyLine:
             if a.isLoose:
               a.listSeq.add(lineBlock.parseLines.openList)
-              result.add(a.listSeq.openLooseUL)
+              if a.kind == unOrderedList:
+                result.add(a.listSeq.openLooseUL)
+              if a.kind == orderedList:
+                result.add(a.listSeq.openLooseOL)
               lineBlock = ""
               a = newAttrFlag()
-              break ulblock
+              break listblock
             else:
               a.listSeq.add(lineBlock.parseLines.openList)
-              result.add(a.listSeq.openTightUL)
+              if a.kind == unOrderedList:
+                result.add(a.listSeq.openTightUL)
+              if a.kind == orderedList:
+                result.add(a.listSeq.openTightOL)
               lineBlock = ""
               a = newAttrFlag()
-              break ulblock
+              break listblock
           else:
 
             for i, c in line:
@@ -207,6 +221,7 @@ proc parseLines*(s: string): seq[Block] =
                 line.startsWith(reHtmlBlock6Begins) or
                 line.startsWith(reHtmlBlock7Begins) or
                 line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+                a.was = a.kind
                 a.kind = none
                 break
 
@@ -228,10 +243,12 @@ proc parseLines*(s: string): seq[Block] =
                   m.numTild = 1
                 
                 of '\\':
+                  a.was = a.kind
                   a.kind = paragraph
                   break
 
                 of '>':
+                  a.was = a.kind
                   a.kind = blockQuote
                   break
 
@@ -246,6 +263,7 @@ proc parseLines*(s: string): seq[Block] =
               of ' ':
                 if m.numBacktick > 0: m.numBacktick = -128
                 if (1..6).contains(m.numHeading):
+                  a.was = a.kind
                   a.kind = header
                   break
                 else:
@@ -255,40 +273,50 @@ proc parseLines*(s: string): seq[Block] =
               of '`':
                 m.numBacktick.inc
                 if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
+                  a.was = a.kind
                   a.kind = fencedCodeBlockBack
                   break
               
               of '~':
                 m.numTild.inc
                 if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
+                  a.was = a.kind
                   a.kind = fencedCodeBlockTild
                   break
 
               of '>':
+                a.was = a.kind
                 a.kind = blockQuote
                 break
 
               else:
                 break
 
-            if a.kind == unOrderedList:
+            if a.kind == unOrderedList or
+               a.kind == orderedList:
               lineBlock.add("\n" & line)
               continue
             else:
               if a.isLoose:
                 a.listSeq.add(lineBlock.parseLines.openList)
-                result.add(a.listSeq.openLooseUL)
+                if a.was == unOrderedList:
+                  result.add(a.listSeq.openLooseUL)
+                if a.was == orderedList:
+                  result.add(a.listSeq.openLooseOL)
                 lineBlock = ""
                 a = newAttrFlag()
                 m = newMarkerFlag()
-                break ulblock
+                break listblock
               else:
                 a.listSeq.add(lineBlock.parseLines.openList)
-                result.add(a.listSeq.openTightUL)
+                if a.was == unOrderedList:
+                  result.add(a.listSeq.openTightUL)
+                if a.was == orderedList:
+                  result.add(a.listSeq.openTightOL)
                 lineBlock = ""
                 a = newAttrFlag()
                 m = newMarkerFlag()
-                break ulblock
+                break listblock
 
 
 
@@ -560,6 +588,10 @@ proc parseLines*(s: string): seq[Block] =
 
       if m.isAfterULMarker > 0:
         m.isAfterULMarker.dec
+      if m.isAfterNumber > 0:
+        m.isAfterNumber.dec
+      if m.isAfterOLMarker > 0:
+        m.isAfterOLMarker.dec
 
 
       if lineBlock != "" and line.match(reSetextHeader):
@@ -618,6 +650,9 @@ proc parseLines*(s: string): seq[Block] =
           m.isAfterULMarker = 2
           continue
 
+        of olNum:
+          m.isAfterNumber = 2
+
         else: continue
     
       
@@ -634,6 +669,9 @@ proc parseLines*(s: string): seq[Block] =
           break
         if m.isAfterULMarker == 1:
           a.kind = unOrderedList
+          break
+        elif m.isAfterOLmarker == 1:
+          a.kind = orderedList
           break
         else:
           m.numHeadSpace.inc
@@ -685,6 +723,17 @@ proc parseLines*(s: string): seq[Block] =
           break
         else:
           m.isAfterULMarker = 2
+      
+      of olNum:
+        if m.numHeading == 0:
+          m.isAfterNumber = 2
+        else:
+          a.kind = paragraph
+          break
+
+      of '.', ')':
+        if m.isAfterNumber == 1:
+          m.isAfterOLMarker = 2
 
       else: 
         a = newAttrFlag()
@@ -716,8 +765,17 @@ proc parseLines*(s: string): seq[Block] =
       lineBlock.add(line)
       continue
 
-    elif a.kind == unorderedList:
+    elif a.kind == unOrderedList:
       let (n, s) = line.delULMarker
+      a.width = n
+      if lineBlock != "":
+        result.add(openParagraph(lineBlock))
+        lineBlock = ""
+      lineBlock.add(s)
+      continue
+
+    elif a.kind == orderedList:
+      let (n, s) = line.delOLMarker
       a.width = n
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
@@ -801,6 +859,14 @@ proc parseLines*(s: string): seq[Block] =
       else:
         a.listSeq.add(lineBlock.parseLines.openList)
         result.add(a.listSeq.openTightUL)
+
+    elif a.kind == orderedList:
+      if a.isLoose:
+        a.listSeq.add(lineBlock.parseLines.openList)
+        result.add(a.listSeq.openLooseOL)
+      else:
+        a.listSeq.add(lineBlock.parseLines.openList)
+        result.add(a.listSeq.openTightOL)
 
     elif a.kind == fencedCodeBlockBack or
       a.kind == fencedCodeBlockTild:
