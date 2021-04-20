@@ -284,7 +284,7 @@ proc parseLines*(s: string): seq[Block] =
                 break ulblock
               else:
                 a.listSeq.add(lineBlock.parseLines.openList)
-                result.add(a.listSeq.openLooseUL)
+                result.add(a.listSeq.openTightUL)
                 lineBlock = ""
                 a = newAttrFlag()
                 m = newMarkerFlag()
@@ -772,20 +772,6 @@ proc parseLines*(s: string): seq[Block] =
       continue
 
     elif a.kind == emptyLine:
-      #if flag.flagUnorderedList:
-        #continue
-      #elif flag.flagOrderedList:
-        #continue
-      #elif flag.flagHtmlBlock6:
-          #mdast.add(openHtmlBlock(lineBlock))
-          #lineBlock = ""
-          #flag.flagHtmlBlock6 = false
-          #m.kind = none
-      #elif flag.flagHtmlBlock7:
-          #mdast.add(openHtmlBlock(lineBlock))
-          #lineBlock = ""
-          #flag.flagHtmlBlock7 = false
-          #m.kind = none
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -814,7 +800,7 @@ proc parseLines*(s: string): seq[Block] =
         result.add(a.listSeq.openLooseUL)
       else:
         a.listSeq.add(lineBlock.parseLines.openList)
-        result.add(a.listSeq.openLooseUL)
+        result.add(a.listSeq.openTightUL)
 
     elif a.kind == fencedCodeBlockBack or
       a.kind == fencedCodeBlockTild:
