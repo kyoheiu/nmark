@@ -130,6 +130,9 @@ let
   reFencedCodeBlockBack* = re"^ {0,3}`{3,}[^`]*$"
   reFencedCodeBlockTild* = re"^ {0,3}~{3,}[^~]*~*$"
 
+  reEmptyUL* = re"^ {0,3}(-|\+|\*) *$"
+  reEmptyOL* = re"^ {0,3}[0-9]{1,9}(\.|\)) *$"
+
   reHtmlBlock1Begins* = re" {0,3}<(script|pre|style|textarea)( |>|$)"
   reHtmlBlock1Ends*   = re"</script>|</pre>|</style>|</textarea>"
   reHtmlBlock2Begins* = re" {0,3}<!--"
@@ -182,8 +185,8 @@ proc delULMarker*(line: var string): (int, string, char) =
     elif c == ' ':
       if flag:
         ws.inc
-        if ws == 4:
-          n = mPos + ws + 1
+        if ws == 5:
+          n = mPos + 2
           s = line[n..^1]
           return (n, s, marker)
       else: continue
@@ -193,6 +196,7 @@ proc delULMarker*(line: var string): (int, string, char) =
         s = line[n..^1]
         return (n, s, marker)
       else: continue
+  return (mPos+2, "", marker)
 
 proc delOLMarker*(line: var string): (int, int, string, char) =
   var n: int
@@ -228,6 +232,7 @@ proc delOLMarker*(line: var string): (int, int, string, char) =
         s = line[n..^1]
         return (n, startNum.parseInt, s, marker)
       else: continue
+  return (mPos+2, startNum.parseInt, "", marker)
 
 
 

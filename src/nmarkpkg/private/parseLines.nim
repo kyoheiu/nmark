@@ -142,7 +142,7 @@ proc parseLines*(s: string): seq[Block] =
           continue
         else:
 
-          if line.isUL:
+          if line.isUL or line.match(reEmptyUL):
             if a.isAfterEmptyLine:
               a.isAfterEmptyLine = false
               a.isLoose = true
@@ -177,7 +177,7 @@ proc parseLines*(s: string): seq[Block] =
               a.kind = unOrderedList
               continue
 
-          if line.isOL:
+          if line.isOL or line.match(reEmptyOL):
             if a.isAfterEmptyLine:
               a.isAfterEmptyLine = false
               a.isLoose = true
@@ -213,8 +213,6 @@ proc parseLines*(s: string): seq[Block] =
               a.kind = unOrderedList
               continue
               
-
-
           if a.isAfterEmptyLine:
             if a.isLoose:
               a.listSeq.add(lineBlock.parseLines.openList)
@@ -605,7 +603,7 @@ proc parseLines*(s: string): seq[Block] =
           a.kind = htmlBlock7
           lineBlock.add(line)
           continue
-      
+    
 
 
     #check for marker begins
@@ -618,23 +616,33 @@ proc parseLines*(s: string): seq[Block] =
       if m.isAfterOLMarker > 0:
         m.isAfterOLMarker.dec
 
+      if line.match(reEmptyUL):
+        if a.kind != paragraph:
+          a = newAttrFlag()
+          a.kind = unOrderedList
+          break
+
+      if line.match(reEmptyOL):
+        if a.kind != paragraph:
+          a = newAttrFlag()
+          a.kind = orderedList
+          break
 
       if lineBlock != "" and line.match(reSetextHeader):
         a = newAttrFlag()
         a.kind = setextHeader
         break
       
-      elif line.countWhitespace < 4 and
+      if line.countWhitespace < 4 and
            line.delWhitespace.startsWith(reThematicBreak):
         a = newAttrFlag()
         a.kind = themanticBreak
         break
       
-      elif line.match(reAnotherAtxHeader):
+      if line.match(reAnotherAtxHeader):
         a = newAttrFlag()
         a.kind = headerEmpty
         break
-
 
 
       if i == 0:
