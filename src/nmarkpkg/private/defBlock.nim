@@ -158,8 +158,8 @@ proc delOLMarker*(line: var string): (int, int, string) =
     elif c == ' ':
       if flag:
         ws.inc
-        if ws == 4:
-          n = mPos + ws + 1
+        if ws == 5:
+          n = mPos + 2
           s = line[n..^1]
           return (n, startNum.parseInt, s)
       else: continue

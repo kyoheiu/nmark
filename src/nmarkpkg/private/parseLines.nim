@@ -727,7 +727,7 @@ proc parseLines*(s: string): seq[Block] =
           m.isAfterULMarker = 2
       
       of olNum:
-        if m.numHeading == 0:
+        if m.numHeading == 0 and m.isAfterULMarker == 0:
           m.isAfterNumber = 2
         else:
           a.kind = paragraph

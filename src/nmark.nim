@@ -64,8 +64,8 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 260
-    ends = 268
+    begins = 278
+    ends = 279
   for j in f:
     let
       j = f[begins-1]
@@ -78,7 +78,7 @@ when isMainModule:
       echo "---\p" & md & "---" 
       echo mdd
     else:
-      echo "Success"
+      echo $num & " -> Success"
     begins.inc
     if begins == ends:
       break
