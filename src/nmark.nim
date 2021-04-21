@@ -65,7 +65,7 @@ when isMainModule:
     f = parseFile("testfiles/spec-test.json")
   var
     begins = 301
-    ends = 302
+    ends = 320
   for j in f:
     let
       j = f[begins-1]

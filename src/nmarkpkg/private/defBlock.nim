@@ -231,6 +231,7 @@ proc delOLMarker*(line: var string): (int, int, string, char) =
       else: continue
 
 
+
 proc isUL*(line: string): bool =
   var m = newMarkerFlag()
   var a = newAttrFlag()
@@ -293,6 +294,68 @@ proc isUL*(line: string): bool =
 
   return false
 
+
+
+proc isOL*(line: string): bool =
+  var m = newMarkerFlag()
+  var a = newAttrFlag()
+
+  if line.startsWith(reHtmlBlock1Begins) or
+    line.startsWith(reHtmlBlock2Begins) or
+    line.startsWith(reHtmlBlock3Begins) or
+    line.startsWith(reHtmlBlock4Begins) or
+    line.startsWith(reHtmlBlock5Begins) or
+    line.startsWith(reHtmlBlock6Begins) or
+    line.startsWith(reHtmlBlock7Begins) or
+    line.match(reAnotherAtxHeader) or
+    line.match(reSetextHeader) or
+    line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+    return false
+  
+  for i, c in line:
+
+    if m.isAfterULMarker > 0:
+      m.isAfterULMarker.dec
+    if m.isAfterNumber > 0:
+      m.isAfterNumber.dec
+    if m.isAfterOLMarker > 0:
+      m.isAfterOLMarker.dec
+
+    if i == 0:
+      case c
+
+      of ' ':
+        m.numHeadSpace = 1
+        continue
+
+      of olNum:
+        m.isAfterNumber = 2
+
+      else: return false
+  
+    
+    case c
+
+    of ' ':
+      if m.isAfterOLMarker == 1:
+        return true
+      else:
+        m.numHeadSpace.inc
+        if m.numHeadSpace == 4:
+          return false
+
+    of olNum:
+      m.isAfterNumber = 2
+
+    of '.', ')':
+      if m.isAfterNumber == 1:
+        m.isAfterOLMarker = 2
+      else: return false
+    
+    else: 
+      return false
+
+  return false
 
 
 

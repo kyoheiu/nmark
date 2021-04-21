@@ -143,11 +143,62 @@ proc parseLines*(s: string): seq[Block] =
         else:
 
           if line.isUL:
+            if a.isAfterEmptyLine:
+              a.isAfterEmptyLine = false
+              a.isLoose = true
             let (n, s, marker) = line.delULMarker
             if a.kind == unOrderedList and a.markerType == marker:
               a.listSeq.add(lineBlock.parseLines.openList)
               lineBlock = s
               a.width = n
+              continue
+            elif a.kind == unOrderedList:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              if a.isLoose:
+                result.add(a.listSeq.openLooseUL)
+              else:
+                result.add(a.listSeq.openTightUL)
+              a = newAttrFlag()
+              lineBlock = s
+              a.width = n
+              a.markerType = marker
+              a.kind = unOrderedList
+              continue
+            else:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              if a.isLoose:
+                result.add(a.listSeq.openLooseOL(a.startNum))
+              else:
+                result.add(a.listSeq.openTightOL(a.startNum))
+              a = newAttrFlag()
+              lineBlock = s
+              a.width = n
+              a.markerType = marker
+              a.kind = unOrderedList
+              continue
+
+          if line.isOL:
+            if a.isAfterEmptyLine:
+              a.isAfterEmptyLine = false
+              a.isLoose = true
+            let (n, startNum, s, marker) = line.delOLMarker
+            if a.kind == orderedList and a.markerType == marker:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              lineBlock = s
+              a.width = n
+              continue
+            elif a.kind == orderedList:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              if a.isLoose:
+                result.add(a.listSeq.openLooseOL(a.startNum))
+              else:
+                result.add(a.listSeq.openTightOL(a.startNum))
+              a = newAttrFlag()
+              lineBlock = s
+              a.width = n
+              a.markerType = marker
+              a.startNum = startNum
+              a.kind = orderedList
               continue
             else:
               a.listSeq.add(lineBlock.parseLines.openList)
@@ -155,13 +206,12 @@ proc parseLines*(s: string): seq[Block] =
                 result.add(a.listSeq.openLooseUL)
               else:
                 result.add(a.listSeq.openTightUL)
-              a.listSeq = @[]
+              a = newAttrFlag()
               lineBlock = s
               a.width = n
               a.markerType = marker
+              a.kind = unOrderedList
               continue
-
-
               
 
 
@@ -762,6 +812,10 @@ proc parseLines*(s: string): seq[Block] =
         else:
           lineBlock.add(line.strip(trailing = false))
           continue
+      elif startNum != 1 and lineBlock != "":
+        a.kind = paragraph
+        lineBlock.add("\n" & line.strip(trailing = false))
+        continue
       a.markerType = marker
       a.width = n
       a.startNum = startNum
