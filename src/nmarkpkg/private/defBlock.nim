@@ -2,7 +2,6 @@ import sequtils, strutils, re
 
 type
   BlockType* = enum
-    undefinedBlock,
     paragraph,
     header,
     headerEmpty,
@@ -459,6 +458,8 @@ proc openLooseOL*(mdast: seq[Block], startNum: int): Block =
 
 proc openTightOL*(mdast: seq[Block], startNum: int): Block =
   Block(kind: olist, olType: orderedTightList, startNumber: startNum, olChildren: mdast)
+
+
 
 proc openHTML*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: htmlBlock, raw: lineBlock)
