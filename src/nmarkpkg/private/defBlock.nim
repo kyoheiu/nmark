@@ -41,6 +41,7 @@ type
 type
   BlockKind* = enum
     containerBlock,
+    olist,
     leafBlock,
     fencedCode,
     linkRef
@@ -52,6 +53,11 @@ type
     of containerBlock:
       containerType*: BlockType
       children*: seq[Block]
+    
+    of olist:
+      olType*: BlockType
+      startNumber*: int
+      olChildren*: seq[Block]
 
     of leafBlock:
       leafType*: BlockType

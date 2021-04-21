@@ -106,6 +106,28 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 
     else: return
   
+  of olist:
+
+    case mdast.olType:
+
+    of Blocktype.orderedLooseList:
+
+      isTight = false
+      var orderedListContainer: string
+      for child in mdast.children:
+        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
+      return ol("\p" & orderedListContainer) & "\p"
+
+    of Blocktype.orderedTightList:
+
+      isTight = true
+      var orderedListContainer: string
+      for child in mdast.children:
+        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
+      isTight = false
+      return ol("\p" & orderedListContainer) & "\p"
+  
+    else: return
 
 
   else: return
