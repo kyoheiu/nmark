@@ -73,6 +73,55 @@ type
       linkUrl*: string
       linkTitle*: string
 
+  MarkerFlag* = ref MFObj
+  MFObj = object
+    numHeadSpace*: int
+    numHeading*: int
+    numBacktick*: int
+    numTild*: int
+    isAfterULMarker*: int
+    isAfterNumber*: int
+    isAfterOLMarker*: int
+  
+  AttrFlag* = ref AtFObj
+  AtFObj = object
+    numOpenfence*: int
+    numEmptyLine*: int
+    isAfterEmptyLine*: bool
+    isLoose*: bool
+    listSeq*: seq[Block]
+    attr*: string
+    kind*: BlockType
+    width*: int
+    startNum*: int
+    markerType*: char
+    was*: BlockType
+  
+proc newMarkerFlag*(): MarkerFlag =
+  MarkerFlag(
+    numHeadSpace: 0,
+    numHeading: 0,
+    numBacktick: 0,
+    numTild: 0,
+    isAfterULMarker: 0,
+    isAfterNumber: 0,
+    isAfterOLMarker: 0
+  )
+
+proc newAttrFlag*(): AttrFlag =
+  AttrFlag(
+    numOpenfence: 0,
+    numEmptyLine: 0,
+    isAfterEmptyLine: false,
+    isLoose: false,
+    attr: "",
+    kind: none,
+    width: 0,
+    startNum: 0,
+    markerType: 'n',
+    was: none,
+  )
+
   
 
 let
@@ -114,9 +163,10 @@ proc countWhitespace*(line: string): int =
     else: return i
   return i
 
-proc delULMarker*(line: var string): (int, string) =
+proc delULMarker*(line: var string): (int, string, char) =
   var n: int
   var s: string
+  var marker: char
   var flag: bool
   var mPos: int
   var ws: int
@@ -125,8 +175,9 @@ proc delULMarker*(line: var string): (int, string) =
       if flag:
         n = mPos + ws + 1
         s = line[n..^1]
-        return (n, s)
+        return (n, s, marker)
       else:
+        marker = c
         flag = true
         mPos = i
     elif c == ' ':
@@ -135,18 +186,19 @@ proc delULMarker*(line: var string): (int, string) =
         if ws == 4:
           n = mPos + ws + 1
           s = line[n..^1]
-          return (n, s)
+          return (n, s, marker)
       else: continue
     else:
       if flag:
         n = mPos + ws + 1
         s = line[n..^1]
-        return (n, s)
+        return (n, s, marker)
       else: continue
 
-proc delOLMarker*(line: var string): (int, int, string) =
+proc delOLMarker*(line: var string): (int, int, string, char) =
   var n: int
   var s: string
+  var marker: char
   var flag: bool
   var mPos: int
   var ws: int
@@ -155,27 +207,94 @@ proc delOLMarker*(line: var string): (int, int, string) =
     if c == '.' or c == ')':
       flag = true
       mPos = i
+      marker = c
     elif c == ' ':
       if flag:
         ws.inc
         if ws == 5:
           n = mPos + 2
           s = line[n..^1]
-          return (n, startNum.parseInt, s)
+          return (n, startNum.parseInt, s, marker)
       else: continue
     elif olNum.contains(c):
       if flag: 
         n = mPos + ws + 1
         s = line[n..^1]
-        return (n, startNum.parseInt, s)
+        return (n, startNum.parseInt, s, marker)
       else:
         startNum.add(c)
     else:
       if flag:
         n = mPos + ws + 1
         s = line[n..^1]
-        return (n, startNum.parseInt, s)
+        return (n, startNum.parseInt, s, marker)
       else: continue
+
+
+proc isUL*(line: string): bool =
+  var m = newMarkerFlag()
+  var a = newAttrFlag()
+
+  if line.startsWith(reHtmlBlock1Begins) or
+    line.startsWith(reHtmlBlock2Begins) or
+    line.startsWith(reHtmlBlock3Begins) or
+    line.startsWith(reHtmlBlock4Begins) or
+    line.startsWith(reHtmlBlock5Begins) or
+    line.startsWith(reHtmlBlock6Begins) or
+    line.startsWith(reHtmlBlock7Begins) or
+    line.match(reAnotherAtxHeader) or
+    line.match(reSetextHeader) or
+    line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+    return false
+  
+  for i, c in line:
+
+    if m.isAfterULMarker > 0:
+      m.isAfterULMarker.dec
+    if m.isAfterNumber > 0:
+      m.isAfterNumber.dec
+    if m.isAfterOLMarker > 0:
+      m.isAfterOLMarker.dec
+
+    if i == 0:
+      case c
+
+      of ' ':
+        m.numHeadSpace = 1
+        continue
+
+      of '-', '+', '*':
+        m.isAfterULMarker = 2
+        a.markerType = c
+        continue
+
+      else: return false
+  
+    
+    case c
+
+    of ' ':
+      if m.isAfterULMarker == 1:
+        return true
+      else:
+        m.numHeadSpace.inc
+        if m.numHeadSpace == 4:
+          return false
+
+    of '-', '+', '*':
+      if m.isAfterULMarker > 0:
+        return false
+      else:
+        a.markerType = c
+        m.isAfterULMarker = 2
+    
+    else: 
+      return false
+
+  return false
+
+
+
 
 proc countBacktick*(line: string): int =
   var i: int

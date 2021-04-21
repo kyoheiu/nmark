@@ -1,57 +1,6 @@
 import strutils, sequtils, re
 import defBlock
 
-type
-  MarkerFlag* = ref MFObj
-  MFObj = object
-    numHeadSpace: int
-    numHeading: int
-    numBacktick: int
-    numTild: int
-    isAfterULMarker: int
-    isAfterNumber: int
-    isAfterOLMarker: int
-  
-  AttrFlag* = ref AtFObj
-  AtFObj = object
-    numOpenfence: int
-    numEmptyLine: int
-    isAfterEmptyLine: bool
-    isLoose: bool
-    listSeq: seq[Block]
-    attr: string
-    kind: BlockType
-    width: int
-    startNum: int
-    was: BlockType
-  
-proc newMarkerFlag(): MarkerFlag =
-  MarkerFlag(
-    numHeadSpace: 0,
-    numHeading: 0,
-    numBacktick: 0,
-    numTild: 0,
-    isAfterULMarker: 0,
-    isAfterNumber: 0,
-    isAfterOLMarker: 0
-  )
-
-proc newAttrFlag(): AttrFlag =
-  AttrFlag(
-    numOpenfence: 0,
-    numEmptyLine: 0,
-    isAfterEmptyLine: false,
-    isLoose: false,
-    attr: "",
-    kind: none,
-    width: 0,
-    startNum: 0,
-    was: none,
-  )
-
-const olNum = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-
-
 proc parseLines*(s: string): seq[Block] =
 
   var lineBlock: string
@@ -192,6 +141,30 @@ proc parseLines*(s: string): seq[Block] =
           lineBlock.add("\n" & line[a.width..^1])
           continue
         else:
+
+          if line.isUL:
+            let (n, s, marker) = line.delULMarker
+            if a.kind == unOrderedList and a.markerType == marker:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              lineBlock = s
+              a.width = n
+              continue
+            else:
+              a.listSeq.add(lineBlock.parseLines.openList)
+              if a.isLoose:
+                result.add(a.listSeq.openLooseUL)
+              else:
+                result.add(a.listSeq.openTightUL)
+              a.listSeq = @[]
+              lineBlock = s
+              a.width = n
+              a.markerType = marker
+              continue
+
+
+              
+
+
           if a.isAfterEmptyLine:
             if a.isLoose:
               a.listSeq.add(lineBlock.parseLines.openList)
@@ -736,6 +709,7 @@ proc parseLines*(s: string): seq[Block] =
       of '.', ')':
         if m.isAfterNumber == 1:
           m.isAfterOLMarker = 2
+        else: break
 
       else: 
         a = newAttrFlag()
@@ -768,8 +742,9 @@ proc parseLines*(s: string): seq[Block] =
       continue
 
     elif a.kind == unOrderedList:
-      let (n, s) = line.delULMarker
+      let (n, s, marker) = line.delULMarker
       a.width = n
+      a.markerType = marker
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -777,7 +752,7 @@ proc parseLines*(s: string): seq[Block] =
       continue
 
     elif a.kind == orderedList:
-      let (n, startNum, s) = line.delOLMarker
+      let (n, startNum, s, marker) = line.delOLMarker
       if startNum >= 1000000000:
         a = newAttrFlag()
         a.kind = paragraph
@@ -787,7 +762,7 @@ proc parseLines*(s: string): seq[Block] =
         else:
           lineBlock.add(line.strip(trailing = false))
           continue
-
+      a.markerType = marker
       a.width = n
       a.startNum = startNum
       if lineBlock != "":
