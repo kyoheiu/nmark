@@ -1,4 +1,5 @@
 from strutils import removeSuffix, isEmptyOrWhiteSpace
+from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
 import json
@@ -41,6 +42,10 @@ proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
     if delim.position == position:
       return delim
     else: continue
+
+proc hasCanCloseLinkRef(s: seq[DelimStack], i: int): bool =
+  let filtered = s.filter(proc(x: DelimStack): bool = x.position >= i)
+  return filtered.any(proc(x: DelimStack): bool = x.typeDelim == "]" and x.potential == canClose)
 
 proc asLiteral*(line: string): string =
   for c in line:
@@ -265,8 +270,11 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of "[":
         if currentDelim.potential == opener:
           flag.toLinktext = true
-        elif currentDelim.potential == canOpen:
+        elif currentDelim.potential == canOpen and
+             delimSeq.hasCanCloseLinkRef(i):
           flag.toLinkRef = true
+        else:
+          result.add(c)
       
       of "![":
         if currentDelim.potential == opener:
@@ -355,5 +363,5 @@ proc echoDelims(r: seq[DelimStack]) =
 
 
 proc insertInline*(line: string, linkSeq: seq[Block]): string =
-  #echoDelims line.parseInline
+  echoDelims line.parseInline
   insertMarker(line, linkSeq, line.parseInline)

@@ -98,9 +98,16 @@ proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
   for i, element in delimSeq:
 
-    if element.typeDelim == "`" and element.isActive:
-      if flag.canMakeCode:
-        if flag.number == element.numDelim:
+    if element.typeDelim == "`" and element.isActive and
+       element.potential == both:
+      flag.positionOpener = i
+      flag.positionOpenerInString = element.position
+      flag.number = element.numDelim
+    
+      for j, element in delimSeq[i+1..^1]:
+        if element.typeDelim == "`" and
+           element.isActive and
+           element.numDelim == flag.number:
           delimSeq[flag.positionOpener].potential = opener
           element.potential = closer
 
@@ -108,22 +115,12 @@ proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
 
           flag = newParseFlag()
 
-        else:
-          continue
-
-      else:
-        flag.canMakeCode = true
-        flag.positionOpener = i
-        flag.positionOpenerInString = element.position
-        flag.number = element.numDelim
-    
-    else:
-      continue
-
-  for codePosition in codePositions:
-    for element in delimSeq:
-      if element.position > codePosition.begins and element.position < codePosition.ends: 
-        element.isActive = false
+          for codePosition in codePositions:
+            for element in delimSeq:
+              if element.isActive and
+                 element.position > codePosition.begins and
+                 element.position < codePosition.ends: 
+                element.isActive = false
 
   return delimSeq
 
@@ -170,9 +167,10 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
 
 
 
-proc parseEmphasis*(delimSeq: seq[DelimStack]): seq[DelimStack] =
+proc parseEmphasis*(delimSeq: var seq[DelimStack]): seq[DelimStack] =
 
   var resultDelims: seq[DelimStack]
+  delimSeq = delimSeq.filter(proc(x: DelimStack): bool = x.typeDelim == "*" or x.typeDelim == "_")
 
   for i, closingElement in delimSeq:
 
@@ -531,7 +529,7 @@ proc parseInline*(line: string): seq[DelimStack] =
    line.readEscape)
    .sortedByIt(it.position)
 
-  #echoDelims r
+  echoDelims r
    
   let n_em = r.parseEscape
               .parseAutoLink(line)
@@ -539,9 +537,12 @@ proc parseInline*(line: string): seq[DelimStack] =
               .filter(proc(x: DelimStack): bool =
               (x.typeDelim != "*" and x.typeDelim != "_"))
 
+  #echoDelims n_em
+
   let em = r.parseEmphasis
 
-  #echoDelims (n_em & em)
+  #echoDelims em
+  echoDelims (n_em & em)
 
   return (n_em & em)
          .sortedByIt(it.position)
