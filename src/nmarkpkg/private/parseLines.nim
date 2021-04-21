@@ -692,6 +692,7 @@ proc parseLines*(s: string): seq[Block] =
       case c
 
       of '#':
+        m.numHeadSpace = 0
         m.numHeading.inc
       
       of ' ':
@@ -716,6 +717,7 @@ proc parseLines*(s: string): seq[Block] =
             break
 
       of '`':
+        m.numHeadSpace = 0
         m.numBacktick.inc
         if m.numBacktick == 3 and line.match(reFencedCodeBlockBack):
           a = newAttrFlag()
@@ -728,6 +730,7 @@ proc parseLines*(s: string): seq[Block] =
           break
       
       of '~':
+        m.numHeadSpace = 0
         m.numTild.inc
         if m.numTild >= 3 and line.match(reFencedCodeBlockTild):
           a = newAttrFlag()
@@ -740,6 +743,7 @@ proc parseLines*(s: string): seq[Block] =
           break
 
       of '>':
+        m.numHeadSpace = 0
         if lineBlock != "":
           result.add(openParagraph(lineBlock))
           lineBlock = ""
@@ -752,12 +756,14 @@ proc parseLines*(s: string): seq[Block] =
         break
 
       of '-', '+', '*':
+        m.numHeadSpace = 0
         if m.isAfterULMarker > 0:
           break
         else:
           m.isAfterULMarker = 2
       
       of olNum:
+        m.numHeadSpace = 0
         if m.numHeading == 0 and m.isAfterULMarker == 0:
           m.isAfterNumber = 2
         else:
@@ -765,6 +771,7 @@ proc parseLines*(s: string): seq[Block] =
           break
 
       of '.', ')':
+        m.numHeadSpace = 0
         if m.isAfterNumber == 1:
           m.isAfterOLMarker = 2
         else: break

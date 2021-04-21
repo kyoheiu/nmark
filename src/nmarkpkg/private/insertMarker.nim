@@ -1,4 +1,4 @@
-from strutils import removeSuffix
+from strutils import removeSuffix, isEmptyOrWhiteSpace
 from unicode import toLower
 from htmlparser import entityToUtf8
 import json
@@ -77,30 +77,35 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
   for i, c in line:
 
+    if skipCount > 0:
+      skipCount.dec
+      continue
+
     block codeBlock:
       if flag.toCode:
         case c
         
         of '\n':
+          tempStr.add(" ")
           continue
 
         of '<':
-          result.add("&lt;")
+          tempstr.add("&lt;")
           continue
         
         of '>':
-          result.add("&gt;")
+          tempStr.add("&gt;")
           continue
 
         of '"':
-          result.add("&quot;")
-      
-        else:
+          tempStr.add("&quot;")
+
+        of '`':
           break codeBlock
 
-    if skipCount > 0:
-      skipCount.dec
-      continue
+        else:
+          tempStr.add(c)
+          continue
 
     if flag.toEscape:
       case c
@@ -276,7 +281,11 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
             skipCount = currentDelim.numDelim - 1
         
         else:
-          result.add("</code>")
+          if tempStr[0] == ' ' and tempStr[^1] == ' ' and
+             not (tempStr.isEmptyOrWhiteSpace):
+            tempStr = tempStr[1..^2]
+          result.add(tempStr & "</code>")
+          tempStr = ""
           flag.toCode = false
           if currentDelim.numDelim > 1:
             skipCount = currentDelim.numDelim - 1
@@ -323,6 +332,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       result.add("&gt;")
 
     else:
+      if flag.toCode:
+        tempStr.add(c)
+        continue
       result.add(c)
 
   if flag.toEscape: result.add('\\')
