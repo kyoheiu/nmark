@@ -87,23 +87,6 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
       isTight = false
       return ul("\p" & unOrderedListContainer) & "\p"
 
-    of Blocktype.orderedLooseList:
-
-      isTight = false
-      var orderedListContainer: string
-      for child in mdast.children:
-        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
-      return ol("\p" & orderedListContainer) & "\p"
-
-    of Blocktype.orderedTightList:
-
-      isTight = true
-      var orderedListContainer: string
-      for child in mdast.children:
-        orderedListContainer.add(child.astToHtml(isTight, linkSeq))
-      isTight = false
-      return ol("\p" & orderedListContainer) & "\p"
-
     else: return
   
   of olist:
@@ -114,18 +97,26 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 
       isTight = false
       var orderedListContainer: string
-      for child in mdast.children:
+      for child in mdast.olChildren:
         orderedListContainer.add(child.astToHtml(isTight, linkSeq))
-      return ol("\p" & orderedListContainer) & "\p"
+      if mdast.startNumber != 1:
+        var t = ol("\p" & orderedListContainer) & "\p"
+        return t.replace("<ol>", "<ol start=\"" & $mdast.startNumber & "\">")
+      else:
+        return ol("\p" & orderedListContainer) & "\p"
 
     of Blocktype.orderedTightList:
 
       isTight = true
       var orderedListContainer: string
-      for child in mdast.children:
+      for child in mdast.olChildren:
         orderedListContainer.add(child.astToHtml(isTight, linkSeq))
       isTight = false
-      return ol("\p" & orderedListContainer) & "\p"
+      if mdast.startNumber != 1:
+        var t = ol("\p" & orderedListContainer) & "\p"
+        return t.replace("<ol>", "<ol start=\"" & $mdast.startNumber & "\">")
+      else:
+        return ol("\p" & orderedListContainer) & "\p"
   
     else: return
 

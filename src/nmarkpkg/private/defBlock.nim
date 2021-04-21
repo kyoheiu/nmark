@@ -99,6 +99,8 @@ let
 
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
+const olNum* = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
 proc delWhitespace*(line: string): string =
   var str: string
   for c in line:
@@ -142,12 +144,13 @@ proc delULMarker*(line: var string): (int, string) =
         return (n, s)
       else: continue
 
-proc delOLMarker*(line: var string): (int, string) =
+proc delOLMarker*(line: var string): (int, int, string) =
   var n: int
   var s: string
   var flag: bool
   var mPos: int
   var ws: int
+  var startNum: string
   for i, c in line:
     if c == '.' or c == ')':
       flag = true
@@ -158,13 +161,20 @@ proc delOLMarker*(line: var string): (int, string) =
         if ws == 4:
           n = mPos + ws + 1
           s = line[n..^1]
-          return (n, s)
+          return (n, startNum.parseInt, s)
       else: continue
+    elif olNum.contains(c):
+      if flag: 
+        n = mPos + ws + 1
+        s = line[n..^1]
+        return (n, startNum.parseInt, s)
+      else:
+        startNum.add(c)
     else:
       if flag:
         n = mPos + ws + 1
         s = line[n..^1]
-        return (n, s)
+        return (n, startNum.parseInt, s)
       else: continue
 
 proc countBacktick*(line: string): int =
@@ -262,11 +272,11 @@ proc openLooseUL*(mdast: seq[Block]): Block =
 proc openTightUL*(mdast: seq[Block]): Block =
   Block(kind: containerBlock, containerType: unOrderedTightList, children: mdast)
 
-proc openLooseOL*(mdast: seq[Block]): Block =
-  Block(kind: containerBlock, containerType: orderedLooseList, children: mdast)
+proc openLooseOL*(mdast: seq[Block], startNum: int): Block =
+  Block(kind: olist, olType: orderedLooseList, startNumber: startNum, olChildren: mdast)
 
-proc openTightOL*(mdast: seq[Block]): Block =
-  Block(kind: containerBlock, containerType: orderedTightList, children: mdast)
+proc openTightOL*(mdast: seq[Block], startNum: int): Block =
+  Block(kind: olist, olType: orderedTightList, startNumber: startNum, olChildren: mdast)
 
 proc openHTML*(lineBlock: string): Block =
   Block(kind: leafBlock, leafType: htmlBlock, raw: lineBlock)

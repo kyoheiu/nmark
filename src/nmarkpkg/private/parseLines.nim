@@ -22,6 +22,7 @@ type
     attr: string
     kind: BlockType
     width: int
+    startNum: int
     was: BlockType
   
 proc newMarkerFlag(): MarkerFlag =
@@ -44,6 +45,7 @@ proc newAttrFlag(): AttrFlag =
     attr: "",
     kind: none,
     width: 0,
+    startNum: 0,
     was: none,
   )
 
@@ -196,7 +198,7 @@ proc parseLines*(s: string): seq[Block] =
               if a.kind == unOrderedList:
                 result.add(a.listSeq.openLooseUL)
               if a.kind == orderedList:
-                result.add(a.listSeq.openLooseOL)
+                result.add(a.listSeq.openLooseOL(a.startNum))
               lineBlock = ""
               a = newAttrFlag()
               break listblock
@@ -205,7 +207,7 @@ proc parseLines*(s: string): seq[Block] =
               if a.kind == unOrderedList:
                 result.add(a.listSeq.openTightUL)
               if a.kind == orderedList:
-                result.add(a.listSeq.openTightOL)
+                result.add(a.listSeq.openTightOL(a.startNum))
               lineBlock = ""
               a = newAttrFlag()
               break listblock
@@ -302,7 +304,7 @@ proc parseLines*(s: string): seq[Block] =
                 if a.was == unOrderedList:
                   result.add(a.listSeq.openLooseUL)
                 if a.was == orderedList:
-                  result.add(a.listSeq.openLooseOL)
+                  result.add(a.listSeq.openLooseOL(a.startNum))
                 lineBlock = ""
                 a = newAttrFlag()
                 m = newMarkerFlag()
@@ -312,7 +314,7 @@ proc parseLines*(s: string): seq[Block] =
                 if a.was == unOrderedList:
                   result.add(a.listSeq.openTightUL)
                 if a.was == orderedList:
-                  result.add(a.listSeq.openTightOL)
+                  result.add(a.listSeq.openTightOL(a.startNum))
                 lineBlock = ""
                 a = newAttrFlag()
                 m = newMarkerFlag()
@@ -775,8 +777,19 @@ proc parseLines*(s: string): seq[Block] =
       continue
 
     elif a.kind == orderedList:
-      let (n, s) = line.delOLMarker
+      let (n, startNum, s) = line.delOLMarker
+      if startNum >= 1000000000:
+        a = newAttrFlag()
+        a.kind = paragraph
+        if lineBlock != "":
+          lineBlock.add("\n" & line.strip(trailing = false))
+          continue
+        else:
+          lineBlock.add(line.strip(trailing = false))
+          continue
+
       a.width = n
+      a.startNum = startNum
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
@@ -863,10 +876,10 @@ proc parseLines*(s: string): seq[Block] =
     elif a.kind == orderedList:
       if a.isLoose:
         a.listSeq.add(lineBlock.parseLines.openList)
-        result.add(a.listSeq.openLooseOL)
+        result.add(a.listSeq.openLooseOL(a.startNum))
       else:
         a.listSeq.add(lineBlock.parseLines.openList)
-        result.add(a.listSeq.openTightOL)
+        result.add(a.listSeq.openTightOL(a.startNum))
 
     elif a.kind == fencedCodeBlockBack or
       a.kind == fencedCodeBlockTild:
