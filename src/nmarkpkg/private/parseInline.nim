@@ -2,7 +2,7 @@ import re, algorithm, sequtils, json
 import readInline
 
 let
-  reAutoLink = re"^[a-zA-Z][a-zA-Z0-9\+\.-]{1,31}:[^\s<>]$"
+  reAutoLink = re"^[a-zA-Z][a-zA-Z0-9\+\.-]{1,31}:[^\s<>]*$"
   reMailLink = re"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
   reLinkDest = re"\([^\(\)\[\]]*\)"
   reRawHtmlTag = re("/?[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*")
@@ -620,6 +620,7 @@ proc parseInline*(line: string): seq[DelimStack] =
    .sortedByIt(it.position)
 
   #echoDelims r
+
   let n_em = r.parseEscape
               .parseAutoLink(line)
               .parseCodeSpan.parseLink(line)
