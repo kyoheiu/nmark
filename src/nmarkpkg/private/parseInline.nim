@@ -529,7 +529,7 @@ proc parseInline*(line: string): seq[DelimStack] =
    line.readEscape)
    .sortedByIt(it.position)
 
-  echoDelims r
+  #echoDelims r
    
   let n_em = r.parseEscape
               .parseAutoLink(line)
@@ -542,7 +542,7 @@ proc parseInline*(line: string): seq[DelimStack] =
   let em = r.parseEmphasis
 
   #echoDelims em
-  echoDelims (n_em & em)
+  #echoDelims (n_em & em)
 
   return (n_em & em)
          .sortedByIt(it.position)

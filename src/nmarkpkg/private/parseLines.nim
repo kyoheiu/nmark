@@ -68,7 +68,7 @@ proc parseLines*(s: string): seq[Block] =
                 a.isAfterEmptyLine = false
                 break
 
-            else: continue
+            else: break
     
       
           case c
@@ -686,7 +686,10 @@ proc parseLines*(s: string): seq[Block] =
         of olNum:
           m.isAfterNumber = 2
 
-        else: continue
+        else:
+          a = newAttrFlag()
+          a.kind = paragraph
+          break
     
       
       case c

@@ -363,5 +363,5 @@ proc echoDelims(r: seq[DelimStack]) =
 
 
 proc insertInline*(line: string, linkSeq: seq[Block]): string =
-  echoDelims line.parseInline
+  #echoDelims line.parseInline
   insertMarker(line, linkSeq, line.parseInline)
