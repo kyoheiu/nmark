@@ -64,7 +64,7 @@ when isMainModule:
   let
     f = parseFile("testfiles/spec-test.json")
   var
-    begins = 350
+    begins = 479
     ends = 480
   for j in f:
     let

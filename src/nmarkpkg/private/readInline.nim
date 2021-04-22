@@ -118,7 +118,7 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
         flag = newInlineFlag()
         flag.isAfterW = true
     
-    elif puncChar.contains(c):
+    elif puncChar.contains(c) or c == '_':
 
       if c == '\\':
         if flag.isAfterW and flag.isAfterA:
@@ -195,7 +195,7 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
         flag = newInlineFlag()
         flag.isAfterW = true
     
-    elif puncChar.contains(c):
+    elif puncChar.contains(c) or c == '*':
 
       if c == '\\':
         if flag.isAfterW and flag.isAfterA:
