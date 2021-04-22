@@ -32,6 +32,7 @@ type
     isAfterA: bool
     isAfterE: bool
     isAfterX: bool
+    isAfterEscape: bool
     number: int
 
 proc newInlineFlag(): InlineFlag =
@@ -43,6 +44,7 @@ proc newInlineFlag(): InlineFlag =
     isAfterA: false,
     isAfterE: false,
     isAfterX: false,
+    isAfterEscape: false,
     number: 0
   )
 
@@ -102,7 +104,11 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
   
   for i, c in str:
 
-    if c == ' ' or c == '\n':
+    if flag.isAfterEscape:
+        flag = newInlineFlag()
+        flag.isAfterE = true
+
+    elif c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
@@ -113,7 +119,18 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
         flag.isAfterW = true
     
     elif puncChar.contains(c):
-      if flag.isAfterW and flag.isAfterA:
+
+      if c == '\\':
+        if flag.isAfterW and flag.isAfterA:
+          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+        elif flag.isAfterE and flag.isAfterA:
+          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
+        elif flag.isAfterP and flag.isAfterA:
+          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+        flag = newInlineFlag()
+        flag.isAfterEscape = true
+
+      elif flag.isAfterW and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterP = true
@@ -164,7 +181,11 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
   
   for i, c in str:
 
-    if c == ' ' or c == '\n':
+    if flag.isAfterEscape:
+        flag = newInlineFlag()
+        flag.isAfterE = true
+
+    elif c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
@@ -175,7 +196,16 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
         flag.isAfterW = true
     
     elif puncChar.contains(c):
-      if flag.isAfterW and flag.isAfterA:
+
+      if c == '\\':
+        if flag.isAfterW and flag.isAfterA:
+          resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+        elif flag.isAfterP and flag.isAfterA:
+          resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+        flag = newInlineFlag()
+        flag.isAfterEscape = true
+
+      elif flag.isAfterW and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterP = true
@@ -204,7 +234,7 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
       if flag.isAfterW and flag.isAfterA:
         resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
+        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
       flag = newInlineFlag()
       flag.isAfterE = true
 

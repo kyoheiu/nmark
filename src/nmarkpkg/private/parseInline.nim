@@ -28,7 +28,7 @@ proc newParseFlag(): ParseFlag =
   )
 
 proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
-  var escapePos: int
+  var escapePos = -100
   for i, element in delimSeq:
     if element.typeDelim == "\\" and element.isActive:
       escapePos = element.position
@@ -220,7 +220,7 @@ proc parseEmphasis*(delimSeq: var seq[DelimStack]): seq[DelimStack] =
                 openingElement.potential = none
                 closingElement.numDelim -= 1
                 closingElement.position += 1
-                continue
+                break
               
               else:
                 resultDelims.add(@[DelimStack(position: openingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: opener), DelimStack(position: closingElement.position, typeDelim: "emphasis", numDelim: 1, isActive: true, potential: closer)])
@@ -363,13 +363,14 @@ proc parseEmphasis*(delimSeq: var seq[DelimStack]): seq[DelimStack] =
       elif closingElement.isActive and closingElement.potential == both:
 
         for openingElement in delimSeq[0..i-1].reversed:
+
           if openingElement.isActive and closingElement.typeDelim == openingElement.typeDelim and (openingElement.potential == canOpen or openingElement.potential == both):
 
             let sum = openingElement.numDelim + closingElement.numDelim
-            let remOpener = openingElement.numDelim mod 3
-            let remCloser = closingElement.numDelim mod 3
 
             if sum mod 3 == 0:
+              let remOpener = openingElement.numDelim mod 3
+              let remCloser = closingElement.numDelim mod 3
               if remOpener == 0 and remCloser == 0:
 
                 while openingElement.numDelim != 0:
@@ -494,8 +495,7 @@ proc parseEmphasis*(delimSeq: var seq[DelimStack]): seq[DelimStack] =
                   closingElement.potential = none
                   break doubleLoop
 
-
-
+          continue
 
 
 
@@ -530,7 +530,6 @@ proc parseInline*(line: string): seq[DelimStack] =
    .sortedByIt(it.position)
 
   #echoDelims r
-   
   let n_em = r.parseEscape
               .parseAutoLink(line)
               .parseCodeSpan.parseLink(line)
@@ -538,7 +537,7 @@ proc parseInline*(line: string): seq[DelimStack] =
               (x.typeDelim != "*" and x.typeDelim != "_"))
 
   #echoDelims n_em
-
+  #echoDelims r
   let em = r.parseEmphasis
 
   #echoDelims em
