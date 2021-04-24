@@ -238,7 +238,6 @@ proc delOLMarker*(line: var string): (int, int, string, char) =
 
 proc isUL*(line: string): bool =
   var m = newMarkerFlag()
-  var a = newAttrFlag()
 
   if line.startsWith(reHtmlBlock1Begins) or
     line.startsWith(reHtmlBlock2Begins) or
@@ -270,7 +269,6 @@ proc isUL*(line: string): bool =
 
       of '-', '+', '*':
         m.isAfterULMarker = 2
-        a.markerType = c
         continue
 
       else: return false
@@ -290,7 +288,6 @@ proc isUL*(line: string): bool =
       if m.isAfterULMarker > 0:
         return false
       else:
-        a.markerType = c
         m.isAfterULMarker = 2
     
     else: 
@@ -302,7 +299,6 @@ proc isUL*(line: string): bool =
 
 proc isOL*(line: string): bool =
   var m = newMarkerFlag()
-  var a = newAttrFlag()
 
   if line.startsWith(reHtmlBlock1Begins) or
     line.startsWith(reHtmlBlock2Begins) or

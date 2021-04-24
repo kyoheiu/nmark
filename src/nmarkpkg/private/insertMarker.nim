@@ -205,7 +205,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
       # parse link contents     
       if c == ')':
-        if lf == toUrlLT: url.add(c)
+        if lf == toUrlLT:
+          url.add(c)
+          continue
         else:
           if flag.isLink:
             if url.isEmptyOrWhitespace and title.isEmptyOrWhitespace:
@@ -216,8 +218,18 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               continue
             
             elif lf == broken:
-              result.add(line[flag.startPos..i])
-              flag .toLinkDestination = false
+              for j, d in line[flag.startpos..i]:
+                if d == '<':
+                  tempstr.add("&lt;")
+                elif d == '>':
+                  tempstr.add("&gt;")
+                elif d == '\\':
+                  continue
+                else:
+                  tempstr.add(d)
+              result.add(tempstr)
+              tempstr = ""
+              flag.toLinkDestination = false
               continue
 
             elif lf == toUrl or lf == skipToTitle:
@@ -235,8 +247,18 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               continue
             
             else:
-              result.add(line[flag.startPos..i])
-              flag .toLinkDestination = false
+              for j, d in line[flag.startpos..i]:
+                if d == '<':
+                  tempstr.add("&lt;")
+                elif d == '>':
+                  tempstr.add("&gt;")
+                elif d == '\\':
+                  continue
+                else:
+                  tempstr.add(d)
+              result.add(tempstr)
+              tempstr = ""
+              flag.toLinkDestination = false
               continue
 
       elif i == flag.urlPos+2:
@@ -257,10 +279,16 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           url.add(c)
       of toUrlLT:
         if c == '>':
-          lf = skipToTitle
+          if not flag.afterBS:
+            lf = skipToTitle
+          else:
+            lf = broken
         elif c == ' ':
           url.add("%20")
+        elif c == '\\':
+          flag.afterBS = true
         else:
+          flag.afterBS = false
           url.add(c)
       of skipToTitle:
         if c == ' ': continue
