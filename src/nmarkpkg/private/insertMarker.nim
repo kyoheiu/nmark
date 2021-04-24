@@ -23,6 +23,7 @@ type
     isLink: bool
     isImage: bool
     startPos: int
+    urlPos: int
 
 proc newSplitFlag(): SplitFlag =
   SplitFlag(
@@ -38,7 +39,10 @@ proc newSplitFlag(): SplitFlag =
     toEscape: false,
     toCode: false,
     afterBS: false,
-    startPos: 0
+    isLink: false,
+    isImage: false,
+    startPos: 0,
+    urlPos: 0
   )
 
 type linkKind = enum
@@ -50,6 +54,7 @@ type linkKind = enum
   toTitlePare
   afterTitle
   broken
+  none
 
 proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
   for delim in s:
@@ -102,7 +107,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
   var tempStr: string
   var linkText: string
-  var linkDestination: string
   var skipCount: int
 
   for i, c in line:
@@ -192,6 +196,7 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       if c == ']':
         flag.toLinktext = false
         flag.toLinkDestination = true
+        flag.urlPos = i
         skipCount = 1
       else:
         linkText.add(c)
@@ -202,38 +207,47 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       if c == ')':
         if lf == toUrlLT: url.add(c)
         else:
-          if url.isEmptyOrWhitespace and title.isEmptyOrWhitespace:
-            result.add("<a href=\"\">" & linkText & "</a>")
-            flag.toLinkDestination = false
-            continue
-          
-          elif lf == broken:
-            result.add(line[flag.startPos..i])
-            flag .toLinkDestination = false
-            continue
+          if flag.isLink:
+            if url.isEmptyOrWhitespace and title.isEmptyOrWhitespace:
+              let delimInLink = linkText.processEmphasis
+              let processedText = linkText.insertMarker(linkSeq, delimInLink)
+              result.add("<a href=\"\">" & processedText & "</a>")
+              flag.toLinkDestination = false
+              continue
+            
+            elif lf == broken:
+              result.add(line[flag.startPos..i])
+              flag .toLinkDestination = false
+              continue
 
-          elif lf == toUrl or lf == skipToTitle:
-            result.add("<a href=\"" & url & "\">" & linkText & "</a>")
-            flag.toLinkDestination = false
-            continue
-          
-          elif lf == afterTitle:
-            result.add("<a href=\"" & url & "\" title=\"" & title & "\">" & linkText & "</a>")
-            flag.toLinkDestination = false
-            continue
-          
-          else:
-            result.add(line[flag.startPos..i])
-            flag .toLinkDestination = false
-            continue
+            elif lf == toUrl or lf == skipToTitle:
+              let delimInLink = linkText.processEmphasis
+              let processedText = linkText.insertMarker(linkSeq, delimInLink)
+              result.add("<a href=\"" & url & "\">" & processedText & "</a>")
+              flag.toLinkDestination = false
+              continue
+            
+            elif lf == afterTitle:
+              let delimInLink = linkText.processEmphasis
+              let processedText = linkText.insertMarker(linkSeq, delimInLink)
+              result.add("<a href=\"" & url & "\" title=\"" & title & "\">" & processedText & "</a>")
+              flag.toLinkDestination = false
+              continue
+            
+            else:
+              result.add(line[flag.startPos..i])
+              flag .toLinkDestination = false
+              continue
 
-      elif i == 0:
+      elif i == flag.urlPos+2:
         case c
         of '<':
           lf = toUrlLT
+          continue
         else:
           lf = toUrl
           url.add(c)
+          continue
       
       case lf
       of toUrl:
@@ -244,6 +258,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of toUrlLT:
         if c == '>':
           lf = skipToTitle
+        elif c == ' ':
+          url.add("%20")
         else:
           url.add(c)
       of skipToTitle:
@@ -256,7 +272,7 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           lf = toTitlePare
         else:
           lf = broken
-          break
+          continue
       of toTitleDouble:
         if c == '"' and line[i-1] != '\\':
           lf = afterTitle
@@ -282,15 +298,12 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         flag.toLinkDestination = false
         continue
 
-      #if c == ')':
-        #flag.toLinkDestination = false
-        #let delimInLink = linkText.processEmphasis
-        #let processedText = linkText.insertMarker(linkSeq, delimInLink)
-        #result.add("<a href=\"" & linkDestination & "\">" & processedText & "</a>")
-        #linkText = ""
-        #linkDestination = ""
-      #else:
-        #linkDestination.add(c)
+      of none:
+        result.add(line[flag.startPos..i])
+        flag.toLinkDestination = false
+        continue
+
+
     
     elif flag.toLinkRef:
       if c == ']':
