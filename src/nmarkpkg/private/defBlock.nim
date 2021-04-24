@@ -471,7 +471,7 @@ proc openHTML*(lineBlock: string): Block =
 
 
 
-type linkKind = enum
+type linkRefKind = enum
   toLabel
   skipToUrl
   toUrl

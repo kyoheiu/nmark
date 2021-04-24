@@ -4,7 +4,7 @@ import readInline
 let
   reAutoLink = re"^[a-zA-Z][a-zA-Z0-9\+\.-]{1,31}:[^\s<>]*$"
   reMailLink = re"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-  reLinkDest = re"\([^\(\)\[\]]*\)"
+  reLinkDest = re"\(.*\)"
   reRawHtmlTag = re("/?[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*")
 
 type
@@ -63,7 +63,7 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
           element.potential = closer
           autoLinkPositions.add((flag.positionOpenerInString, element.position))
           flag = newParseFlag()
-        
+
         elif str.match(reMailLink):
           delimSeq[flag.positionOpener].potential = mailOpener
           element.potential = closer
@@ -149,6 +149,7 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
           elif (element.typeDelim == "[" or element.typeDelim == "![") and
                element.isActive and
                element.potential == canOpen:
+
             element.potential = opener
 
             delimSeq[i].potential = closer
