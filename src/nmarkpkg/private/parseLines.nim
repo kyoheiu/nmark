@@ -31,7 +31,9 @@ proc parseLines*(s: string): seq[Block] =
              line.startsWith(reHtmlBlock5Begins) or
              line.startsWith(reHtmlBlock6Begins) or
              line.startsWith(reHtmlBlock7Begins) or
-             line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+             line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak) or
+             line.isUL or
+             line.isOL:
             a.kind = none
             break
 
@@ -68,8 +70,9 @@ proc parseLines*(s: string): seq[Block] =
                 a.isAfterEmptyLine = false
                 break
 
-            else: break
-    
+            else:
+              if a.isAfterEmptyLine: a.kind = paragraph
+              break
       
           case c
 

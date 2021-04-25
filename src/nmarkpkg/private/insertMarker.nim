@@ -97,6 +97,9 @@ proc asLiteral*(line: string): string =
       of '"':
         result.add("&quot;")
 
+      of '&':
+        result.add("&amp;")
+
       else:
         result.add(c)
         continue
@@ -139,6 +142,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
         of '"':
           tempStr.add("&quot;")
+        
+        of '&':
+          tempStr.add("&amp;")
 
         of '`':
           break codeBlock
@@ -257,7 +263,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               continue
             
             else:
-              let s = line[l.startPos+1..i]
               result.add(line[l.startPos..i])
               flag.toLinkDestination = false
               l = newLinkFlag()
@@ -299,7 +304,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               continue
             
             else:
-              let s = line[l.startPos+1..i]
               result.add(line[l.startPos..i])
               flag.toLinkDestination = false
               l = newLinkFlag()
@@ -577,6 +581,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         
     elif c == '>':
       result.add("&gt;")
+    
+    elif c == '&':
+      result.add("&amp;")
 
     else:
       if flag.toCode:
