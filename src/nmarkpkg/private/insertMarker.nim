@@ -1,9 +1,20 @@
-from strutils import removeSuffix, isEmptyOrWhiteSpace
+from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric
 from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
 import json
 import readInline, parseInline, defBlock
+
+type linkKind = enum
+  toUrl
+  toUrlLT
+  skipToTitle
+  toTitleDouble
+  toTitleSingle
+  toTitlePare
+  afterTitle
+  broken
+  none
 
 type
   SplitFlag = ref SObj
@@ -16,14 +27,22 @@ type
     toImagetext: bool
     toImageDestination: bool
     toLinkRef: bool
+    toImageRef: bool
     toEntity: bool
     toEscape: bool
     toCode: bool
     afterBS: bool
+  
+  LinkFlag = ref LObj
+  LObj = object
     isLink: bool
     isImage: bool
     startPos: int
     urlPos: int
+    linkText: string
+    url: string
+    title: string
+    parseLink: linkKind
 
 proc newSplitFlag(): SplitFlag =
   SplitFlag(
@@ -35,26 +54,24 @@ proc newSplitFlag(): SplitFlag =
     toImagetext: false,
     toImageDestination: false,
     toLinkRef: false,
+    toImageRef: false,
     toEntity: false,
     toEscape: false,
     toCode: false,
     afterBS: false,
+  )
+
+proc newLinkFlag(): LinkFlag =
+  LinkFlag(
     isLink: false,
     isImage: false,
     startPos: 0,
-    urlPos: 0
+    urlPos: 0,
+    linkText: "",
+    url: "",
+    title: "",
+    parseLink: none
   )
-
-type linkKind = enum
-  toUrl
-  toUrlLT
-  skipToTitle
-  toTitleDouble
-  toTitleSingle
-  toTitlePare
-  afterTitle
-  broken
-  none
 
 proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
   for delim in s:
@@ -90,23 +107,12 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
   
   var delimPos: seq[int]
   var flag = newSplitFlag()
-  var
-    url: string
-    title: string
-    numOpenP: int
-    numCloseP: int
-    isAfterBreak = false
-    isAfterBS = false
-    isAfterWS = false
-    isUrlLT = false
-    lf = toUrl
-
+  var l = newLinkFlag()
 
   for delim in delimSeq:
     delimPos.add(delim.position)
 
   var tempStr: string
-  var linkText: string
   var skipCount: int
 
   for i, c in line:
@@ -196,139 +202,189 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       if c == ']':
         flag.toLinktext = false
         flag.toLinkDestination = true
-        flag.urlPos = i
+        l.urlPos = i
         skipCount = 1
       else:
-        linkText.add(c)
+        l.linkText.add(c)
     
     elif flag.toLinkDestination:
 
       # parse link contents     
-      if c == ')':
-        if lf == toUrlLT:
-          url.add(c)
+      if l.parseLink != toTitlePare and c == ')' and line[i-1] != '\\':
+        if l.parseLink == toUrlLT:
+          l.url.add(c)
           continue
         else:
-          if flag.isLink:
-            if url.isEmptyOrWhitespace and title.isEmptyOrWhitespace:
-              let delimInLink = linkText.processEmphasis
-              let processedText = linkText.insertMarker(linkSeq, delimInLink)
+          if l.isLink:
+            if l.url.isEmptyOrWhitespace and l.title.isEmptyOrWhitespace:
+              let delimInLink = l.linkText.processEmphasis
+              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
               result.add("<a href=\"\">" & processedText & "</a>")
               flag.toLinkDestination = false
+              l = newLinkFlag()
               continue
             
-            elif lf == broken:
-              for j, d in line[flag.startpos..i]:
+            elif l.parseLink == broken:
+              for j, d in line[l.startpos..i]:
                 if d == '<':
-                  tempstr.add("&lt;")
+                  tempStr.add("&lt;")
                 elif d == '>':
-                  tempstr.add("&gt;")
+                  tempStr.add("&gt;")
                 elif d == '\\':
                   continue
                 else:
-                  tempstr.add(d)
-              result.add(tempstr)
+                  tempStr.add(d)
+              result.add(tempStr)
               tempstr = ""
               flag.toLinkDestination = false
+              l = newLinkFlag()
               continue
 
-            elif lf == toUrl or lf == skipToTitle:
-              let delimInLink = linkText.processEmphasis
-              let processedText = linkText.insertMarker(linkSeq, delimInLink)
-              result.add("<a href=\"" & url & "\">" & processedText & "</a>")
+            elif l.parseLink == toUrl or l.parseLink == skipToTitle:
+              let delimInLink = l.linkText.processEmphasis
+              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
+              result.add("<a href=\"" & l.url & "\">" & processedText & "</a>")
               flag.toLinkDestination = false
+              l = newLinkFlag()
               continue
             
-            elif lf == afterTitle:
-              let delimInLink = linkText.processEmphasis
-              let processedText = linkText.insertMarker(linkSeq, delimInLink)
-              result.add("<a href=\"" & url & "\" title=\"" & title & "\">" & processedText & "</a>")
+            elif l.parseLink == afterTitle:
+              let delimInLink = l.linkText.processEmphasis
+              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
+              result.add("<a href=\"" & l.url & "\" title=\"" & l.title & "\">" & processedText & "</a>")
               flag.toLinkDestination = false
+              l = newLinkFlag()
               continue
             
             else:
-              for j, d in line[flag.startpos..i]:
+              let s = line[l.startPos+1..i]
+              result.add(line[l.startPos..i])
+              flag.toLinkDestination = false
+              l = newLinkFlag()
+              continue
+          
+          elif l.isImage:
+            if l.url.isEmptyOrWhitespace and l.title.isEmptyOrWhitespace:
+              result.add("<img src=\"\" alt=\">" & l.linkText & "<\" />")
+              flag.toLinkDestination = false
+              l = newLinkFlag()
+              continue
+            
+            elif l.parseLink == broken:
+              for j, d in line[l.startpos..i]:
                 if d == '<':
-                  tempstr.add("&lt;")
+                  tempStr.add("&lt;")
                 elif d == '>':
-                  tempstr.add("&gt;")
+                  tempStr.add("&gt;")
                 elif d == '\\':
                   continue
                 else:
-                  tempstr.add(d)
-              result.add(tempstr)
+                  tempStr.add(d)
+              result.add(tempStr)
               tempstr = ""
               flag.toLinkDestination = false
+              l = newLinkFlag()
               continue
 
-      elif i == flag.urlPos+2:
+            elif l.parseLink == toUrl or l.parseLink == skipToTitle:
+              result.add("<img src=\"" & l.url & "\" alt=\"" & l.linkText & "\" />")
+              flag.toLinkDestination = false
+              l = newLinkFlag()
+              continue
+            
+            elif l.parseLink == afterTitle:
+              result.add("<img src=\"" & l.url & "\" alt=\"" & l.linkText & "\" title=\"" & l.title & "\" />")
+              flag.toLinkDestination = false
+              l = newLinkFlag()
+              continue
+            
+            else:
+              let s = line[l.startPos+1..i]
+              result.add(line[l.startPos..i])
+              flag.toLinkDestination = false
+              l = newLinkFlag()
+              continue
+
+
+      elif i == l.urlPos+2:
         case c
         of '<':
-          lf = toUrlLT
+          l.parseLink = toUrlLT
+          continue
+        of '\\':
+          l.parseLink = toUrl
           continue
         else:
-          lf = toUrl
-          url.add(c)
+          l.parseLink = toUrl
+          l.url.add(c)
           continue
       
-      case lf
+      case l.parseLink
       of toUrl:
         if c == ' ':
-          lf = skipToTitle
+          l.parseLink = skipToTitle
+        elif c == '\\':
+          continue
+        elif c == '"':
+          l.url.add("&quot;")
         else:
-          url.add(c)
+          l.url.add(c)
       of toUrlLT:
         if c == '>':
           if not flag.afterBS:
-            lf = skipToTitle
+            l.parseLink = skipToTitle
           else:
-            lf = broken
+            l.parseLink = broken
         elif c == ' ':
-          url.add("%20")
+          l.url.add("%20")
+        elif c == '"':
+          l.url.add("&quot;")
         elif c == '\\':
           flag.afterBS = true
         else:
           flag.afterBS = false
-          url.add(c)
+          l.url.add(c)
       of skipToTitle:
         if c == ' ': continue
         elif c == '"':
-          lf = toTitleDouble
+          l.parseLink = toTitleDouble
         elif c == '\'':
-          lf = toTitleSingle
+          l.parseLink = toTitleSingle
         elif c == '(':
-          lf = toTitlePare
+          l.parseLink = toTitlePare
         else:
-          lf = broken
+          l.parseLink = broken
           continue
       of toTitleDouble:
         if c == '"' and line[i-1] != '\\':
-          lf = afterTitle
+          l.parseLink = afterTitle
           continue
-        else: title.add(c)
+        else: l.title.add(c)
       of toTitleSingle:
         if c == '\'' and line[i-1] != '\\':
-          lf = afterTitle
+          l.parseLink = afterTitle
           continue
-        else: title.add(c)
+        else: l.title.add(c)
       of toTitlePare:
         if c == ')' and line[i-1] != '\\':
-          lf = afterTitle
+          l.parseLink = afterTitle
           continue
-        else: title.add(c)
+        else: l.title.add(c)
       of afterTitle:
         if c == ' ': continue
         else:
-          lf = broken
+          l.parseLink = broken
           continue
       of broken:
-        result.add(line[flag.startPos..i])
+        result.add(line[l.startPos..i])
         flag.toLinkDestination = false
+        l = newLinkFlag()
         continue
 
       of none:
-        result.add(line[flag.startPos..i])
+        result.add(line[l.startPos..i])
         flag.toLinkDestination = false
+        l = newLinkFlag()
         continue
 
 
@@ -344,12 +400,14 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           if linkSeq.len() != 0:
             for e in linkSeq:
               if e.linkLabel.toLower == tempStr.toLower:
+                let delimInLink = tempStr.processEmphasis
+                let processedText = tempStr.insertMarker(linkSeq, delimInLink)
                 if e.linkTitle == "":
-                  result.add("<a href=\"" & e.linkUrl & "\">" & tempStr & "</a>")
+                  result.add("<a href=\"" & e.linkUrl & "\">" & processedText & "</a>")
                   tempStr = ""
                   break
                 else:
-                  result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & tempStr &  "</a>")
+                  result.add("<a href=\"" & e.linkUrl & "\" title=\"" & e.linkTitle & "\">" & processedText &  "</a>")
                   tempStr = ""
                   break
               else:
@@ -369,6 +427,44 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         if flag.afterBS:
           flag.afterBS = false
         tempStr.add(c)
+        continue
+
+    elif flag.toImageRef:
+      if c == ']':
+        if flag.afterBS:
+          flag.afterBS = false
+          continue
+        else:
+          flag.toImageRef = false
+          if linkSeq.len() != 0:
+            for e in linkSeq:
+              if e.linkLabel.toLower == tempStr.toLower:
+                if e.linkTitle == "":
+                  result.add("<img src=\"" & e.linkUrl & "\" alt=\"" & tempStr & "\" />")
+                  tempStr = ""
+                  break
+                else:
+                  result.add("<img src=\"" & e.linkUrl & "\" alt=\"" & tempStr & "\" title=\"" & e.linkTitle & "\" />")
+                  tempStr = ""
+                  break
+              else:
+                continue
+            if tempStr != "":
+              result.add("[" & tempStr & "]")
+              tempStr = ""
+          else:
+            result.add("[" & tempStr & "]")
+            tempStr = ""
+            continue
+
+      elif c == '\\':
+        flag.afterBS = true
+        continue
+      else:
+        if flag.afterBS:
+          flag.afterBS = false
+        if c.isAlphaNumeric:
+          tempStr.add(c)
         continue
 
     elif flag.toEntity:
@@ -404,8 +500,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of "[":
         if currentDelim.potential == opener:
           flag.toLinktext = true
-          flag.isLink = true
-          flag.startPos = i
+          l.isLink = true
+          l.startPos = i
         elif currentDelim.potential == canOpen and
              delimSeq.hasCanCloseLinkRef(i):
           flag.toLinkRef = true
@@ -415,9 +511,14 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of "![":
         if currentDelim.potential == opener:
           flag.toLinktext = true
-          flag.isImage = true
-          flag.startPos = i
+          l.isImage = true
+          l.startPos = i
           skipCount = 1
+        elif currentDelim.potential == canOpen and
+             delimSeq.hasCanCloseLinkRef(i):
+          flag.toImageRef = true
+        else:
+          result.add(c)
 
       of "`":
         if currentDelim.potential == opener:

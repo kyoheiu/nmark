@@ -141,12 +141,7 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
         
         for j, element in delimSeq[0..i].reversed:
 
-          if flag.inactivateLink:
-            if element.typeDelim == "[":
-              element.isActive = false
-              continue
-
-          elif (element.typeDelim == "[" or element.typeDelim == "![") and
+          if (element.typeDelim == "[" or element.typeDelim == "![") and
                element.isActive and
                element.potential == canOpen:
 
