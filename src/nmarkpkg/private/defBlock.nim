@@ -35,15 +35,22 @@ type
     orderedLooseList,
     list,
     emptyLine,
+    table,
     none
 
-type
+  ALignKind* = enum
+    nothing,
+    center,
+    left,
+    right
+
   BlockKind* = enum
     containerBlock,
     olist,
     leafBlock,
     fencedCode,
-    linkRef
+    linkRef,
+    tableBlock
 
   Block* = ref BlockObj
   BlockObj = object
@@ -72,6 +79,11 @@ type
       linkUrl*: string
       linkTitle*: string
 
+    of tableBlock:
+      align*: seq[ALignKind]
+      thR*: seq[string]
+      tdR*: seq[seq[string]]
+
   MarkerFlag* = ref MFObj
   MFObj = object
     numHeadSpace*: int
@@ -95,6 +107,10 @@ type
     startNum*: int
     markerType*: char
     was*: BlockType
+    columnNum*: int
+    align*: seq[ALignKind]
+    th*: seq[string]
+    td*: seq[seq[string]]
   
 proc newMarkerFlag*(): MarkerFlag =
   MarkerFlag(
@@ -119,6 +135,10 @@ proc newAttrFlag*(): AttrFlag =
     startNum: 0,
     markerType: 'n',
     was: none,
+    columnNum: 0,
+    align: @[],
+    th: @[],
+    td: @[]
   )
 
   
@@ -165,6 +185,64 @@ proc countWhitespace*(line: string): int =
     else: return i
   return i
 
+proc isTable*(line: string): bool =
+  for c in line:
+    case c
+    of ' ', '-', '|', ':': continue
+    else: return false
+  return true
+
+proc parseTableDelim*(line: string): seq[ALignKind] =
+  let s = line.split('|')
+         .filter(proc(x: string): bool = not x.isEmptyOrWhitespace)
+  for delim in s:
+    let e = delim.strip
+    echo e[^1]
+    if e[0] == ':' and e[^1] == ':':
+      result.add(center)
+    elif e[0] == ':':
+      result.add(left)
+    elif e[^1] == ':':
+      result.add(right)
+    else:
+      result.add(nothing)
+  
+proc parseTableElement*(line: string): seq[string] =
+  var str: string
+  var flag = false
+  for c in line:
+    case c
+    of '|':
+      if not flag:
+        if not str.isEmptyOrWhitespace:
+          result.add(str.strip)
+          str = ""
+        else: continue
+      else: 
+        flag = false
+        str.add(c)
+    of '\\':
+      flag = true
+    else:
+      if flag: flag = false
+      str.add(c)
+  if not str.isEmptyOrWhitespace: result.add(str.strip)
+
+proc addTableElement*(td: var seq[seq[string]], row: var seq[string], columnNum: int) =
+  let length = row.len()
+  if length == columnNum:
+    td.add(row)
+  elif length < columnNum:
+    while true:
+      row.add("")
+      if row.len() == columnNum: break
+    td.add(row)
+  else:
+    td.add(row[0..columnNum-1])
+
+proc openTable*(alignSeq: seq[ALignKind], th: seq[string], td: seq[seq[string]]): Block =
+  return Block(kind: tableBlock, align: alignSeq, thR: th, tdR: td)
+  
 proc delULMarker*(line: var string): (int, string, char) =
   var n: int
   var s: string

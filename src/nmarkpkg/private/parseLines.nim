@@ -346,6 +346,21 @@ proc parseLines*(s: string): seq[Block] =
 
 
 
+    block tableBlock:
+      if a.kind == table:
+        if line.isEmptyOrWhitespace:
+          result.add(openTable(a.align, a.th, a.td))
+          a = newAttrFlag()
+          continue
+        
+        else:
+          var parsedLine = line.parseTableElement
+          a.td.addTableElement(parsedLine, a.columnNum)
+          continue
+
+
+
+
     block iCBblock:
       if a.kind == indentedCodeBlock:
         if (not line.isEmptyOrWhitespace) and
@@ -647,6 +662,10 @@ proc parseLines*(s: string): seq[Block] =
         a.kind = headerEmpty
         break
 
+      if line.isTable:
+        a.kind = table
+        break
+
 
       if i == 0:
         case c
@@ -891,6 +910,18 @@ proc parseLines*(s: string): seq[Block] =
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
       continue
+
+    elif a.kind == table:
+      a.align = line.parseTableDelim
+      a.columnNum = a.align.len()
+      a.th = lineBlock.parseTableElement
+      if a.th.len() != a.columnNum:
+        a = newAttrFlag()
+        a.kind = paragraph
+        lineBlock.add("\n" & line.strip(trailing = false))
+      else:
+        lineBlock = ""
+        continue
 
     elif a.kind == emptyLine:
       if lineBlock != "":

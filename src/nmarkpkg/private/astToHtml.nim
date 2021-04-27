@@ -120,5 +120,50 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
   
     else: return
 
+  of tableBlock:
+    var head: string
+    for i, e in mdast.thR:
+      case mdast.align[i]
+      
+      of nothing:
+        head.add("<th>" & e.insertInline(linkSeq) & "</th>\p")
+
+      of AlignKind.center:
+        head.add("<th align=\"center\">" & e.insertInline(linkSeq) & "</th>\p")
+        
+      of left:
+        head.add("<th align=\"left\">" & e.insertInline(linkSeq) & "</th>\p")
+
+      of right:
+        head.add("<th align=\"right\">" & e.insertInline(linkSeq) & "</th>\p")
+
+    head = thead("\p" & tr("\p" & head) & "\p")
+    
+    var body: string
+    var tdRow: string
+    for s in mdast.tdR:
+      for i, e in s:
+        case mdast.align[i]
+
+        of nothing:
+          tdRow.add("\p" & "<td>" & e.insertInline(linkSeq) & "</td>")
+
+        of ALignKind.center:
+          tdRow.add("\p" & "<td align=\"center\">" & e.insertInline(linkSeq) & "</td>")
+          
+        of left:
+          tdRow.add("\p" & "<td align=\"left\">" & e.insertInline(linkSeq) & "</td>")
+
+        of right:
+          tdRow.add("\p" & "<td align=\"right\">" & e.insertInline(linkSeq) & "</td>")
+      
+      body.add(tr(tdRow & "\p"))
+      tdRow = ""
+    
+    body = tbody("\p" & body & "\p")
+
+    return table("\p" & (head & "\p" & body) & "\p") & "\p"
+          
+
 
   else: return

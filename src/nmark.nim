@@ -60,12 +60,12 @@ proc markdownFromFile*(path: string): string =
 
 
 
-when isMainModule:
+proc specTest() =
   let
     f = parseFile("testfiles/spec-test.json")
   var
     begins = 1
-    ends = 42
+    ends = 100
   for j in f:
     let
       j = f[begins-1]
@@ -82,3 +82,9 @@ when isMainModule:
     begins.inc
     if begins == ends:
       break
+
+
+
+when isMainModule:
+  let f = readFile("testfiles/table.md")
+  echo f.markdown
