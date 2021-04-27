@@ -1,5 +1,5 @@
 import json
-import nmarkpkg/private/parseLines, nmarkpkg/private/astToHtml, nmarkpkg/private/defBlock
+import nmarkpkg/parseLines, nmarkpkg/astToHtml, nmarkpkg/defBlock
 
 
 
