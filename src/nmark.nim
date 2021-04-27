@@ -1,17 +1,7 @@
 import json
 import nmark/parseLines, nmark/astToHtml, nmark/defBlock
 
-
-
-proc echoSeqBlock(s: seq[Block]) =
-  var t: seq[JsonNode]
-  for b in s:
-    t.add(%b)
-  echo t
-
-
-
-proc markdown*(lines: string): string =
+proc markdown(lines: string): string =
   let seqAst = lines.parseLines
 
   #echoSeqBlock seqAst
@@ -29,34 +19,12 @@ proc markdown*(lines: string): string =
 
   #echoSeqBlock linkSeq
 
-  var resultHtml: string
   var isTight = false
 
   for ast in seqAst:
-    resultHtml.add(ast.astToHtml(isTight, linkseq))
+    result.add(ast.astToHtml(isTight, linkseq))
 
-  return resultHtml
-
-
-proc markdownFromFile*(path: string): string =
-  let lines = readFile(path)
-
-  let seqAst = lines.parseLines
-
-  var linkSeq: seq[Block]
-  for e in seqAst:
-    if e.kind == BlockKind.linkRef:
-      linkSeq.add(e)
-    else:
-      continue
-
-  var resultHtml: string
-  var isTight = false
-
-  for ast in seqAst:
-    resultHtml.add(ast.astToHtml(isTight, linkSeq))
-
-  return resultHtml
+  return result
 
 
 
@@ -65,7 +33,7 @@ proc specTest() =
     f = parseFile("testfiles/spec-test.json")
   var
     begins = 1
-    ends = 100
+    ends = 653
   for j in f:
     let
       j = f[begins-1]
@@ -86,5 +54,6 @@ proc specTest() =
 
 
 when isMainModule:
-  let f = readFile("testfiles/table.md")
-  echo f.markdown
+  specTest()
+  #let f = readFile("testfiles/table.md")
+  #echo f.markdown
