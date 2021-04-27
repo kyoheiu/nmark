@@ -1,4 +1,6 @@
-import re, algorithm, sequtils, json
+from re import re, match, startsWith
+import sequtils
+from algorithm import reversed, sortedByIt
 import readInline
 
 let
@@ -596,12 +598,7 @@ proc processEmphasis*(line: string): seq[DelimStack] =
          .sortedByIt(it.position)
          .parseEmphasis
   
-proc echoDelims(r: seq[DelimStack]) =
-  var j: seq[JsonNode]
-  for element in r:
-    j.add(%element)
-  
-  echo j
+
 
 proc parseInline*(line: string): seq[DelimStack] =
 

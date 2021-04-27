@@ -1,4 +1,5 @@
-import htmlgen, strutils
+from strutils import replace
+import htmlgen
 import defBlock, insertMarker
 
 proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =

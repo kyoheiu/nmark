@@ -2,7 +2,6 @@ from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric
 from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
-import json
 import readInline, parseInline, defBlock
 
 type linkKind = enum
@@ -596,15 +595,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
   result.removeSuffix({' ', '\n'})
   
   return result
-
-
-
-proc echoDelims(r: seq[DelimStack]) =
-  var j: seq[JsonNode]
-  for element in r:
-    j.add(%element)
-  
-  echo j
 
 
 

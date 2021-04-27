@@ -33,7 +33,7 @@ proc specTest() =
     f = parseFile("testfiles/spec-test.json")
   var
     begins = 1
-    ends = 653
+    ends = 100
   for j in f:
     let
       j = f[begins-1]

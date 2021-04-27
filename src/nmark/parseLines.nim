@@ -1,4 +1,5 @@
-import strutils, sequtils, re
+from re import match, startsWith, contains
+import strutils, sequtils
 import defBlock
 
 proc parseLines*(s: string): seq[Block] =

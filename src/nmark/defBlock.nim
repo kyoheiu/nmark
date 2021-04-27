@@ -141,7 +141,7 @@ proc newAttrFlag*(): AttrFlag =
     td: @[]
   )
 
-  
+
 
 let
   reThematicBreak* = re" {0,3}(\*{3,}|-{3,}|_{3,})$"
@@ -167,7 +167,6 @@ let
   reHtmlBlock7Begins* = re(" {0,3}(<|</)[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*(>|/>) *$")
 
   reLinkRef = re" {0,3}\[\s*.*\s*]:(\s*\n?\s*)"
-
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
 const olNum* = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
