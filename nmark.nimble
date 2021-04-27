@@ -6,7 +6,6 @@ description   = "fast markdown parser"
 license       = "MIT"
 srcDir        = "src"
 #bin           = @["nmark"]
-skipDirs = @["nmarkpkg/private"]
 
 
 # Dependencies
