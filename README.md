@@ -1,35 +1,41 @@
 # nmark
 
-A fast markdown parser, based on CommonMark.
+Fast markdown parser, based on CommonMark, written in Nim.
 
 ## Usage
 
-```
+```nim
 import nmark
 
-let f = readfile("1.md")
-echo f.markdown
+let txt = """
+> Lorem ipsum dolor
+sit amet.
+> - Qui *quodsi iracundia*
+> - aliquando id
+"""
+
+echo txt.markdown
+```
+...and it's done.
+
+```
+# output
+<blockquote>
+<p>Lorem ipsum dolor
+sit amet.</p>
+<ul>
+<li>Qui <em>quodsi iracundia</em></li>
+<li>aliquando id</li>
+</ul>
+</blockquote>
 ```
 
-...and it's done!
+## performance comparison
+One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between `nim-markdown`, which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
 
-```
-<h3>Headings</h3>
-<p>The following HTML <code>&lt;h1&gt;—&lt;h6&gt;</code> elements represent six levels of section headings. <code>&lt;h1&gt;</code> is the highest section level while <code>&lt;h6&gt;</code> is the lowest.</p>
-<h1>H1</h1>
-<h2>H2</h2>
-<h3>H3</h3>
-<h4>H4</h4>
-<h5>H5</h5>
-<h6>H6</h6>
-<h3>Paragraph</h3>
-...
-```
+`./casa build` generates 100 same htmls containing a lot of markdown delimiter. For detail please check my [repo](https://github.com/kyoheiu/Casa).
 
-## perf comparison
-By using a static site generator(which, btw, I made) and `hyperfine`, let's compare the existing markdown parser written in Nim and nmark.
-
-### the existing parser
+### nim-markdown
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
 | `./casa build` | 296.1 ± 12.2 | 287.6 | 322.4 | 1.00 |
@@ -39,10 +45,8 @@ By using a static site generator(which, btw, I made) and `hyperfine`, let's comp
 |:---|---:|---:|---:|---:|
 | `./casa build` | 54.4 ± 0.9 | 53.1 | 57.4 | 1.00 |
 
-(Detail in my [repo](https://github.com/kyoheiu/Casa))
-
 ## caution
-This is work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
+This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
 
 ```
 > foo
@@ -50,7 +54,7 @@ bar
 ===
 ```
 
-... is converted to:
+... is, by `nmark`, converted to:
 
 ```
 <blockquote>
@@ -59,4 +63,4 @@ bar</h1>
 </blockquote>
 ```
 
-Though I BELIEVE this markdown parser is ENOUGH for normal usage, I'm working on improving the perf and 
+Though I believe `nmark` is enough for normal usage, I'm working on improving the accuracy and performance. And issues, pull requests always welcome.
