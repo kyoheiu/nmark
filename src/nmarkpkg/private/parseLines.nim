@@ -984,6 +984,9 @@ proc parseLines*(s: string): seq[Block] =
          a.kind == htmlBlock7:
       lineBlock.removeSuffix("\n")
       result.add(openHTML(lineBlock))
+    
+    elif a.kind == table:
+      result.add(openTable(a.align, a.th, a.td))
 
     else:
       result.add(openParagraph(lineBlock))
