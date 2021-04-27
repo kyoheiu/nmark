@@ -197,7 +197,6 @@ proc parseTableDelim*(line: string): seq[ALignKind] =
          .filter(proc(x: string): bool = not x.isEmptyOrWhitespace)
   for delim in s:
     let e = delim.strip
-    echo e[^1]
     if e[0] == ':' and e[^1] == ':':
       result.add(center)
     elif e[0] == ':':
