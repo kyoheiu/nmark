@@ -5,7 +5,7 @@ author        = "Kyohei Uto"
 description   = "fast markdown parser"
 license       = "MIT"
 srcDir        = "src"
-bin           = @["nmark"]
+#bin           = @["nmark"]
 
 
 # Dependencies
