@@ -1,8 +1,6 @@
 import re
 import defBlock
 
-const puncChar = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~']
-
 type
   DelimPotential* = enum
     canOpen,

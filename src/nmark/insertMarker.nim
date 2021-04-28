@@ -41,6 +41,9 @@ type
     linkText: string
     url: string
     title: string
+    numOpenP: int
+    numCloseP: int
+    afterBS: bool
     parseLink: linkKind
 
 proc newSplitFlag(): SplitFlag =
@@ -69,6 +72,9 @@ proc newLinkFlag(): LinkFlag =
     linkText: "",
     url: "",
     title: "",
+    numOpenP: 0,
+    numCloseP: 0,
+    afterBS: false,
     parseLink: none
   )
 
@@ -205,25 +211,40 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
     
     elif flag.toLinktext:
       if c == ']':
-        flag.toLinktext = false
-        flag.toLinkDestination = true
-        l.urlPos = i
-        skipCount = 1
+        if l.numOpenP > l.numCloseP:
+          l.numCloseP.inc
+          l.linkText.add(c)
+        else:
+          l.numOpenP = 0
+          l.numCloseP = 0
+          flag.toLinktext = false
+          flag.toLinkDestination = true
+          l.urlPos = i
+          skipCount = 1
+      elif c == '[':
+        if line[i-1] != '\\':
+          l.numOpenP.inc
+        l.linkText.add(c)
+      elif c == '\\':
+        continue
       else:
         l.linkText.add(c)
     
     elif flag.toLinkDestination:
 
       # parse link contents     
-      if l.parseLink != toTitlePare and c == ')' and line[i-1] != '\\':
+      if l.parseLink != toTitlePare and c == ')' and not l.afterBS:
+        if l.numOpenP > l.numCloseP and l.parseLink == toUrl:
+          l.url.add(c)
+          l.numCloseP.inc
+          continue
         if l.parseLink == toUrlLT:
           l.url.add(c)
           continue
         else:
           if l.isLink:
             if l.url.isEmptyOrWhitespace and l.title.isEmptyOrWhitespace:
-              let delimInLink = l.linkText.processEmphasis
-              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
+              let processedText = l.linkText.insertMarker(linkSeq, l.linkText.parseInline)
               result.add("<a href=\"\">" & processedText & "</a>")
               flag.toLinkDestination = false
               l = newLinkFlag()
@@ -246,16 +267,14 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               continue
 
             elif l.parseLink == toUrl or l.parseLink == skipToTitle:
-              let delimInLink = l.linkText.processEmphasis
-              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
+              let processedText = l.linkText.insertMarker(linkSeq, l.linkText.parseInline)
               result.add("<a href=\"" & l.url & "\">" & processedText & "</a>")
               flag.toLinkDestination = false
               l = newLinkFlag()
               continue
             
             elif l.parseLink == afterTitle:
-              let delimInLink = l.linkText.processEmphasis
-              let processedText = l.linkText.insertMarker(linkSeq, delimInLink)
+              let processedText = l.linkText.insertMarker(linkSeq, l.linkText.parseInline)
               result.add("<a href=\"" & l.url & "\" title=\"" & l.title & "\">" & processedText & "</a>")
               flag.toLinkDestination = false
               l = newLinkFlag()
@@ -307,7 +326,11 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
               flag.toLinkDestination = false
               l = newLinkFlag()
               continue
-
+      
+      elif l.parseLink != toTitlePare and c == ')' and l.afterBS:
+        if l.parseLink == toUrl:
+          l.url.add(c)
+          continue
 
       elif i == l.urlPos+2:
         case c
@@ -316,10 +339,11 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           continue
         of '\\':
           l.parseLink = toUrl
+          l.afterBS = true
           continue
         else:
           l.parseLink = toUrl
-          if c == '"': l.url.add("&quot;")
+          if c == '"': l.url.add("%22")
           else: l.url.add(c)
           continue
       
@@ -328,11 +352,27 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         if c == ' ':
           l.parseLink = skipToTitle
         elif c == '\\':
+          l.afterBS = true
           continue
         elif c == '"':
-          l.url.add("&quot;")
-        else:
+          l.afterBS = false
+          l.url.add("%22")
+        elif c == '(':
+          if not l.afterBS:
+            l.url.add(c)
+            l.numOpenP.inc
+          else:
+            l.afterBS = false
+            l.url.add(c)
+        elif puncChar.contains(c):
+          l.afterBS = false
           l.url.add(c)
+        else:
+          if l.afterBS:
+            l.url.add("%5C" & c)
+            l.afterBS = false
+          else:
+            l.url.add(c)
       of toUrlLT:
         if c == '>':
           if not flag.afterBS:
@@ -598,6 +638,10 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       result.add(c)
 
   if flag.toEscape: result.add('\\')
+
+  elif flag.toLinktext: result.add(line[l.startPos..^1])
+
+  elif flag.toLinkDestination: result.add(line[l.startPos..^1])
 
   result.removeSuffix({' ', '\n'})
   
