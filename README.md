@@ -65,12 +65,12 @@ One of the reason I'm working on this parser is that other markdown parser libra
 
 `./casa build` generates 100 same htmls containing a lot of markdown delimiter. For detail please check my [repo](https://github.com/kyoheiu/Casa).
 
-### nim-markdown >>
+### nim-markdown@0.8.5 >>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
 | `./casa build` | 296.1 ± 12.2 | 287.6 | 322.4 | 1.00 |
 
-### nmark >>
+### nmark@0.1.0 >>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
 | `./casa build` | 54.4 ± 0.9 | 53.1 | 57.4 | 1.00 |
