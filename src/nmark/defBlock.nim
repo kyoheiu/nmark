@@ -172,10 +172,9 @@ let
 const olNum* = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 proc delWhitespace*(line: string): string =
-  var str: string
   for c in line:
-    if c != ' ': str.add(c)
-  return str
+    if c != ' ': result.add(c)
+  return result
 
 proc countWhitespace*(line: string): int =
   var i = 0

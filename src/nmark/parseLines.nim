@@ -711,6 +711,8 @@ proc parseLines*(s: string): seq[Block] =
         
         of '\t':
           a.kind = indentedCodeBlock
+          line.delete(0,0)
+          line = "    " & line
           break
 
         else:
@@ -805,7 +807,7 @@ proc parseLines*(s: string): seq[Block] =
         if m.isAfterNumber == 1:
           m.isAfterOLMarker = 2
         else: break
-
+      
       else: 
         a = newAttrFlag()
         a.kind = paragraph
