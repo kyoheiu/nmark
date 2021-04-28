@@ -73,7 +73,7 @@ One of the reason I'm working on this parser is that other markdown parser libra
 ### nmark@0.1.0 >>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `./casa build` | 54.4 ± 0.9 | 53.1 | 57.4 | 1.00 |
+| `./casa build` | 57.0 ± 9.7 | 54.1 | 105.6 | 1.00 |
 
 ## Caution
 This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
