@@ -88,8 +88,11 @@ proc parseLines*(s: string): seq[Block] =
             else:
               m.numHeadSpace.inc
               if m.numHeadSpace == 4:
-                a.kind = indentedCodeBlock
-                break
+                if a.isAfterEmptyLine:
+                  a.kind = indentedCodeBlock
+                  break
+                else:
+                  break
 
           of '`':
             m.numBacktick.inc

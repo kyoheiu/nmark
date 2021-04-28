@@ -56,6 +56,7 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 
     of Blocktype.blockQuote:
 
+      isTight = false
       var blockQuoteContainer: string
       for child in mdast.children:
         blockQuoteContainer.add(child.astToHtml(isTight, linkSeq))

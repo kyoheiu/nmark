@@ -319,7 +319,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           continue
         else:
           l.parseLink = toUrl
-          l.url.add(c)
+          if c == '"': l.url.add("&quot;")
+          else: l.url.add(c)
           continue
       
       case l.parseLink
@@ -361,17 +362,23 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of toTitleDouble:
         if c == '"' and line[i-1] != '\\':
           l.parseLink = afterTitle
-          continue
+        elif c == '"' and line[i-1] == '\\':
+          l.title.add("&quot;")
+        elif c == '\\': continue
         else: l.title.add(c)
       of toTitleSingle:
         if c == '\'' and line[i-1] != '\\':
           l.parseLink = afterTitle
           continue
+        elif c == '"':
+          l.title.add("&quot;")
+        elif c == '\\': continue
         else: l.title.add(c)
       of toTitlePare:
         if c == ')' and line[i-1] != '\\':
           l.parseLink = afterTitle
           continue
+        elif c == '\\': continue
         else: l.title.add(c)
       of afterTitle:
         if c == ' ': continue
