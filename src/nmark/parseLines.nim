@@ -638,40 +638,40 @@ proc parseLines*(s: string): seq[Block] =
       if m.isAfterOLMarker > 0:
         m.isAfterOLMarker.dec
 
-      if line.match(reEmptyUL):
-        if a.kind != paragraph:
-          a = newAttrFlag()
-          a.kind = unOrderedList
-          break
-
-      if line.match(reEmptyOL):
-        if a.kind != paragraph:
-          a = newAttrFlag()
-          a.kind = orderedList
-          break
-
-      if lineBlock != "" and line.match(reSetextHeader):
-        a = newAttrFlag()
-        a.kind = setextHeader
-        break
-      
-      if line.countWhitespace < 4 and
-           line.delWhitespace.startsWith(reThematicBreak):
-        a = newAttrFlag()
-        a.kind = themanticBreak
-        break
-      
-      if line.match(reAnotherAtxHeader):
-        a = newAttrFlag()
-        a.kind = headerEmpty
-        break
-
-      if line.isTable:
-        a.kind = table
-        break
-
-
       if i == 0:
+
+        if line.match(reEmptyUL):
+          if a.kind != paragraph:
+            a = newAttrFlag()
+            a.kind = unOrderedList
+            break
+
+        if line.match(reEmptyOL):
+          if a.kind != paragraph:
+            a = newAttrFlag()
+            a.kind = orderedList
+            break
+
+        if lineBlock != "" and line.match(reSetextHeader):
+          a = newAttrFlag()
+          a.kind = setextHeader
+          break
+        
+        if line.countWhitespace < 4 and
+            line.delWhitespace.startsWith(reThematicBreak):
+          a = newAttrFlag()
+          a.kind = themanticBreak
+          break
+        
+        if line.match(reAnotherAtxHeader):
+          a = newAttrFlag()
+          a.kind = headerEmpty
+          break
+
+        if line.isTable:
+          a.kind = table
+          break
+
         case c
 
         of '#':
