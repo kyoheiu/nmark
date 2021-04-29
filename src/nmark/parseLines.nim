@@ -25,20 +25,21 @@ proc parseLines*(s: string): seq[Block] =
         # check if (lazy) continuation lines
         for i, c in line:
 
-          if line.startsWith(reHtmlBlock1Begins) or
-             line.startsWith(reHtmlBlock2Begins) or
-             line.startsWith(reHtmlBlock3Begins) or
-             line.startsWith(reHtmlBlock4Begins) or
-             line.startsWith(reHtmlBlock5Begins) or
-             line.startsWith(reHtmlBlock6Begins) or
-             line.startsWith(reHtmlBlock7Begins) or
-             line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak) or
-             line.isUL or
-             line.isOL:
-            a.kind = none
-            break
-
           if i == 0 :
+
+            if line.startsWith(reHtmlBlock1Begins) or
+              line.startsWith(reHtmlBlock2Begins) or
+              line.startsWith(reHtmlBlock3Begins) or
+              line.startsWith(reHtmlBlock4Begins) or
+              line.startsWith(reHtmlBlock5Begins) or
+              line.startsWith(reHtmlBlock6Begins) or
+              line.startsWith(reHtmlBlock7Begins) or
+              line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak) or
+              line.isUL or
+              line.isOL:
+              a.kind = none
+              break
+
             case c
 
             of '#':
@@ -239,23 +240,25 @@ proc parseLines*(s: string): seq[Block] =
               lineBlock = ""
               a = newAttrFlag()
               break listblock
+
           else:
 
             for i, c in line:
 
-              if line.startsWith(reHtmlBlock1Begins) or
-                line.startsWith(reHtmlBlock2Begins) or
-                line.startsWith(reHtmlBlock3Begins) or
-                line.startsWith(reHtmlBlock4Begins) or
-                line.startsWith(reHtmlBlock5Begins) or
-                line.startsWith(reHtmlBlock6Begins) or
-                line.startsWith(reHtmlBlock7Begins) or
-                line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
-                a.was = a.kind
-                a.kind = none
-                break
-
               if i == 0 :
+                
+                if line.startsWith(reHtmlBlock1Begins) or
+                  line.startsWith(reHtmlBlock2Begins) or
+                  line.startsWith(reHtmlBlock3Begins) or
+                  line.startsWith(reHtmlBlock4Begins) or
+                  line.startsWith(reHtmlBlock5Begins) or
+                  line.startsWith(reHtmlBlock6Begins) or
+                  line.startsWith(reHtmlBlock7Begins) or
+                  line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
+                  a.was = a.kind
+                  a.kind = none
+                  break
+
                 case c
 
                 of '#':
@@ -280,6 +283,10 @@ proc parseLines*(s: string): seq[Block] =
                 of '>':
                   a.was = a.kind
                   a.kind = blockQuote
+                  break
+
+                of '\t':
+                  a.tabPos = i
                   break
 
                 else: continue
@@ -324,6 +331,9 @@ proc parseLines*(s: string): seq[Block] =
 
             if a.kind == unOrderedList or
                a.kind == orderedList:
+              if a.tabPos == 0:
+                line.delete(0, 0)
+                line = "    " & line
               lineBlock.add("\n" & line)
               continue
             else:
@@ -810,6 +820,13 @@ proc parseLines*(s: string): seq[Block] =
         if m.isAfterNumber == 1:
           m.isAfterOLMarker = 2
         else: break
+
+      of '\t':
+        if m.numHeadSpace > 0:
+          a.kind = indentedCodeBlock
+          a.tabPos = i
+          break
+
       
       else: 
         a = newAttrFlag()
@@ -914,7 +931,9 @@ proc parseLines*(s: string): seq[Block] =
         lineBlock.add("\n" & line.strip(trailing = false))
         a.kind = paragraph
       else:
-        line.delete(0, 3)
+        if a.tabPos > 0:
+          line.delete(0, a.tabPos)
+        else: line.delete(0, 3)
         lineBlock.add(line)
     
     elif a.kind == blockQuote:

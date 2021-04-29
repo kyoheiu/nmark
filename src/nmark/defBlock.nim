@@ -111,6 +111,7 @@ type
     align*: seq[ALignKind]
     th*: seq[string]
     td*: seq[seq[string]]
+    tabPos*: int
   
 proc newMarkerFlag*(): MarkerFlag =
   MarkerFlag(
@@ -138,7 +139,8 @@ proc newAttrFlag*(): AttrFlag =
     columnNum: 0,
     align: @[],
     th: @[],
-    td: @[]
+    td: @[],
+    tabPos: -1
   )
 
 
