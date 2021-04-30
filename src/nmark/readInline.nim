@@ -1,5 +1,5 @@
 import re
-import defBlock
+import def
 
 type
   DelimPotential* = enum

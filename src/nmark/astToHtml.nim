@@ -1,6 +1,6 @@
 from strutils import replace
 import htmlgen
-import defBlock, insertMarker
+import def, insertMarker
 
 proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 

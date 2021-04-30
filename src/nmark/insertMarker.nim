@@ -2,7 +2,7 @@ from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric
 from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
-import readInline, parseInline, defBlock
+import readInline, parseInline, def
 
 type linkKind = enum
   toUrl
