@@ -93,6 +93,9 @@ type
     isAfterULMarker*: int
     isAfterNumber*: int
     isAfterOLMarker*: int
+    tabPos*: int
+    tabNum*: int
+    earlyReturn*: bool
   
   AttrFlag* = ref AtFObj
   AtFObj = object
@@ -111,7 +114,6 @@ type
     align*: seq[ALignKind]
     th*: seq[string]
     td*: seq[seq[string]]
-    tabPos*: int
   
 proc newMarkerFlag*(): MarkerFlag =
   MarkerFlag(
@@ -121,7 +123,10 @@ proc newMarkerFlag*(): MarkerFlag =
     numTild: 0,
     isAfterULMarker: 0,
     isAfterNumber: 0,
-    isAfterOLMarker: 0
+    isAfterOLMarker: 0,
+    tabPos: -1,
+    tabNum: 0,
+    earlyReturn: false
   )
 
 proc newAttrFlag*(): AttrFlag =
@@ -139,8 +144,7 @@ proc newAttrFlag*(): AttrFlag =
     columnNum: 0,
     align: @[],
     th: @[],
-    td: @[],
-    tabPos: -1
+    td: @[]
   )
 
 
@@ -176,7 +180,7 @@ const puncChar* = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', 
 
 proc delWhitespace*(line: string): string =
   for c in line:
-    if c != ' ': result.add(c)
+    if c != ' ' and c != '\t': result.add(c)
   return result
 
 proc countWhitespace*(line: string): int =
@@ -242,6 +246,12 @@ proc addTableElement*(td: var seq[seq[string]], row: var seq[string], columnNum:
 
 proc openTable*(alignSeq: seq[ALignKind], th: seq[string], td: seq[seq[string]]): Block =
   return Block(kind: tableBlock, align: alignSeq, thR: th, tdR: td)
+
+proc countTab*(line: string): int =
+  for c in line:
+    if c == '\t':
+      result.inc
+    else: return result
   
 proc delULMarker*(line: var string): (int, string, char) =
   var n: int

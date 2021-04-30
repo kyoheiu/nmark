@@ -1,7 +1,7 @@
 import nmark/mdToAst, nmark/astToHtml, nmark/def
 
 proc markdown*(lines: string): string =
-  let seqAst = lines.parseLines
+  let seqAst = lines.mdToAst
 
   #echoSeqBlock seqAst
 

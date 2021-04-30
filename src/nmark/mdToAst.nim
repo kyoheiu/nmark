@@ -2,7 +2,7 @@ from re import match, startsWith, contains
 import strutils, sequtils
 import def
 
-proc parseLines*(s: string): seq[Block] =
+proc mdToAst*(s: string): seq[Block] =
 
   var lineBlock: string
   var a = newAttrFlag()
@@ -17,7 +17,7 @@ proc parseLines*(s: string): seq[Block] =
       if a.kind == blockQuote:
 
         if line.isEmptyOrWhitespace:
-          result.add(openBlockQuote(lineBlock.parseLines))
+          result.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
           a = newAttrFlag()
           break bqblock
@@ -127,7 +127,7 @@ proc parseLines*(s: string): seq[Block] =
           lineBlock.add("\n" & line)
           continue
         else:
-          result.add(openBlockQuote(lineBlock.parseLines))
+          result.add(openBlockQuote(lineBlock.mdToAst))
           lineBlock = ""
           a = newAttrFlag()
           m = newMarkerFlag()
@@ -138,6 +138,7 @@ proc parseLines*(s: string): seq[Block] =
     block listblock:
       if a.kind == unOrderedList or
          a.kind == orderedList:
+        m.tabNum = line.countTab
         if line.isEmptyOrWhitespace:
           lineBlock.add("\n")
           a.isAfterEmptyLine = true
@@ -148,6 +149,16 @@ proc parseLines*(s: string): seq[Block] =
           a.isAfterEmptyLine = false
           lineBlock.add("\n" & line[a.width..^1])
           continue
+        elif m.tabNum * 4 >= a.width:
+          if a.isAfterEmptyLine:
+            a.isLoose = true
+          a.isAfterEmptyLine = false
+          var tempStr = line
+          tempStr.delete(0, m.tabNum-1)
+          tempStr = (' ').repeat(m.tabNum * 4) & tempStr
+          lineBlock.add("\n" & tempStr[a.width..^1])
+          continue
+
         else:
 
           if line.isUL or line.match(reEmptyUL):
@@ -156,12 +167,12 @@ proc parseLines*(s: string): seq[Block] =
               a.isLoose = true
             let (n, s, marker) = line.delULMarker
             if a.kind == unOrderedList and a.markerType == marker:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               lineBlock = s
               a.width = n
               continue
             elif a.kind == unOrderedList:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.isLoose:
                 result.add(a.listSeq.openLooseUL)
               else:
@@ -173,7 +184,7 @@ proc parseLines*(s: string): seq[Block] =
               a.kind = unOrderedList
               continue
             else:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.isLoose:
                 result.add(a.listSeq.openLooseOL(a.startNum))
               else:
@@ -191,12 +202,12 @@ proc parseLines*(s: string): seq[Block] =
               a.isLoose = true
             let (n, startNum, s, marker) = line.delOLMarker
             if a.kind == orderedList and a.markerType == marker:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               lineBlock = s
               a.width = n
               continue
             elif a.kind == orderedList:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.isLoose:
                 result.add(a.listSeq.openLooseOL(a.startNum))
               else:
@@ -209,7 +220,7 @@ proc parseLines*(s: string): seq[Block] =
               a.kind = orderedList
               continue
             else:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.isLoose:
                 result.add(a.listSeq.openLooseUL)
               else:
@@ -223,7 +234,7 @@ proc parseLines*(s: string): seq[Block] =
               
           if a.isAfterEmptyLine:
             if a.isLoose:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.kind == unOrderedList:
                 result.add(a.listSeq.openLooseUL)
               if a.kind == orderedList:
@@ -232,7 +243,7 @@ proc parseLines*(s: string): seq[Block] =
               a = newAttrFlag()
               break listblock
             else:
-              a.listSeq.add(lineBlock.parseLines.openList)
+              a.listSeq.add(lineBlock.mdToAst.openList)
               if a.kind == unOrderedList:
                 result.add(a.listSeq.openTightUL)
               if a.kind == orderedList:
@@ -285,10 +296,6 @@ proc parseLines*(s: string): seq[Block] =
                   a.kind = blockQuote
                   break
 
-                of '\t':
-                  a.tabPos = i
-                  break
-
                 else: continue
         
           
@@ -331,14 +338,11 @@ proc parseLines*(s: string): seq[Block] =
 
             if a.kind == unOrderedList or
                a.kind == orderedList:
-              if a.tabPos == 0:
-                line.delete(0, 0)
-                line = "    " & line
               lineBlock.add("\n" & line)
               continue
             else:
               if a.isLoose:
-                a.listSeq.add(lineBlock.parseLines.openList)
+                a.listSeq.add(lineBlock.mdToAst.openList)
                 if a.was == unOrderedList:
                   result.add(a.listSeq.openLooseUL)
                 if a.was == orderedList:
@@ -348,7 +352,7 @@ proc parseLines*(s: string): seq[Block] =
                 m = newMarkerFlag()
                 break listblock
               else:
-                a.listSeq.add(lineBlock.parseLines.openList)
+                a.listSeq.add(lineBlock.mdToAst.openList)
                 if a.was == unOrderedList:
                   result.add(a.listSeq.openTightUL)
                 if a.was == orderedList:
@@ -377,7 +381,14 @@ proc parseLines*(s: string): seq[Block] =
 
     block iCBblock:
       if a.kind == indentedCodeBlock:
-        if (not line.isEmptyOrWhitespace) and
+        m.tabNum = line.countTab
+        if m.tabNum > 0:
+          var tempStr = line
+          tempStr.delete(0, m.tabNum-1)
+          tempStr = (' ').repeat((m.tabNum-1) * 4) & tempStr
+          lineBlock.add("\n" & tempStr)
+          continue
+        elif (not line.isEmptyOrWhitespace) and
           line.countWhitespace < 4:
           if a.numEmptyLine != 0:
             var s = lineBlock.splitLines
@@ -708,9 +719,14 @@ proc parseLines*(s: string): seq[Block] =
             result.add(openParagraph(lineBlock))
             lineBlock = ""
           line.delete(0, i)
+          m.tabNum = line.countTab
           if (not line.isEmptyOrWhitespace) and
              line[0] == ' ':
             line.delete(0, 0)
+          elif (not line.isEmptyOrWhitespace) and
+             m.tabNum > 0:
+            line.delete(0, m.tabNum - 1)
+            line = (' ').repeat(m.tabNum * 3) & line 
           a = newAttrFlag()
           a.kind = blockQuote
           break
@@ -788,17 +804,17 @@ proc parseLines*(s: string): seq[Block] =
           break
 
       of '>':
-        m.numHeadSpace = 0
-        if lineBlock != "":
-          result.add(openParagraph(lineBlock))
-          lineBlock = ""
-        line.delete(0, i)
-        if not line.isEmptyOrWhitespace and
-            line[0] == ' ':
-          line.delete(0, 0)
-        a = newAttrFlag()
-        a.kind = blockQuote
-        break
+        if m.numHeadSpace > 0:
+          if lineBlock != "":
+            result.add(openParagraph(lineBlock))
+            lineBlock = ""
+          line.delete(0, i)
+          if not line.isEmptyOrWhitespace and
+              line[0] == ' ':
+            line.delete(0, 0)
+          a = newAttrFlag()
+          a.kind = blockQuote
+          break
 
       of '-', '+', '*':
         m.numHeadSpace = 0
@@ -822,9 +838,19 @@ proc parseLines*(s: string): seq[Block] =
         else: break
 
       of '\t':
-        if m.numHeadSpace > 0:
+        if m.isAfterULMarker == 1:
+          a.kind = unOrderedList
+          break
+        elif m.isAfterOLmarker == 1:
+          a.kind = orderedList
+          break
+        elif (1..6).contains(m.numHeading):
+          a = newAttrFlag()
+          a.kind = header
+          break
+        elif m.numHeadSpace > 0:
           a.kind = indentedCodeBlock
-          a.tabPos = i
+          m.tabPos = i
           break
 
       
@@ -931,8 +957,8 @@ proc parseLines*(s: string): seq[Block] =
         lineBlock.add("\n" & line.strip(trailing = false))
         a.kind = paragraph
       else:
-        if a.tabPos > 0:
-          line.delete(0, a.tabPos)
+        if m.tabPos > 0:
+          line.delete(0, m.tabPos)
         else: line.delete(0, 3)
         lineBlock.add(line)
     
@@ -974,22 +1000,22 @@ proc parseLines*(s: string): seq[Block] =
   if lineBlock != "":
 
     if a.kind == blockQuote:
-      result.add(openBlockQuote(lineBlock.parseLines))
+      result.add(openBlockQuote(lineBlock.mdToAst))
 
     elif a.kind == unOrderedList:
       if a.isLoose:
-        a.listSeq.add(lineBlock.parseLines.openList)
+        a.listSeq.add(lineBlock.mdToAst.openList)
         result.add(a.listSeq.openLooseUL)
       else:
-        a.listSeq.add(lineBlock.parseLines.openList)
+        a.listSeq.add(lineBlock.mdToAst.openList)
         result.add(a.listSeq.openTightUL)
 
     elif a.kind == orderedList:
       if a.isLoose:
-        a.listSeq.add(lineBlock.parseLines.openList)
+        a.listSeq.add(lineBlock.mdToAst.openList)
         result.add(a.listSeq.openLooseOL(a.startNum))
       else:
-        a.listSeq.add(lineBlock.parseLines.openList)
+        a.listSeq.add(lineBlock.mdToAst.openList)
         result.add(a.listSeq.openTightOL(a.startNum))
 
     elif a.kind == fencedCodeBlockBack or
