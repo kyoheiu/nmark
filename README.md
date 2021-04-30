@@ -30,6 +30,7 @@ sit amet.</p>
 </blockquote>
 ```
 
+### table
 You can use tables in `nmark`.
 
 ```
@@ -84,7 +85,7 @@ bar
 ===
 ```
 
-... is, by `nmark`, converted to:
+is, by `nmark`, converted to:
 
 ```
 <blockquote>
@@ -93,4 +94,4 @@ bar</h1>
 </blockquote>
 ```
 
-Though I believe `nmark` is enough for normal usage, I'm working on improving the accuracy and performance. And issues, pull requests always welcome.
+I'm working on improving the accuracy and performance. Issues, pull requests always welcome.
