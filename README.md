@@ -62,7 +62,7 @@ is converted to:
 
 
 ## Performance comparison
-One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between `nim-markdown`, which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
+One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between [`nim-markdown`](https://github.com/soasme/nim-markdown), which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
 
 `./casa build` generates 100 same htmls containing a lot of markdown delimiter. For detail please check my [repo](https://github.com/kyoheiu/Casa).
 
