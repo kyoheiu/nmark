@@ -71,10 +71,10 @@ One of the reason I'm working on this parser is that other markdown parser libra
 |:---|---:|---:|---:|---:|
 | `./casa build` | 296.1 ± 12.2 | 287.6 | 322.4 | 1.00 |
 
-### nmark@0.1.4 >>
+### nmark@0.1.5 >>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `./casa build` | 53.3 ± 7.2 | 51.4 | 92.1 | 1.00 |
+| `./casa build` | 53.9 ± 5.7 | 51.8 | 86.1 | 1.00 |
 
 ## Caution
 This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
