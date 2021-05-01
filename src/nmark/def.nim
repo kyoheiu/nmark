@@ -1,4 +1,5 @@
 import sequtils, strutils, re
+from json import `%`, `$`
 
 type
   BlockType* = enum
@@ -177,6 +178,7 @@ let
 
 const olNum* = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 const puncChar* = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~']
+const unchangedChar* = ['!', '#', '$', '%', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '=', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~', '_', '*']
 
 proc delWhitespace*(line: string): string =
   for c in line:
@@ -475,7 +477,45 @@ proc delSpaceAndFence*(line: string): string =
 
 proc takeAttr*(line: string): string =
   let s = line.splitWhitespace
-  return s[0]
+  var toEscape = false
+  for c in s[0]:
+    
+    if toEscape:
+      case c
+
+      of '"':
+        result.add("&quot;")
+        toEscape = false
+      
+      of '&':
+        result.add("&amp;")
+        toEscape = false
+
+      of '<':
+        result.add("&lt;")
+        toEscape = false
+
+      of '>':
+        result.add("&gt;")
+        toEscape = false
+      
+      of '\n':
+        result.add("<br />" & c)
+        toEscape = false
+      
+      of unchangedChar:
+        result.add(c)
+        toEscape = false
+      
+      else:
+        result.add("\\" & c)
+        toEscape = false
+
+    elif c == '\\':
+        toEscape = true
+    
+    else:
+      result.add(c)
 
 proc openAtxHeader*(line: string): Block =
   var s = line.splitWhitespace
@@ -617,23 +657,29 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
           
           of toUrlLT:
             if c == '\n': break linkDetecting
-            elif c == '<' and lineBlock[i-1] != '\\': break linkDetecting
-            elif c == '>' and lineBlock[i-1] != '\\':
+            elif c == '<' and not isAfterBS: break linkDetecting
+            elif c == '>' and not isAfterBS:
               urlEndPos = i
               flag = skipToTitle
               continue
+            elif c == '\\':
+              isAfterBS = true
+              continue
             elif c == ' ':
+              isAfterBS = false
               url.add("%20")
               continue
             else:
+              if isAfterBS:
+                isAfterBS = false
               url.add(c)
               continue
           
           of toUrl:
-            if c == '(' and lineBlock[i-1] != '\\':
+            if c == '(' and not isAfterBS:
               numOpenP.inc
               url.add(c)
-            elif c == ')' and lineBlock[i-1] != '\\':
+            elif c == ')' and isAfterBS:
               numCloseP.inc
               url.add(c)
             elif c == '\\':
@@ -661,10 +707,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               if isAfterBS:
                 isAfterBS = false
-                url.add("%5C" & c)
-              else:
-                url.add(c)
-                continue
+              url.add(c)
+              continue
           
           of skipToTitle:
             if c == ' ':
@@ -725,11 +769,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               if isAfterBS:
                 isAfterBS = false
-                title.add("\\" & c)
-                continue
-              else:
-                title.add(c)
-                continue
+              title.add(c)
+              continue
 
           of toTitleSingle:
             if c == '\'' and not(isAfterBS):
@@ -747,11 +788,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               if isAfterBS:
                 isAfterBS = false
-                title.add("\\" & c)
-                continue
-              else:
-                title.add(c)
-                continue
+              title.add(c)
+              continue
 
           of toTitlePare:
             if c == '(' and not(isAfterBS): break linkDetecting
@@ -770,18 +808,6 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             else:
               if isAfterBS:
                 isAfterBS = false
-                title.add("\\" & c)
-                continue
-              else:
-                title.add(c)
-                continue
-            if c == '(' and lineBlock[i-1] != '\\': break linkDetecting
-            elif c == ')' and lineBlock[i-1] != '\\':
-              title.add(c)
-              titleEndPos = i
-              flag = afterTitle
-              continue
-            else:
               title.add(c)
               continue
           
@@ -835,3 +861,8 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
   else:
     result.add(Block(kind: leafBlock, leafType: paragraph, raw: lineBlock))
     return result
+
+
+
+proc echoSeqBlock*(s: seq[Block]) =
+  debugEcho $(s.map(`%`))

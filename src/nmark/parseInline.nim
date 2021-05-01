@@ -30,16 +30,15 @@ proc newParseFlag(): ParseFlag =
   )
 
 proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
-  var escapePos = -100
+  var escapePos = -2
   for i, element in delimSeq:
-    if element.typeDelim == "\\" and element.isActive:
-      escapePos = element.position
     if element.position == escapePos+1:
       element.isActive = false
-      escapePos = 0
+      escapePos = -2
+    elif element.typeDelim == "\\" and element.isActive:
+      escapePos = element.position
   
   return delimSeq
-      
 
 proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack] =
 

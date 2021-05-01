@@ -178,16 +178,26 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         flag.toEscape = false
       
       of '\n':
-        result.add("<br />")
+        result.add("<br />" & c)
+        flag.toEscape = false
+      
+      of unchangedChar:
+        result.add(c)
         flag.toEscape = false
       
       else:
-        result.add(c)
+        result.add("\\" & c)
         flag.toEscape = false
 
     elif flag.toAutoLink:
       if c == '>':
-        result.add("<a href=\"" & tempStr & "\">" & tempStr & "</a>")
+        var linkDest: string
+        for d in tempStr:
+          if d == '\\':
+            linkDest.add("%5C")
+          else: linkDest.add(d)
+        result.add("<a href=\"" & linkDest & "\">" & tempStr & "</a>")
+        linkDest = ""
         tempStr = ""
         flag.toAutoLink = false
       else:
@@ -369,10 +379,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
           l.url.add(c)
         else:
           if l.afterBS:
-            l.url.add("%5C" & c)
             l.afterBS = false
-          else:
-            l.url.add(c)
+          l.url.add(c)
       of toUrlLT:
         if c == '>':
           if not flag.afterBS:
@@ -386,7 +394,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         elif c == '\\':
           flag.afterBS = true
         else:
-          flag.afterBS = false
+          if l.afterBS:
+            l.afterBS = false
           l.url.add(c)
       of skipToTitle:
         if c == ' ': continue
@@ -531,6 +540,9 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       else:
         tempStr.add(c)
     
+    elif c == '\\':
+        flag.toEscape = true
+    
     elif delimPos.contains(i):
     
       let currentDelim = delimSeq.returnMatchedDelim(i)
@@ -609,9 +621,6 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
       of "&":
         flag.toEntity = true
         tempStr.add(c)
-
-      of "\\":
-        flag.toEscape = true
 
       of ">":
         result.add("&gt;")
