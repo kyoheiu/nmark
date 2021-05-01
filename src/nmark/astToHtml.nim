@@ -9,7 +9,7 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
 
     case mdast.leafType
 
-    of themanticBreak: return hr() & "\p"
+    of thematicBreak: return hr() & "\p"
 
     of paragraph:
       let value = mdast.raw.insertInline(linkSeq)

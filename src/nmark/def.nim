@@ -12,7 +12,7 @@ type
     header5,
     header6,
     setextHeader,
-    themanticBreak,
+    thematicBreak,
     indentedCodeBlock,
     fencedCodeBlockBack,
     fencedCodeBlockTild,
@@ -524,8 +524,8 @@ proc openSetextHeader*(n: int, lineBlock: string): Block =
   else:
     return Block(kind: leafBlock, leafType: header2, raw: lineBlock)
 
-proc openThemanticBreak*(): Block =
-  return Block(kind: leafBlock, leafType: themanticBreak, raw: "")
+proc openthematicBreak*(): Block =
+  return Block(kind: leafBlock, leafType: thematicBreak, raw: "")
 
 proc openLinkReference*(lineBlock: string): Block =
   return Block(kind: leafBlock, leaftype: linkReference, raw: lineBlock)

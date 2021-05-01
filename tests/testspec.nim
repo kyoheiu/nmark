@@ -1,8 +1,6 @@
 import unittest, json
 import ../src/nmark
 
-
-
 proc specTest() =
   let
     f = parseFile("testfiles/spec-test.json")

@@ -681,7 +681,7 @@ proc mdToAst*(s: string): seq[Block] =
         if line.countWhitespace < 4 and
             line.delWhitespace.startsWith(reThematicBreak):
           a = newAttrFlag()
-          a.kind = themanticBreak
+          a.kind = thematicBreak
           break
         
         if line.match(reAnotherAtxHeader):
@@ -918,11 +918,11 @@ proc mdToAst*(s: string): seq[Block] =
       lineBlock.add(s)
       continue
 
-    elif a.kind == themanticBreak:
+    elif a.kind == thematicBreak:
       if lineBlock != "":
         result.add(openParagraph(lineBlock))
         lineBlock = ""
-      result.add(openThemanticBreak())
+      result.add(openthematicBreak())
       a.kind = none
 
     elif a.kind == header:
