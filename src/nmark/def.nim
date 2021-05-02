@@ -634,13 +634,19 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
 
           case flag
           of toLabel:
-            if c == '[' and lineBlock[i-1] != '\\': break linkDetecting
-            elif c == ']' and lineBlock[i-1] != '\\':
+            if c == '[' and not isAfterBS: break linkDetecting
+            elif c == ']' and not isAfterBS:
               flag = skipToUrl
               continue
+            elif c == ']' and isAfterBS:
+              isAfterBS = false
+              label.add(c)
+              continue
             elif c == '\\':
+              isAfterBS = true
               continue
             else:
+              if isAfterBS: isAfterBS = false
               label.add(c)
               continue
           
@@ -679,7 +685,7 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             if c == '(' and not isAfterBS:
               numOpenP.inc
               url.add(c)
-            elif c == ')' and isAfterBS:
+            elif c == ')' and not isAfterBS:
               numCloseP.inc
               url.add(c)
             elif c == '\\':
@@ -701,14 +707,17 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
                 continue
               else:
                 break linkDetecting
-            elif c == '*':
+            elif c in unchangedChar:
               isAfterBS = false
               url.add(c)
             else:
               if isAfterBS:
                 isAfterBS = false
-              url.add(c)
-              continue
+                url.add("%5C" & c)
+                continue
+              else:
+                url.add(c)
+                continue
           
           of skipToTitle:
             if c == ' ':
@@ -766,11 +775,15 @@ proc openParagraph*(lineBlock: var string): seq[Block] =
             elif c == '\\':
               isAfterBS = true
               continue
+            elif c in unchangedChar:
+              isAfterBS = false
+              title.add(c)
             else:
               if isAfterBS:
                 isAfterBS = false
-              title.add(c)
-              continue
+                title.add("\\" & c)
+              else:
+                title.add(c)
 
           of toTitleSingle:
             if c == '\'' and not(isAfterBS):

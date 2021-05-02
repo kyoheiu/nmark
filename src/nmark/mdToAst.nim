@@ -974,7 +974,10 @@ proc mdToAst*(s: string): seq[Block] =
       if a.th.len() != a.columnNum:
         a = newAttrFlag()
         a.kind = paragraph
-        lineBlock.add("\n" & line.strip(trailing = false))
+        if lineBlock == "":
+          lineBlock.add(line.strip(trailing = false))
+        else:
+          lineBlock.add("\n" & line.strip(trailing = false))
       else:
         lineBlock = ""
         continue

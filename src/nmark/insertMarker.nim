@@ -201,7 +201,10 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         tempStr = ""
         flag.toAutoLink = false
       else:
-        tempStr.add(c)
+        if c == '&':
+          tempStr.add("&amp;")
+        else:
+          tempStr.add(c)
 
     elif flag.toMailLink:
       if c == '>':

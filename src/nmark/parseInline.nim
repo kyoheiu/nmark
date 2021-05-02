@@ -32,7 +32,7 @@ proc newParseFlag(): ParseFlag =
 proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
   var escapePos = -2
   for i, element in delimSeq:
-    if element.position == escapePos+1:
+    if element.position == escapePos+1 and element.typeDelim != "`":
       element.isActive = false
       escapePos = -2
     elif element.typeDelim == "\\" and element.isActive:
