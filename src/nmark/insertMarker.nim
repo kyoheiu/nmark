@@ -1,4 +1,4 @@
-from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric
+from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric, toLowerAscii
 from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
@@ -531,10 +531,14 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         tempStr.add(c)
         let sliceStr = tempStr[1..^2]
         let entity = sliceStr.entityToUtf8
-        if entity != "":
+        if entity == "\"":
+          result.add("&quot;")
+        elif entity == "&":
+          result.add("&amp;")
+        elif entity != "":
           result.add(entity)
         else:
-          result.add(tempStr)
+          result.add("&amp;" & sliceStr & ";")
         tempStr = ""
         flag.toEntity = false
       else:
