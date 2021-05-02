@@ -64,7 +64,7 @@ is converted to:
 ## Performance comparison
 One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between [`nim-markdown`](https://github.com/soasme/nim-markdown), which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
 
-[Perfomance comparison](perfcmp.md)
+[Perfomance comparison detail](perfcmp.md)
 
 As shown above, `nmark` is about 5 times faster than `nim-markdown`.
 
