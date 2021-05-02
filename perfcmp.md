@@ -9,6 +9,7 @@
 |:---|---:|---:|---:|---:|
 | `./casa build` | 296.1 ± 12.2 | 287.6 | 322.4 | 1.00 |
 
-### nmark@0.1.5>>| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+### nmark@0.1.5>>
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `./casa build` | 53.3 ± 1.3 | 51.7 | 56.5 | 1.00 |
+| `./casa build` | 52.8 ± 0.5 | 52.0 | 54.4 | 1.00 |
