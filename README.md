@@ -64,17 +64,9 @@ is converted to:
 ## Performance comparison
 One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between [`nim-markdown`](https://github.com/soasme/nim-markdown), which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
 
-`./casa build` generates 100 same htmls containing a lot of markdown delimiter. For detail please check my [repo](https://github.com/kyoheiu/Casa).
+[Perfomance comparison](perfcmp.md)
 
-### nim-markdown@0.8.5 >>
-| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
-|:---|---:|---:|---:|---:|
-| `./casa build` | 296.1 ± 12.2 | 287.6 | 322.4 | 1.00 |
-
-### nmark@0.1.5 >>
-| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
-|:---|---:|---:|---:|---:|
-| `./casa build` | 53.9 ± 5.7 | 51.8 | 86.1 | 1.00 |
+As shown above, `nmark` is about 5 times faster than `nim-markdown`.
 
 ## Caution
 This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
