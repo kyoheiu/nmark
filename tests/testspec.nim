@@ -33,7 +33,7 @@ proc specTest() =
     ends: int
     sKind: SpecKind
   
-  sKind = autolinks
+  sKind = all
 
   case sKind
 

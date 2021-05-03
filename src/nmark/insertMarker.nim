@@ -607,8 +607,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
             skipCount = currentDelim.numDelim - 1
         
         else:
-          if tempStr[0] == ' ' and tempStr[^1] == ' ' and
-             not (tempStr.isEmptyOrWhiteSpace):
+          if not (tempStr.isEmptyOrWhiteSpace) and
+             tempStr[0] == ' ' and tempStr[^1] == ' ':
             tempStr = tempStr[1..^2]
           result.add(tempStr & "</code>")
           tempStr = ""
