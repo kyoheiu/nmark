@@ -66,7 +66,7 @@ One of the reason I'm working on this parser is that other markdown parser libra
 
 [Perfomance comparison detail](perfcmp.md)
 
-As shown above, `nmark` is about 5 times faster than `nim-markdown`.
+As shown above, `nmark` is about 4 times faster than `nim-markdown`.
 
 ## Caution
 This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,

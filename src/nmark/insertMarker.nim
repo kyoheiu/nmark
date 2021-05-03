@@ -1,4 +1,4 @@
-from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric, toLowerAscii
+from strutils import removeSuffix, isEmptyOrWhiteSpace, isAlphaNumeric, toLowerAscii, repeat
 from sequtils import filter, any
 from unicode import toLower
 from htmlparser import entityToUtf8
@@ -31,6 +31,7 @@ type
     toEscape: bool
     toCode: bool
     afterBS: bool
+    escapedOpener: bool
   
   LinkFlag = ref LObj
   LObj = object
@@ -61,6 +62,7 @@ proc newSplitFlag(): SplitFlag =
     toEscape: false,
     toCode: false,
     afterBS: false,
+    escapedOpener: false
   )
 
 proc newLinkFlag(): LinkFlag =
@@ -108,9 +110,11 @@ proc asLiteral*(line: string): string =
 
       of '"':
         result.add("&quot;")
+        continue
 
       of '&':
         result.add("&amp;")
+        continue
 
       else:
         result.add(c)
@@ -154,9 +158,11 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
 
         of '"':
           tempStr.add("&quot;")
+          continue
         
         of '&':
           tempStr.add("&amp;")
+          continue
 
         of '`':
           break codeBlock
@@ -189,6 +195,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         flag.toEscape = false
       
       of unchangedChar:
+        if c == '`':
+          flag.escapedOpener = true
         result.add(c)
         flag.toEscape = false
       
@@ -204,6 +212,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
             linkDest.add("%5C")
           elif d == '[':
             linkDest.add("%5B")
+          elif d == '`':
+            linkDest.add("%60")
           else: linkDest.add(d)
         result.add("<a href=\"" & linkDest & "\">" & tempStr & "</a>")
         linkDest = ""
@@ -603,12 +613,19 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         if currentDelim.potential == opener:
           result.add("<code>")
           flag.toCode = true
+          flag.escapedOpener = false
           if currentDelim.numDelim > 1:
             skipCount = currentDelim.numDelim - 1
         
         else:
+          if flag.escapedOpener:
+            result.add($('`'.repeat(currentDelim.numDelim)))
+            if currentDelim.numDelim > 1:
+              skipCount = currentDelim.numDelim - 1
+            continue
           if not (tempStr.isEmptyOrWhiteSpace) and
-             tempStr[0] == ' ' and tempStr[^1] == ' ':
+             tempStr[0] == ' ' and
+             tempStr[^1] == ' ':
             tempStr = tempStr[1..^2]
           result.add(tempStr & "</code>")
           tempStr = ""

@@ -39,14 +39,14 @@ proc astToHtml*(mdast: Block, isTight: var bool, linkSeq: seq[Block]): string =
     if mdast.codeText == "":
       if mdast.codeAttr != "":
         var t = pre(code(mdast.codeText.asLiteral)) & "\p"
-        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr & "\">")
+        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr.insertInline(linkSeq) & "\">")
       else:
         return pre(code(mdast.codeText.asLiteral)) & "\p"
 
     else:
       if mdast.codeAttr != "":
         var t = pre(code(mdast.codeText.asLiteral & "\p")) & "\p"
-        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr & "\">")
+        return t.replace("<code>", "<code class=\"language-" & mdast.codeAttr.insertInline(linkSeq) & "\">")
       else:
         return pre(code(mdast.codeText.asLiteral & "\p")) & "\p"
 
