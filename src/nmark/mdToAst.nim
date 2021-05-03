@@ -33,7 +33,8 @@ proc mdToAst*(s: string): seq[Block] =
               line.startsWith(reHtmlBlock4Begins) or
               line.startsWith(reHtmlBlock5Begins) or
               line.startsWith(reHtmlBlock6Begins) or
-              line.startsWith(reHtmlBlock7Begins) or
+              line.startsWith(reHtmlBlock7Begins1) or
+              line.startsWith(reHtmlBlock7Begins2) or
               line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak) or
               line.isUL or
               line.isOL:
@@ -264,7 +265,8 @@ proc mdToAst*(s: string): seq[Block] =
                   line.startsWith(reHtmlBlock4Begins) or
                   line.startsWith(reHtmlBlock5Begins) or
                   line.startsWith(reHtmlBlock6Begins) or
-                  line.startsWith(reHtmlBlock7Begins) or
+                  line.startsWith(reHtmlBlock7Begins1) or
+                  line.startsWith(reHtmlBlock7Begins2) or
                   line.countWhitespace < 4 and line.delWhitespace.startsWith(reThematicBreak):
                   a.was = a.kind
                   a.kind = none
@@ -637,7 +639,8 @@ proc mdToAst*(s: string): seq[Block] =
         lineBlock.add(line)
         continue
       
-      if line.startsWith(reHtmlBlock7Begins):
+      if line.startsWith(reHtmlBlock7Begins1) or
+         line.startsWith(reHtmlBlock7Begins2):
         if lineBlock != "":
           lineBlock.add("\n" & line.strip(trailing = false))
           continue

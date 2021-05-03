@@ -1,13 +1,20 @@
 from re import re, match, startsWith
-import sequtils
+from json import `%`, `$`
+from strutils import contains
 from algorithm import reversed, sortedByIt
+import sequtils
 import readInline
 
 let
   reAutoLink = re"^[a-zA-Z][a-zA-Z0-9\+\.-]{1,31}:[^\s<>]*$"
   reMailLink = re"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
   reLinkDest = re"\(.*\)"
-  reRawHtmlTag = re("/?[a-zA-Z][a-zA-Z0-9-]*( [a-zA-Z_:][a-zA-Z0-9|_|.|:|-]*)*( {0,1}= {0,1}(|'|\")[a-zA-Z]+(|'|\"))* */*")
+  reRawHtmlOpenTag = re"""^[a-zA-Z][a-zA-Z0-9-]*(\s[a-zA-Z_:][a-zA-Z0-9_\.:-]*(\s?=\s?([^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*/?$"""
+  reRawHtmlClosingTag = re"^/[a-zA-Z][a-zA-Z0-9\-]*\s?$"
+  reRawHtmlComment = re"!--[\s\S]*--"
+  reRawHtmlPI = re"\?.+?"
+  reRawHtmlDec = re"![A-Z]+\s.+"
+  reRawHtmlCDATA = re"!\[CDATA\[.+\]\]"
 
 type
   ParseFlag = ref PObj
@@ -29,6 +36,9 @@ proc newParseFlag(): ParseFlag =
     inactivateLink: false
   )
 
+proc echoObj*(s: seq[DelimStack]) =
+  debugEcho $(s.map(`%`))
+
 proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
   var escapePos = -2
   for i, element in delimSeq:
@@ -39,6 +49,15 @@ proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
       escapePos = element.position
   
   return delimSeq
+
+proc isHtmlComment(line: string): bool =
+  let str = line[3..^3]
+  if str.contains("--") or
+     str[0] == '>' or
+     str[0..1] == "->" or
+     str[^1] == '-':
+    return false
+  else: return true
 
 proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack] =
 
@@ -71,11 +90,24 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
           autoLinkPositions.add((flag.positionOpenerInString, element.position))
           flag = newParseFlag()
         
-        elif str.match(reRawHtmlTag):
+        elif str.match(reRawHtmlOpenTag) or
+             str.match(reRawHtmlClosingTag) or
+             str.match(reRawHtmlPI) or
+             str.match(reRawHtmlDec) or
+             str.match(reRawHtmlCDATA):
           delimSeq[flag.positionOpener].potential = htmlTag
           element.potential = closer
           autoLinkPositions.add((flag.positionOpenerInString, element.position))
           flag = newParseFlag()
+        
+        elif str.match(reRawHtmlComment):
+          if str.isHtmlComment:
+            delimSeq[flag.positionOpener].potential = htmlTag
+            element.potential = closer
+            autoLinkPositions.add((flag.positionOpenerInString, element.position))
+            flag = newParseFlag()
+
+
 
       else:
         continue
@@ -611,7 +643,7 @@ proc parseInline*(line: string): seq[DelimStack] =
    line.readEscape)
    .sortedByIt(it.position)
 
-  #echoDelims r
+  #echoObj r
 
   let n_em = r.parseEscape
               .parseAutoLink(line)
@@ -619,12 +651,12 @@ proc parseInline*(line: string): seq[DelimStack] =
               .filter(proc(x: DelimStack): bool =
               (x.typeDelim != "*" and x.typeDelim != "_"))
 
-  #echoDelims n_em
-  #echoDelims r
+  #echoObj n_em
+  #echoObj r
   let em = r.parseEmphasis
 
-  #echoDelims em
-  #echoDelims (n_em & em)
+  #echoObj em
+  #echoObj (n_em & em)
 
   return (n_em & em)
          .sortedByIt(it.position)

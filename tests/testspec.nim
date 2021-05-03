@@ -33,7 +33,7 @@ proc specTest() =
     ends: int
     sKind: SpecKind
   
-  sKind = otherInline
+  sKind = autolinks
 
   case sKind
 
@@ -90,9 +90,9 @@ proc specTest() =
     ends = 571
   of images:
     begins = 571
-    ends = 592
+    ends = 593
   of autolinks:
-    begins = 592
+    begins = 593
     ends = 612
   of rawHtml:
     begins = 612

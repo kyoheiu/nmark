@@ -49,15 +49,26 @@ proc newInlineFlag(): InlineFlag =
 proc readAutoLink*(line: string): seq[DelimStack] =
 
   var resultSeq: seq[DelimStack]
+  var openNum: int
+  var closeNum: int
 
   for i, c in line:
     case c
 
     of '<':
-      resultSeq.add(DelimStack(position: i, typeDelim: "<", numDelim: 1, isActive: true, potential: canOpen))
+      if openNum == 0:      
+        resultSeq.add(DelimStack(position: i, typeDelim: "<", numDelim: 1, isActive: true, potential: canOpen))
+        openNum.inc
+      else:
+        openNum.inc
 
     of '>':
-      resultSeq.add(DelimStack(position: i, typeDelim: ">", numDelim: 1, isActive: true, potential: canClose))
+      if openNum - closeNum == 1:
+        resultSeq.add(DelimStack(position: i, typeDelim: ">", numDelim: 1, isActive: true, potential: canClose))
+        openNum = 0
+        closeNum = 0
+      else:
+        closeNum.inc
 
     else:
       continue

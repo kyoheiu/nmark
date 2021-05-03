@@ -3,7 +3,7 @@ import nmark/mdToAst, nmark/astToHtml, nmark/def
 proc markdown*(lines: string): string =
   let seqAst = lines.mdToAst
 
-  #echoSeqBlock seqAst
+  #echoObj seqAst
 
   var linkSeq: seq[Block]
   for e in seqAst:

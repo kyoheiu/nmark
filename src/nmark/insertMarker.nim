@@ -84,6 +84,13 @@ proc returnMatchedDelim(s: seq[DelimStack], position: int): DelimStack =
       return delim
     else: continue
 
+proc isDelim(s: seq[DelimStack], position: int): bool =
+  for delim in s:
+    if delim.position == position:
+      return true
+    else: continue
+  return false
+
 proc hasCanCloseLinkRef(s: seq[DelimStack], i: int): bool =
   let filtered = s.filter(proc(x: DelimStack): bool = x.position >= i)
   return filtered.any(proc(x: DelimStack): bool = x.typeDelim == "]" and x.potential == canClose)
@@ -195,6 +202,8 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         for d in tempStr:
           if d == '\\':
             linkDest.add("%5C")
+          elif d == '[':
+            linkDest.add("%5B")
           else: linkDest.add(d)
         result.add("<a href=\"" & linkDest & "\">" & tempStr & "</a>")
         linkDest = ""
@@ -215,12 +224,13 @@ proc insertMarker(line: string, linkSeq: seq[Block], delimSeq: seq[DelimStack]):
         tempStr.add(c)
     
     elif flag.toHtmlTag:
-      if c == '>':
+      if c == '>' and isDelim(delimSeq, i):
         result.add("<" & tempStr & ">")
         tempStr = ""
         flag.toHtmlTag = false
       else:
         tempStr.add(c)
+        continue
     
     elif flag.toLinktext:
       if c == ']':
