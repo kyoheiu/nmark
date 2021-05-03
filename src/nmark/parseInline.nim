@@ -1,4 +1,4 @@
-from re import re, match, startsWith
+from regex import re, match, startsWith
 from json import `%`, `$`
 from strutils import contains
 from algorithm import reversed, sortedByIt

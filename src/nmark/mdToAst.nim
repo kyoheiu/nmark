@@ -1,4 +1,4 @@
-from re import match, startsWith, contains
+from regex import match, startsWith, contains
 import strutils, sequtils
 import def
 

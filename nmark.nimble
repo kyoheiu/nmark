@@ -11,3 +11,4 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.4.4"
+requires "regex >= 0.19.0"
