@@ -7,9 +7,9 @@
 ### nim-markdown@0.8.5 >>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `./casa build` | 280.9 ± 0.7 | 279.7 | 282.2 | 1.00 |
+| `./casa build` | 281.6 ± 3.0 | 279.2 | 288.8 | 1.00 |
 
-### nmark@0.1.7>>
+### nmark@0.1.9>>
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `./casa build` | 66.0 ± 0.5 | 65.3 | 67.3 | 1.00 |
+| `./casa build` | 67.5 ± 0.7 | 66.6 | 69.7 | 1.00 |
