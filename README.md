@@ -1,6 +1,6 @@
 # nmark
 
-Fast markdown parser, based on CommonMark, written in Nim.
+Fast markdown converter, based on CommonMark, written in Nim.
 
 ## Usage
 
@@ -62,11 +62,11 @@ is converted to:
 
 
 ## Performance comparison
-One of the reason I'm working on this parser is that other markdown parser librarys written in Nim seemed relatively slow. Here is a comparison between [`nim-markdown`](https://github.com/soasme/nim-markdown), which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
+One of the reason I'm working on this is that other markdown librarys written in Nim seemed relatively slow. Here is a comparison between [`nim-markdown`](https://github.com/soasme/nim-markdown), which I think is the standard Nim markdown parser, and `nmark`, through a static site generator(which, btw, I made) and `hyperfine`.
 
 [Perfomance comparison detail](perfcmp.md)
 
-As shown above, `nmark` is about 4 times faster than `nim-markdown`.
+As shown above, with `nmark` it is about 4 times faster than with `nim-markdown` for now.
 
 ## Caution
 This is still work-in-progess project, and does not FULLY pass the [spec-test of CommonMark](https://spec.commonmark.org/0.29/). For example,
