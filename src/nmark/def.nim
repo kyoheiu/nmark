@@ -150,7 +150,7 @@ proc newAttrFlag*(): AttrFlag =
 
 
 
-let
+const
   reThematicBreak* = re" {0,3}(\*{3,}|-{3,}|_{3,})$"
   reSetextHeader* = re"^ {0,3}(=+|-+)\s*$"
   reAnotherAtxHeader* = re"^#{1,6}$"
