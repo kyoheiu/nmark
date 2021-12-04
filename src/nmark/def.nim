@@ -184,7 +184,7 @@ const unchangedChar* = {'!', '#', '$', '%', '\'', '(', ')', '+', ',', '-', '.', 
 proc delWhitespace*(line: string): string =
   result = newStringOfCap(line.len div 3 * 2)
   for c in line:
-    if c notin {' ', '\n'}: result.add(c)
+    if c notin {' ', '\t'}: result.add(c)
 
 proc countWhitespace*(line: string): int =
   for c in line:
