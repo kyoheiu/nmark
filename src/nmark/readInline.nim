@@ -47,8 +47,6 @@ proc newInlineFlag(): InlineFlag =
   )
 
 proc readAutoLink*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
   var openNum: int
   var closeNum: int
 
@@ -57,14 +55,14 @@ proc readAutoLink*(line: string): seq[DelimStack] =
 
     of '<':
       if openNum == 0:      
-        resultSeq.add(DelimStack(position: i, typeDelim: "<", numDelim: 1, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: i, typeDelim: "<", numDelim: 1, isActive: true, potential: canOpen))
         openNum.inc
       else:
         openNum.inc
 
     of '>':
       if openNum - closeNum == 1:
-        resultSeq.add(DelimStack(position: i, typeDelim: ">", numDelim: 1, isActive: true, potential: canClose))
+        result.add(DelimStack(position: i, typeDelim: ">", numDelim: 1, isActive: true, potential: canClose))
         openNum = 0
         closeNum = 0
       else:
@@ -72,14 +70,10 @@ proc readAutoLink*(line: string): seq[DelimStack] =
 
     else:
       continue
-  
-  return resultSeq
 
 
 
 proc readLinkOrImage*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
   for i, c in line:
@@ -91,22 +85,18 @@ proc readLinkOrImage*(line: string): seq[DelimStack] =
     of '[':
       if flag.isAfterX:
         flag.isAfterX = false
-        resultSeq.add(DelimStack(position: i-1, typeDelim: "![", numDelim: 1, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: i-1, typeDelim: "![", numDelim: 1, isActive: true, potential: canOpen))
       else:
-        resultSeq.add(DelimStack(position: i, typeDelim: "[", numDelim: 1, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: i, typeDelim: "[", numDelim: 1, isActive: true, potential: canOpen))
 
     of ']':
-      resultSeq.add(DelimStack(position: i, typeDelim: "]", numDelim: 1, isActive: true, potential: canClose))
+      result.add(DelimStack(position: i, typeDelim: "]", numDelim: 1, isActive: true, potential: canClose))
 
     else:
       continue
-  
-  return resultSeq
-
 
 
 proc readEmphasisAste*(line: string): seq[DelimStack] =
-  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
   let str = " " & line
@@ -119,7 +109,7 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
 
     elif c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
         flag.isAfterW = true
 
@@ -131,26 +121,26 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
 
       if c == '\\':
         if flag.isAfterW and flag.isAfterA:
-          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+          result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
         elif flag.isAfterE and flag.isAfterA:
-          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
+          result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
         elif flag.isAfterP and flag.isAfterA:
-          resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+          result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterEscape = true
 
       elif flag.isAfterW and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterP = true
 
       elif flag.isAfterE and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
         flag.isAfterP = true
 
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
         flag = newInlineFlag()
         flag.isAfterP = true
 
@@ -165,25 +155,22 @@ proc readEmphasisAste*(line: string): seq[DelimStack] =
     
     else:
       if flag.isAfterW and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
       elif flag.isAfterE and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: both))
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canOpen))
       flag = newInlineFlag()
       flag.isAfterE = true
 
   if flag.isAfterE and flag.isAfterA:
-    resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
+    result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
   elif flag.isAfterP and flag.isAfterA:
-    resultSeq.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
-
-  return resultSeq
+    result.add(DelimStack(position: flag.position, typeDelim: "*", numDelim: flag.number, isActive: true, potential: canClose))
 
 
 
 proc readEmphasisUnder*(line: string): seq[DelimStack] =
-  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
   let str = " " & line
@@ -196,7 +183,7 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
 
     elif c == ' ' or c == '\n':
       if (flag.isAfterE or flag.isAfterP) and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
         flag.isAfterW = true
 
@@ -208,24 +195,24 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
 
       if c == '\\':
         if flag.isAfterW and flag.isAfterA:
-          resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+          result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
         elif flag.isAfterP and flag.isAfterA:
-          resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+          result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterEscape = true
 
       elif flag.isAfterW and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
         flag = newInlineFlag()
         flag.isAfterP = true
 
       elif flag.isAfterE and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
         flag = newInlineFlag()
         flag.isAfterP = true
 
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: both))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: both))
         flag = newInlineFlag()
         flag.isAfterP = true
       
@@ -241,24 +228,18 @@ proc readEmphasisUnder*(line: string): seq[DelimStack] =
     
     else:
       if flag.isAfterW and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
       elif flag.isAfterP and flag.isAfterA:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
+        result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canOpen))
       flag = newInlineFlag()
       flag.isAfterE = true
 
   if flag.isAfterE and flag.isAfterA:
-    resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
+    result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
   elif flag.isAfterP and flag.isAfterA:
-    resultSeq.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
-
-  return resultSeq
-
-
+    result.add(DelimStack(position: flag.position, typeDelim: "_", numDelim: flag.number, isActive: true, potential: canClose))
 
 proc readCodeSpan*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
   for i, c in line:
@@ -274,46 +255,33 @@ proc readCodeSpan*(line: string): seq[DelimStack] =
 
     else:
       if flag.isAfterB:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.number, isActive: true, potential: both))
+        result.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.number, isActive: true, potential: both))
         flag.position = 0
         flag.number = 0
         flag.isAfterB = false
   
   if flag.isAfterB:
-      resultSeq.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.number, isActive: true, potential: both))
-  
-  return resultSeq
+      result.add(DelimStack(position: flag.position, typeDelim: "`", numDelim: flag.number, isActive: true, potential: both))
+
 
 
 
 proc readEscape*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
-
   for i, c in line:
     if c == '\\':
-      resultSeq.add(DelimStack(position: i, typeDelim: "\\", numDelim: 1, isActive: true, potential: canOpen))
+      result.add(DelimStack(position: i, typeDelim: "\\", numDelim: 1, isActive: true, potential: canOpen))
     else:
       continue
-
-  return resultSeq
 
 proc readEntity*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
-
   for i, c in line:
     if c == '&' and line[i..^1].startsWith(reEntity):
-      resultSeq.add(DelimStack(position: i, typeDelim: "&", numDelim: 1, isActive: true, potential: canOpen))
+      result.add(DelimStack(position: i, typeDelim: "&", numDelim: 1, isActive: true, potential: canOpen))
     else:
       continue
-
-  return resultSeq
 
 
 proc readHardBreak*(line: string): seq[DelimStack] =
-
-  var resultSeq: seq[DelimStack]
   var flag = newInlineFlag()
 
   for i, c in line:
@@ -329,10 +297,8 @@ proc readHardBreak*(line: string): seq[DelimStack] =
 
     of '\n':
       if flag.number >= 2:
-        resultSeq.add(DelimStack(position: flag.position, typeDelim: " ", numDelim: flag.number, isActive: true, potential: opener))
+        result.add(DelimStack(position: flag.position, typeDelim: " ", numDelim: flag.number, isActive: true, potential: opener))
       flag = newInlineFlag()
     
     else:
       flag = newInlineFlag()
-  
-  return resultSeq

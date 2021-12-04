@@ -2,7 +2,7 @@ import nmark/mdToAst, nmark/astToHtml, nmark/def
 
 proc markdown*(lines: string): string =
   let seqAst = lines.mdToAst
-
+  
   #echoObj seqAst
 
   var linkSeq: seq[Block]
@@ -22,5 +22,3 @@ proc markdown*(lines: string): string =
 
   for ast in seqAst:
     result.add(ast.astToHtml(isTight, linkseq))
-
-  return result

@@ -1,7 +1,7 @@
 from regex import re, match, startsWith
 from json import `%`, `$`
 from strutils import contains
-from algorithm import reversed, sortedByIt
+from algorithm import reversed, sort, sortedByIt
 import sequtils
 import readInline
 
@@ -39,7 +39,7 @@ proc newParseFlag(): ParseFlag =
 proc echoObj*(s: seq[DelimStack]) =
   debugEcho $(s.map(`%`))
 
-proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
+proc parseEscape*(delimSeq: var seq[DelimStack]) =
   var escapePos = -2
   for i, element in delimSeq:
     if element.position == escapePos+1 and element.typeDelim != "`":
@@ -47,8 +47,6 @@ proc parseEscape*(delimSeq: var seq[DelimStack]): var seq[DelimStack] =
       escapePos = -2
     elif element.typeDelim == "\\" and element.isActive:
       escapePos = element.position
-  
-  return delimSeq
 
 proc isHtmlComment(line: string): bool =
   let str = line[3..^3]
@@ -59,7 +57,7 @@ proc isHtmlComment(line: string): bool =
     return false
   else: return true
 
-proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack] =
+proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string) =
 
   var flag = newParseFlag()
   var autoLinkPositions: seq[tuple[begins: int, ends: int]]
@@ -120,11 +118,9 @@ proc parseAutoLink*(delimSeq: var seq[DelimStack], line: string): seq[DelimStack
       if element.position > autoLinkPosition.begins and element.position < autoLinkPosition.ends: 
         element.isActive = false
 
-  return delimSeq
 
 
-
-proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
+proc parseCodeSpan*(delimSeq: var seq[DelimStack]) =
 
   var flag = newParseFlag()
   var codePositions: seq[tuple[begins: int, ends: int]]
@@ -155,11 +151,9 @@ proc parseCodeSpan*(delimSeq: seq[DelimStack]): seq[DelimStack] =
                  element.position < codePosition.ends: 
                 element.isActive = false
 
-  return delimSeq
 
 
-
-proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
+proc parseLink*(delimSeq: var seq[DelimStack], line: string) =
 
   var flag = newParseFlag()
   var linkPositions: seq[tuple[begins: int, ends: int]]
@@ -192,15 +186,11 @@ proc parseLink*(delimSeq: seq[DelimStack], line: string): seq[DelimStack] =
         if element.position > linkPosition.begins and element.position < linkPosition.ends: 
           element.isActive = false
 
-  return delimSeq
-
 
 
 proc parseEmphasis*(delimSeq: var seq[DelimStack]): seq[DelimStack] =
 
   var resultDelims: seq[DelimStack]
-
-  delimSeq = delimSeq.filter(proc(x: DelimStack): bool = x.typeDelim == "*" or x.typeDelim == "_")
 
   for i, closingElement in delimSeq:
 
@@ -632,34 +622,32 @@ proc processEmphasis*(line: string): seq[DelimStack] =
 
 
 proc parseInline*(line: string): seq[DelimStack] =
-
-  var r = (line.readAutoLink &
-   line.readLinkOrImage &
-   line.readCodeSpan &
-   line.readEmphasisAste &
-   line.readEmphasisUnder &
-   line.readHardBreak &
-   line.readEntity &
-   line.readEscape)
-   .sortedByIt(it.position)
-
+  # r
+  result = line.readAutoLink()
+  result.add line.readLinkOrImage
+  result.add line.readCodeSpan
+  result.add line.readEmphasisAste
+  result.add line.readEmphasisUnder
+  result.add line.readHardBreak
+  result.add line.readEntity
+  result.add line.readEscape
+  result.sort(proc (a, b: DelimStack): int = cmp(a.position, b.position))
   #echoObj r
 
-  let n_em = r.parseEscape
-              .parseAutoLink(line)
-              .parseCodeSpan.parseLink(line)
-              .filter(proc(x: DelimStack): bool =
-              (x.typeDelim != "*" and x.typeDelim != "_"))
-
+  # n_em 
+  result.parseEscape()
+  result.parseAutoLink(line)
+  result.parseCodeSpan()
+  result.parseLink(line)
+  result.keepItIf(it.typeDelim notin ["*", "_"])
+  
   #echoObj n_em
   #echoObj r
-  let em = r.parseEmphasis
+  let em = result.parseEmphasis()
 
   #echoObj em
   #echoObj (n_em & em)
 
-  return (n_em & em)
-         .sortedByIt(it.position)
-         .filter(proc(x: DelimStack): bool =
-         (x.isActive) and
-          x.potential != both)
+  result.add em
+  result.sort(proc (a, b: DelimStack): int = cmp(a.position, b.position))
+  result.keepItIf(it.isActive and it.potential != both)

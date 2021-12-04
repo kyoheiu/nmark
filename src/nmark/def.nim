@@ -54,7 +54,7 @@ type
     tableBlock
 
   Block* = ref BlockObj
-  BlockObj = object
+  BlockObj {.acyclic.} = object
     case kind*: BlockKind
 
     of containerBlock:
@@ -177,21 +177,19 @@ const
   reLinkRef = re" {0,3}\[\s*.*\s*]:(\s*\n?\s*)"
   reEntity* = re"&[a-zA-Z0-9#]+;"
 
-const olNum* = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-const puncChar* = ['!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~']
-const unchangedChar* = ['!', '#', '$', '%', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '=', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~', '_', '*']
+const olNum* = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+const puncChar* = {'!', '"', '#', '$', '%', '&', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~'}
+const unchangedChar* = {'!', '#', '$', '%', '\'', '(', ')', '+', ',', '-', '.', '/', ':', ';', '=', '?', '@', '[', '\\', ']', '^', '`', '{', '|', '}', '~', '_', '*'}
 
 proc delWhitespace*(line: string): string =
+  result = newStringOfCap(line.len div 3 * 2)
   for c in line:
-    if c != ' ' and c != '\t': result.add(c)
-  return result
+    if c notin {' ', '\n'}: result.add(c)
 
 proc countWhitespace*(line: string): int =
-  var i = 0
   for c in line:
-    if c == ' ': i.inc
-    else: return i
-  return i
+    if c == ' ': inc result
+    else: return
 
 proc isTable*(line: string): bool =
   for c in line:
