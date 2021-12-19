@@ -1,7 +1,7 @@
 from regex import re, match, startsWith
 from json import `%`, `$`
 from strutils import contains
-from algorithm import reversed, sortedByIt
+from algorithm import reversed, sort, sortedByIt
 import sequtils
 import readInline
 
@@ -632,24 +632,22 @@ proc processEmphasis*(line: string): seq[DelimStack] =
 
 
 proc parseInline*(line: string): seq[DelimStack] =
-
-  var r = (line.readAutoLink &
-   line.readLinkOrImage &
-   line.readCodeSpan &
-   line.readEmphasisAste &
-   line.readEmphasisUnder &
-   line.readHardBreak &
-   line.readEntity &
-   line.readEscape)
-   .sortedByIt(it.position)
-
+  # r
+  var r = line.readAutoLink()
+  r.add line.readLinkOrImage
+  r.add line.readCodeSpan
+  r.add line.readEmphasisAste
+  r.add line.readEmphasisUnder
+  r.add line.readHardBreak
+  r.add line.readEntity
+  r.add line.readEscape
+  r.sort(proc (a, b: DelimStack): int = cmp(a.position, b.position))
   #echoObj r
 
   let n_em = r.parseEscape
               .parseAutoLink(line)
               .parseCodeSpan.parseLink(line)
-              .filter(proc(x: DelimStack): bool =
-              (x.typeDelim != "*" and x.typeDelim != "_"))
+              .filterIt(it.typeDelim != "*" and it.typeDelim != "_")
 
   #echoObj n_em
   #echoObj r
@@ -658,8 +656,7 @@ proc parseInline*(line: string): seq[DelimStack] =
   #echoObj em
   #echoObj (n_em & em)
 
-  return (n_em & em)
-         .sortedByIt(it.position)
-         .filter(proc(x: DelimStack): bool =
-         (x.isActive) and
-          x.potential != both)
+  result = n_em 
+  result.add em
+  result.sort(proc (a, b: DelimStack): int = cmp(a.position, b.position))
+  result.keepItIf(it.isActive and it.potential != both)
